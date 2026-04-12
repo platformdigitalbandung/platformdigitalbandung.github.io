@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://platform.digitalbdg.ac.id/sitemap.xml
