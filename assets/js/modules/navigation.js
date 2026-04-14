@@ -1,62 +1,22 @@
 export const initNavigation = () => {
-    /*=============== SHOW MENU ===============*/
-    const navMenu = document.getElementById('nav-menu');
-    const navToggle = document.getElementById('nav-toggle');
-    const navClose = document.getElementById('nav-close');
+    // Bottom Navigation Logic for Super App
+    const navItems = document.querySelectorAll('.bottom-nav .nav-item');
 
-    /* Menu Show */
-    if (navToggle) {
-        navToggle.addEventListener('click', () => {
-            navMenu.classList.add('show-menu');
-        });
-    }
-
-    /* Menu Hidden */
-    if (navClose) {
-        navClose.addEventListener('click', () => {
-            navMenu.classList.remove('show-menu');
-        });
-    }
-
-    /*=============== REMOVE MENU MOBILE ===============*/
-    const navLink = document.querySelectorAll('.nav-link');
-
-    const linkAction = () => {
-        const navMenu = document.getElementById('nav-menu');
-        // When we click on each nav-link, we remove the show-menu class
-        navMenu.classList.remove('show-menu');
-    };
-    navLink.forEach(n => n.addEventListener('click', linkAction));
-
-    /*=============== CHANGE BACKGROUND HEADER ===============*/
-    const blurHeader = () => {
-        const header = document.getElementById('header');
-        // When the scroll is greater than 50 viewport height, add the blur class to the header tag
-        this.scrollY >= 50 ? header.classList.add('blur') 
-                           : header.classList.remove('blur');
-    };
-    window.addEventListener('scroll', blurHeader);
-
-    /*=============== SCROLL SECTIONS ACTIVE LINK ===============*/
-    const sections = document.querySelectorAll('section[id]');
-    
-    const scrollActive = () => {
-        const scrollY = window.pageYOffset;
-
-        sections.forEach(current => {
-            const sectionHeight = current.offsetHeight;
-            const sectionTop = current.offsetTop - 100;
-            const sectionId = current.getAttribute('id');
-            const sectionsClass = document.querySelector('.nav-menu a[href*=' + sectionId + ']');
-
-            if (sectionsClass) {
-                if(scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
-                    sectionsClass.classList.add('active-link');
-                } else {
-                    sectionsClass.classList.remove('active-link');
-                }
+    navItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent default anchor click behavior
+            
+            // Remove active class from all
+            navItems.forEach(n => n.classList.remove('active'));
+            
+            // Add active class to clicked item
+            this.classList.add('active');
+            
+            // If it's the scan button, we can maybe trigger an alert or modal instead of just changing color
+            if(this.classList.contains('scan-btn')) {
+                // Future: open camera/QR modal
+                console.log('Open QR Scanner');
             }
         });
-    };
-    window.addEventListener('scroll', scrollActive);
+    });
 };
