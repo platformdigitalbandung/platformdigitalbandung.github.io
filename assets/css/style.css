@@ -344,7 +344,7 @@ h1, h2, h3, h4 {
 
 .promo-banner {
   width: 100%;
-  height: 130px;
+  min-height: 130px;
   background: linear-gradient(45deg, #4f46e5, #ec4899);
   border-radius: 1.25rem;
   overflow: hidden;
