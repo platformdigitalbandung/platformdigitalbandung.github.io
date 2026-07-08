@@ -5,7 +5,7 @@ Pages di **https://platform.digitalbdg.ac.id**.
 
 - Backend: repo [`rlm`](https://github.com/platformdigitalbandung/rlm)
   (FastAPI), dijalankan di server lokal kampus dan diekspos lewat **cloudflared
-  tunnel** di `https://rlm.digitalbdg.ac.id`.
+  tunnel** di `https://rlm.ll.my.id`.
 - Alamat backend bisa diganti tanpa deploy ulang lewat tautan "alamat backend"
   di footer (tersimpan di `localStorage`).
 
