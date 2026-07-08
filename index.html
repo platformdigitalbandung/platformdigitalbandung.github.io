@@ -1,219 +1,66 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-    <!-- Primary Meta Tags -->
-    <title>Sistem Digital Cerdas</title>
-    <meta name="title" content="Sistem Digital Cerdas">
-    <meta name="description" content="Super App Ekosistem Digital Terpadu untuk Kebutuhan Anda.">
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
-
-    <!-- Icons (Phosphor Icons for modern look) -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Tugas — Akademi Digital Bandung</title>
+  <meta name="description" content="Portal pengumpulan tugas Akademi Digital Bandung dengan pemeriksaan kemiripan.">
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
-
 <body>
-
-    <div class="app-container">
-        
-        <!-- Top Navigation / Greeting -->
-        <header class="top-bar">
-            <div class="user-greeting">
-                <div class="avatar">
-                    <span>RF</span>
-                </div>
-                <div class="greeting-text">
-                    <p>Selamat Datang,</p>
-                    <h2>Rolly Maulana</h2>
-                </div>
-            </div>
-            <div class="top-actions">
-                <button class="icon-btn">
-                    <i class="ph ph-bell"></i>
-                    <span class="notification-dot"></span>
-                </button>
-            </div>
-        </header>
-
-        <!-- Main Content Area -->
-        <main class="main-content">
-            
-            <!-- Wallet/Info Card Section -->
-            <section class="section wallet-card-wrapper">
-                <div class="wallet-card">
-                    <div class="wallet-header">
-                        <span>Digital Payment</span>
-                        <i class="ph ph-wallet"></i>
-                    </div>
-                    <div class="wallet-balance">
-                        <h3><span>Rp</span> 1.250.000</h3>
-                        <p>1.500 Poin Tersedia</p>
-                    </div>
-                    <div class="wallet-actions">
-                        <div class="w-action-btn">
-                            <i class="ph ph-plus-circle"></i>
-                            <span>Top Up</span>
-                        </div>
-                        <div class="w-action-btn">
-                            <i class="ph ph-paper-plane-tilt"></i>
-                            <span>Kirim</span>
-                        </div>
-                        <div class="w-action-btn">
-                            <i class="ph ph-hand-coins"></i>
-                            <span>Minta</span>
-                        </div>
-                        <div class="w-action-btn">
-                            <i class="ph ph-clock-counter-clockwise"></i>
-                            <span>Riwayat</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Super App Menus Grid Layout -->
-            <section class="section">
-                <div class="menu-grid">
-                    <div class="menu-item">
-                        <div class="menu-icon bg-blue">
-                            <i class="ph-fill ph-student"></i>
-                        </div>
-                        <p>Akademik</p>
-                    </div>
-                    <div class="menu-item">
-                        <div class="menu-icon bg-orange">
-                            <i class="ph-fill ph-books"></i>
-                        </div>
-                        <p>KRS</p>
-                    </div>
-                    <div class="menu-item">
-                        <div class="menu-icon bg-green">
-                            <i class="ph-fill ph-chalkboard-teacher"></i>
-                        </div>
-                        <p>LMS</p>
-                    </div>
-                    <div class="menu-item">
-                        <div class="menu-icon bg-purple">
-                            <i class="ph-fill ph-calendar-check"></i>
-                        </div>
-                        <p>Jadwal</p>
-                    </div>
-                    <div class="menu-item">
-                        <div class="menu-icon bg-pink">
-                            <i class="ph-fill ph-exam"></i>
-                        </div>
-                        <p>Ujian</p>
-                    </div>
-                    <div class="menu-item">
-                        <div class="menu-icon bg-yellow">
-                            <i class="ph-fill ph-file-text"></i>
-                        </div>
-                        <p>Transkrip</p>
-                    </div>
-                    <div class="menu-item">
-                        <div class="menu-icon bg-cyan">
-                            <i class="ph-fill ph-book-open-user"></i>
-                        </div>
-                        <p>E-Lib</p>
-                    </div>
-                    <div class="menu-item">
-                        <div class="menu-icon bg-gray">
-                            <i class="ph-fill ph-squares-four"></i>
-                        </div>
-                        <p>Lainnya</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Promos / Banner Carousel -->
-            <section class="section promo-section">
-                <div class="section-header">
-                    <h3>Info Kampus</h3>
-                    <a href="#">Lihat Semua</a>
-                </div>
-                
-                <div class="promo-banner">
-                    <div class="promo-content">
-                        <h4>Beasiswa 2026 Dibuka!</h4>
-                        <p>Daftarkan diri Anda untuk program beasiswa prestasi semester ini.</p>
-                        <button class="btn-sm">Daftar Sekarang</button>
-                    </div>
-                    <i class="ph-fill ph-graduation-cap promo-graphic"></i>
-                </div>
-            </section>
-
-            <!-- Agenda/Timeline -->
-            <section class="section">
-                <div class="section-header" style="margin-bottom: 1rem;">
-                    <h3>Kuliah Hari Ini</h3>
-                </div>
-                <div class="agenda-list">
-                    <div class="agenda-item">
-                        <div class="agenda-time">
-                            <span class="time">08:00</span>
-                            <span class="room">R. 401</span>
-                        </div>
-                        <div class="agenda-details">
-                            <h4>Kriptografi Terapan</h4>
-                            <p><i class="ph-fill ph-user"></i> Dr. Budi Santoso</p>
-                        </div>
-                    </div>
-                    <div class="agenda-item">
-                        <div class="agenda-time">
-                            <span class="time">10:30</span>
-                            <span class="room">Lab A</span>
-                        </div>
-                        <div class="agenda-details">
-                            <h4>Praktikum Mobile App</h4>
-                            <p><i class="ph-fill ph-user"></i> Ir. Anita Wijaya</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-        </main>
-
-        <!-- Bottom Navigation Bar -->
-        <nav class="bottom-nav">
-            <a href="#" class="nav-item active">
-                <i class="ph-fill ph-house"></i>
-                <span>Beranda</span>
-            </a>
-            <a href="#" class="nav-item">
-                <i class="ph-fill ph-chart-line-up"></i>
-                <span>Aktivitas</span>
-            </a>
-            <a href="#" class="nav-item scan-btn">
-                <div class="scan-icon-wrapper">
-                    <i class="ph-bold ph-qr-code"></i>
-                </div>
-                <span>Scanner</span>
-            </a>
-            <a href="#" class="nav-item">
-                <i class="ph-fill ph-chat-circle-dots"></i>
-                <span>Pesan</span>
-            </a>
-            <a href="#" class="nav-item">
-                <i class="ph-fill ph-user"></i>
-                <span>Profil</span>
-            </a>
-        </nav>
-
+  <header class="top">
+    <div class="wrap">
+      <h1><a href="./">Portal Tugas ADB</a></h1>
+      <p>Akademi Digital Bandung — pengumpulan tugas &amp; pemeriksaan kemiripan</p>
     </div>
+  </header>
 
-    <!-- JS Entry Point (ES6 Module) -->
-    <script type="module" src="assets/js/main.js"></script>
+  <div class="wrap">
+    <nav class="tabs">
+      <a href="./" class="aktif">Daftar Tugas</a>
+      <a href="dosen.html">Halaman Dosen</a>
+    </nav>
+
+    <div id="isi"><p class="redup">Memuat daftar tugas…</p></div>
+  </div>
+
+  <footer>
+    <p><span id="status-backend"><span class="status-dot gagal"></span>memeriksa backend…</span>
+    · <a href="#" id="ganti-backend">alamat backend</a></p>
+    <p>Skor kemiripan adalah alat bantu, bukan vonis plagiat; keputusan pada dosen.</p>
+  </footer>
+
+  <script type="module">
+    import { apiGet, gantiAlamatBackend } from './assets/js/api.js';
+    import { API_BASE } from './assets/js/config.js';
+
+    document.getElementById('ganti-backend').onclick = (e) => { e.preventDefault(); gantiAlamatBackend(); };
+
+    const isi = document.getElementById('isi');
+    const status = document.getElementById('status-backend');
+    try {
+      const h = await apiGet('/health');
+      status.innerHTML = `<span class="status-dot ok"></span>backend tersambung (${API_BASE})`;
+      const { tugas } = await apiGet('/api/tugas');
+      if (!tugas.length) {
+        isi.innerHTML = '<div class="kartu"><h3>Belum ada tugas</h3>' +
+          '<p class="meta">Dosen dapat membuat tugas lewat Halaman Dosen.</p></div>';
+      } else {
+        isi.innerHTML = tugas.map(t =>
+          `<a class="kartu" href="tugas.html?id=${t.id}">
+             <h3>${esc(t.judul)}</h3>
+             <p class="meta">${t.n_kiriman} kiriman · klik untuk mengumpulkan jawaban</p>
+           </a>`).join('');
+      }
+    } catch (err) {
+      status.innerHTML = `<span class="status-dot gagal"></span>backend tidak terjangkau (${API_BASE})`;
+      isi.innerHTML = `<div class="pesan gagal">Tidak bisa memuat daftar tugas: ${esc(err.message)}.<br>
+        Pastikan backend jalan, atau ganti <a href="#" onclick="return false" id="gb2">alamat backend</a>.</div>`;
+      document.getElementById('gb2').onclick = () => gantiAlamatBackend();
+    }
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+  </script>
 </body>
-
 </html>

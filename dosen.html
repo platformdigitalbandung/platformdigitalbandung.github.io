@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halaman Dosen — Portal Tugas ADB</title>
+  <link rel="icon" href="favicon.ico">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <h1><a href="./">Portal Tugas ADB</a></h1>
+      <p>Halaman dosen: buat tugas &amp; laporan kemiripan</p>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav class="tabs">
+      <a href="./">Daftar Tugas</a>
+      <a href="dosen.html" class="aktif">Halaman Dosen</a>
+    </nav>
+    <div id="isi"></div>
+  </div>
+
+  <footer>
+    <p>Band kemiripan: <b>tinggi</b> ≥ 0.85 · <b>sedang</b> ≥ 0.60 · <b>rendah</b> &lt; 0.60
+    (ambang awal, belum dikalibrasi).</p>
+    <p>Skor kemiripan adalah alat bantu prioritas pemeriksaan, bukan vonis plagiat.</p>
+  </footer>
+
+  <script type="module">
+    import { apiGet, apiPostJson, loginDosen, logoutDosen, isDosen } from './assets/js/api.js';
+
+    const isi = document.getElementById('isi');
+    function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+
+    function tampilLogin(pesan = '') {
+      isi.innerHTML = `
+        ${pesan ? `<div class="pesan gagal">${esc(pesan)}</div>` : ''}
+        <div class="kartu">
+          <h3>Masuk sebagai Dosen</h3>
+          <form id="login">
+            <label>Password dosen<input type="password" name="pw" required></label>
+            <button>Masuk</button>
+          </form>
+        </div>`;
+      document.getElementById('login').onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+          await loginDosen(new FormData(e.target).get('pw'));
+          tampilPanel();
+        } catch (err) {
+          logoutDosen();
+          tampilLogin(`Login gagal: ${err.message}`);
+        }
+      };
+    }
+
+    async function tampilPanel() {
+      const { tugas } = await apiGet('/api/tugas');
+      isi.innerHTML = `
+        <div class="kartu">
+          <h3>Buat Tugas Baru</h3>
+          <form id="buat">
+            <label>Judul<input name="judul" required maxlength="200"></label>
+            <label>Deskripsi<textarea name="deskripsi" rows="3"></textarea></label>
+            <button>Simpan Tugas</button>
+          </form>
+          <div id="hasil-buat"></div>
+        </div>
+        <div class="kartu">
+          <h3>Laporan Kemiripan</h3>
+          ${tugas.length ? `
+            <label>Pilih tugas
+              <select id="pilih">${tugas.map(t =>
+                `<option value="${t.id}">#${t.id} — ${esc(t.judul)} (${t.n_kiriman} kiriman)</option>`).join('')}
+              </select></label>
+            <button id="muat">Tampilkan Laporan</button>`
+            : '<p class="redup">Belum ada tugas.</p>'}
+          <div id="laporan"></div>
+        </div>
+        <p><button class="sekunder" id="keluar">Keluar</button></p>`;
+
+      document.getElementById('keluar').onclick = () => { logoutDosen(); tampilLogin(); };
+
+      document.getElementById('buat').onsubmit = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const h = document.getElementById('hasil-buat');
+        try {
+          const r = await apiPostJson('/api/tugas', {
+            judul: fd.get('judul'), deskripsi: fd.get('deskripsi') || '' });
+          const link = `${location.origin}${location.pathname.replace('dosen.html', '')}tugas.html?id=${r.id}`;
+          h.innerHTML = `<div class="pesan sukses">Tugas <b>#${r.id}</b> dibuat.
+            Bagikan tautan ini ke mahasiswa:<br><a href="${link}">${link}</a></div>`;
+          tampilPanel();
+        } catch (err) { h.innerHTML = `<div class="pesan gagal">Gagal: ${esc(err.message)}</div>`; }
+      };
+
+      const muat = document.getElementById('muat');
+      if (muat) muat.onclick = async () => {
+        const tid = document.getElementById('pilih').value;
+        const lap = document.getElementById('laporan');
+        lap.innerHTML = '<p class="redup">Memuat laporan…</p>';
+        try {
+          const d = await apiGet(`/api/tugas/${tid}/laporan`, { auth: true });
+          const baris = d.per_kiriman.map(r => `
+            <tr class="band-${r.band}"><td>#${r.id}</td>
+              <td>${esc(r.nama)} (${esc(r.nim)})</td>
+              <td>${r.max_score ?? '-'}</td>
+              <td>${r.pasangan_id ? '#' + r.pasangan_id + ' ' + esc(r.pasangan_nama || '') : '-'}</td>
+              <td>${r.band}</td></tr>`).join('');
+          const pas = d.pasangan.slice(0, 20).map(p => `
+            <tr class="band-${p.band}"><td>#${p.a_id} ${esc(p.a_nama)}</td>
+              <td>#${p.b_id} ${esc(p.b_nama)}</td><td>${p.score}</td><td>${p.band}</td></tr>`).join('');
+          lap.innerHTML = `
+            <h4>Per kiriman</h4>
+            <div class="gulir"><table><tr><th>Kiriman</th><th>Mahasiswa</th><th>Skor maks</th>
+              <th>Paling mirip dengan</th><th>Band</th></tr>${baris || '<tr><td colspan="5">Belum ada kiriman</td></tr>'}</table></div>
+            <h4>Pasangan paling mirip (top 20)</h4>
+            <div class="gulir"><table><tr><th>A</th><th>B</th><th>Skor</th><th>Band</th></tr>${pas || '<tr><td colspan="4">-</td></tr>'}</table></div>`;
+        } catch (err) { lap.innerHTML = `<div class="pesan gagal">Gagal memuat laporan: ${esc(err.message)}</div>`; }
+      };
+    }
+
+    if (isDosen()) {
+      try { await apiGet('/api/dosen/ping', { auth: true }); tampilPanel(); }
+      catch { logoutDosen(); tampilLogin(); }
+    } else tampilLogin();
+  </script>
+</body>
+</html>

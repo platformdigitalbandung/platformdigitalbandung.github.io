@@ -1,524 +1,67 @@
-/* Google Fonts */
+/* Portal Tugas — Akademi Digital Bandung. Mobile-first, tanpa dependensi eksternal. */
 :root {
-  --hue: 220; /* Lebih ke arah biru laut tech-friendly */
-  --primary-color: hsl(var(--hue), 85%, 55%);
-  --primary-color-alt: hsl(var(--hue), 85%, 45%);
-  --secondary-color: hsl(280, 85%, 55%); /* Ungu utk gradient/aksen */
-  --text-color: hsl(var(--hue), 15%, 20%);
-  --text-color-light: hsl(var(--hue), 10%, 45%);
-  --title-color: hsl(var(--hue), 15%, 10%);
-  
-  --bg-color: hsl(var(--hue), 5%, 96%); /* Abu-abu sangat terang/off-white (app background) */
-  --card-bg: #ffffff; /* Putih bersih utk elemen card */
-  
-  --body-font: 'Inter', sans-serif;
-  --title-font: 'Outfit', sans-serif;
-  
-  --app-max-width: 480px; /* Lebar maksimal layaknya tablet/hp */
+  --biru: #0a58ca; --biru-tua: #084298; --bg: #f4f6fa; --kartu: #fff;
+  --teks: #1f2430; --redup: #6b7280; --garis: #e3e7ee;
+  --merah-bg: #fde2e2; --kuning-bg: #fdf3d8; --hijau-bg: #e8f6e8;
 }
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-  -webkit-tap-highlight-color: transparent;
-}
-
-html {
-  font-size: 16px;
-}
-
+* { box-sizing: border-box; }
 body {
-  font-family: var(--body-font);
-  background-color: #e0e5ec; /* Warna luar dari app layer pada desktop */
-  color: var(--text-color);
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start; /* Nempel atas */
-  overflow-x: hidden;
+  margin: 0; background: var(--bg); color: var(--teks);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.55;
 }
-
-a {
-  text-decoration: none;
-  color: inherit;
+.wrap { max-width: 720px; margin: 0 auto; padding: 1rem 1rem 4rem; }
+header.top {
+  background: linear-gradient(120deg, var(--biru), var(--biru-tua));
+  color: #fff; padding: 1.2rem 1rem;
 }
-
-ul {
-  list-style: none;
+header.top .wrap { padding: 0; max-width: 720px; margin: 0 auto; }
+header.top h1 { margin: 0; font-size: 1.25rem; }
+header.top p { margin: .2rem 0 0; opacity: .85; font-size: .85rem; }
+header.top a { color: #fff; text-decoration: none; }
+nav.tabs { display: flex; gap: .5rem; margin: 1rem 0; }
+nav.tabs a {
+  padding: .45rem .9rem; border-radius: 999px; text-decoration: none;
+  color: var(--teks); background: var(--kartu); border: 1px solid var(--garis);
+  font-size: .9rem;
 }
-
-img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 12px;
+nav.tabs a.aktif { background: var(--biru); color: #fff; border-color: var(--biru); }
+.kartu {
+  background: var(--kartu); border: 1px solid var(--garis); border-radius: 12px;
+  padding: 1rem; margin: .8rem 0;
 }
-
-h1, h2, h3, h4 {
-  font-family: var(--title-font);
-  color: var(--title-color);
-  font-weight: 700;
+.kartu h3 { margin: 0 0 .3rem; font-size: 1rem; }
+.kartu .meta { color: var(--redup); font-size: .85rem; }
+a.kartu { display: block; text-decoration: none; color: inherit; }
+a.kartu:hover { border-color: var(--biru); }
+label { display: block; margin: .7rem 0 .2rem; font-size: .9rem; font-weight: 600; }
+input, textarea, select {
+  width: 100%; padding: .55rem .7rem; border: 1px solid var(--garis);
+  border-radius: 8px; font: inherit; background: #fff;
 }
-
-/* App Container (The "Phone" box on Desktop) */
-.app-container {
-  width: 100%;
-  max-width: var(--app-max-width);
-  min-height: 100vh;
-  background-color: var(--bg-color);
-  position: relative;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.05); /* Bayangan pemisah dari background desktop */
-  display: flex;
-  flex-direction: column;
+button {
+  margin-top: 1rem; padding: .6rem 1.4rem; border: 0; border-radius: 8px;
+  background: var(--biru); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
 }
-
-@media screen and (min-width: 481px) {
-  .app-container {
-    height: 100vh;
-    overflow-y: auto;
-    /* Optional: Memberi gaya melengkung jika di desktop agar mirip HP */
-    /* border-radius: 20px; 
-       margin: 20px 0; 
-       min-height: calc(100vh - 40px);
-       height: auto;
-    */
-  }
+button:disabled { opacity: .5; cursor: wait; }
+button.sekunder { background: #fff; color: var(--biru); border: 1px solid var(--biru); }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+th, td { border: 1px solid var(--garis); padding: .45rem .55rem; text-align: left; }
+th { background: #f0f3f8; }
+.band-tinggi { background: var(--merah-bg); }
+.band-sedang { background: var(--kuning-bg); }
+.band-rendah { background: var(--hijau-bg); }
+.pesan { padding: .7rem 1rem; border-radius: 8px; margin: .8rem 0; font-size: .9rem; }
+.pesan.sukses { background: var(--hijau-bg); }
+.pesan.gagal { background: var(--merah-bg); }
+.redup { color: var(--redup); font-size: .85rem; }
+footer {
+  max-width: 720px; margin: 2rem auto 0; padding: 0 1rem 2rem;
+  color: var(--redup); font-size: .8rem;
 }
-
-/* Scrollbar styling for App container */
-.app-container::-webkit-scrollbar {
-  width: 6px;
-  background: transparent;
-}
-.app-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-}
-
-/* Section Wrapper for Spacing */
-.section {
-  padding: 0 1.25rem;
-  margin-bottom: 1.5rem;
-}
-
-/* --- TOP BAR --- */
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem 1.25rem 1rem;
-  background: var(--bg-color); /* Atau biarkan transparent jika wallet menempel atas banget */
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  background-color: rgba(245, 247, 250, 0.9);
-}
-
-.user-greeting {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-weight: 600;
-  font-size: 1.2rem;
-  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
-}
-
-.greeting-text p {
-  font-size: 0.75rem;
-  color: var(--text-color-light);
-  font-weight: 500;
-}
-
-.greeting-text h2 {
-  font-size: 1rem;
-}
-
-.top-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-.icon-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--card-bg);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.25rem;
-  color: var(--text-color);
-  position: relative;
-  cursor: pointer;
-  border: none;
-}
-
-.notification-dot {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  width: 8px;
-  height: 8px;
-  background: #ef4444;
-  border-radius: 50%;
-  border: 2px solid var(--card-bg);
-}
-
-
-/* --- WALLET / INFO CARD --- */
-.wallet-card-wrapper {
-  margin-top: 0.5rem;
-}
-
-.wallet-card {
-  background: linear-gradient(135deg, #1e3a8a, var(--primary-color));
-  border-radius: 1.25rem;
-  padding: 1.25rem;
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
-}
-
-.wallet-card::before {
-  content: '';
-  position: absolute;
-  top: -50px;
-  right: -50px;
-  width: 150px;
-  height: 150px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-}
-
-.wallet-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
-  opacity: 0.9;
-}
-
-.wallet-balance {
-  margin-bottom: 1.25rem;
-}
-
-.wallet-balance h3 {
-  font-size: 2rem;
-  color: #fff;
-  font-family: var(--body-font);
-  letter-spacing: -0.5px;
-}
-
-.wallet-balance span {
-  font-size: 1rem;
-  opacity: 0.8;
-  font-weight: 500;
-}
-
-.wallet-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.15);
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
-  backdrop-filter: blur(10px);
-}
-
-.w-action-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.w-action-btn i {
-  font-size: 1.5rem;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  margin-bottom: 0.25rem;
-}
-
-
-/* --- SUPER APP MENU GRID --- */
-.menu-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.25rem 0.5rem;
-  margin-top: 1.5rem;
-  background: var(--card-bg);
-  padding: 1.5rem 1rem;
-  border-radius: 1.25rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-}
-
-.menu-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.menu-item:active {
-  transform: scale(0.95);
-}
-
-.menu-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 1rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.75rem;
-}
-
-.menu-item p {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--text-color);
-  line-height: 1.2;
-}
-
-/* Menu Colors */
-.bg-blue { background: #eff6ff; color: #3b82f6; }
-.bg-orange { background: #fff7ed; color: #f97316; }
-.bg-green { background: #f0fdf4; color: #10b981; }
-.bg-purple { background: #faf5ff; color: #a855f7; }
-.bg-pink { background: #fdf2f8; color: #ec4899; }
-.bg-yellow { background: #fefce8; color: #eab308; }
-.bg-cyan { background: #ecfeff; color: #06b6d4; }
-.bg-gray { background: #f1f5f9; color: #64748b; }
-
-/* Menampilkan lebih modern */
-.bg-blue { background: linear-gradient(135deg, #eff6ff, #dbeafe); }
-.bg-orange { background: linear-gradient(135deg, #fff7ed, #ffedd5); }
-
-
-/* --- PROMO BANNER --- */
-.promo-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.section-header h3 {
-  font-size: 1.1rem;
-  color: var(--title-color);
-}
-
-.section-header a {
-  font-size: 0.8rem;
-  color: var(--primary-color);
-  font-weight: 600;
-}
-
-.promo-banner {
-  width: 100%;
-  min-height: 130px;
-  background: linear-gradient(45deg, #4f46e5, #ec4899);
-  border-radius: 1.25rem;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  align-items: center;
-  padding: 1.5rem;
-  color: #fff;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.promo-content {
-  position: relative;
-  z-index: 2;
-  max-width: 60%;
-}
-
-.promo-content h4 {
-  font-size: 1.1rem;
-  margin-bottom: 0.25rem;
-}
-
-.promo-content p {
-  font-size: 0.75rem;
-  opacity: 0.9;
-  margin-bottom: 0.75rem;
-}
-
-.btn-sm {
-  background: #fff;
-  color: var(--primary-color);
-  padding: 0.4rem 0.8rem;
-  border-radius: 2rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  display: inline-block;
-  border: none;
-}
-
-.promo-graphic {
-  position: absolute;
-  right: -20px;
-  bottom: -40px;
-  font-size: 8rem;
-  opacity: 0.2;
-  transform: rotate(-15deg);
-}
-
-/* --- UPCOMING SCHEDULE (INFO LIST) --- */
-.agenda-list {
-  background: var(--card-bg);
-  border-radius: 1.25rem;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-  margin-bottom: 5rem; /* Space for bottom nav */
-}
-
-.agenda-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  border-radius: 0.75rem;
-  background: var(--bg-color);
-}
-
-.agenda-time {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 50px;
-  padding-right: 1rem;
-  border-right: 1px dashed #cbd5e1;
-}
-
-.agenda-time .time {
-  font-weight: 700;
-  color: var(--primary-color);
-  font-size: 0.9rem;
-}
-
-.agenda-time .room {
-  font-size: 0.65rem;
-  color: var(--text-color-light);
-  font-weight: 600;
-}
-
-.agenda-details h4 {
-  font-size: 0.9rem;
-  margin-bottom: 0.2rem;
-  color: var(--title-color);
-}
-
-.agenda-details p {
-  font-size: 0.75rem;
-  color: var(--text-color-light);
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-
-/* --- BOTTOM NAVIGATION --- */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: var(--app-max-width);
-  height: 65px;
-  background: var(--card-bg);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  border-top-left-radius: 1.5rem;
-  border-top-right-radius: 1.5rem;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-  z-index: 100;
-  padding: 0 1rem;
-}
-
-.nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-  color: var(--text-color-light);
-  font-weight: 500;
-  position: relative;
-  width: 60px;
-}
-
-.nav-item i {
-  font-size: 1.5rem;
-  transition: .3s;
-}
-
-.nav-item span {
-  font-size: 0.65rem;
-}
-
-.nav-item.active {
-  color: var(--primary-color);
-}
-
-.nav-item.active i {
-  transform: translateY(-2px);
-}
-
-/* Floating Action Button Style (Center Scanner/QR) */
-.nav-item.scan-btn {
-  position: relative;
-  top: -15px;
-}
-
-.scan-icon-wrapper {
-  width: 55px;
-  height: 55px;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #fff;
-  font-size: 1.75rem;
-  box-shadow: 0 8px 15px rgba(59, 130, 246, 0.4);
-  border: 4px solid #f8fafc; /* Outline menyala di terang */
-}
-
-/* Fix z-index stacking if background of scan button blends with body. Easiest is border matching body color. */
-.scan-icon-wrapper {
-   border-color: #eaeff5; /* Match bg off-white at the bottom */
-}
+footer a { color: var(--redup); }
+.status-dot { display: inline-block; width: .6em; height: .6em; border-radius: 50%; margin-right: .35em; }
+.status-dot.ok { background: #1a9c46; }
+.status-dot.gagal { background: #c22; }
+.gulir { overflow-x: auto; }
+@media (min-width: 720px) { header.top h1 { font-size: 1.5rem; } }
