@@ -7,6 +7,10 @@ dan tanpa biaya storage/CDN tambahan.
 Live di **https://platform.digitalbdg.ac.id** — deploy otomatis lewat GitHub Pages
 setiap kali ada perubahan di branch `main`.
 
+**Daftar isi:** [Ringkasan Untuk Investor](#ringkasan-untuk-investor) ·
+[Arsitektur](#arsitektur) · [Stack Teknologi](#stack-teknologi) ·
+[Status Saat Ini](#status-saat-ini) · [Roadmap](#roadmap)
+
 ## Ringkasan Untuk Investor
 
 Model bisnis LMS konvensional terbebani biaya infrastruktur yang naik sejalan
@@ -33,20 +37,19 @@ runway lebih panjang tanpa perlu putaran pendanaan besar hanya untuk
 
 ## Arsitektur
 
-```
-┌─────────────────────────┐        HTTPS/JSON        ┌──────────────────────────┐
-│  Frontend (statis)      │ ────────────────────────▶ │  Backend (GoCroot)       │
-│  GitHub Pages           │                            │  Golang, hosted di      │
-│  Vanilla JS ESM +       │ ◀──────────────────────── │  Fly.io (apk.fly.dev)   │
-│  CrootJS (jscroot)      │                            └───────────┬──────────────┘
-└─────────────────────────┘                                        │
-                                                    ┌────────────────┼────────────────┐
-                                                    ▼                ▼                ▼
-                                          ┌──────────────┐  ┌────────────────┐ ┌────────────┐
-                                          │  MongoDB     │  │ GitHub Private │ │  YouTube   │
-                                          │  (data)      │  │ Repo (storage  │ │  (video    │
-                                          │              │  │ file, via GHPAT│ │  private)  │
-                                          └──────────────┘  └────────────────┘ └────────────┘
+```mermaid
+flowchart LR
+    A["Frontend — statis\nGitHub Pages\nVanilla JS ESM + CrootJS"]
+    B["Backend — GoCroot (Golang)\nFly.io · apk.fly.dev"]
+    C[("MongoDB\ndata")]
+    D[["GitHub Private Repo\nstorage file · via GHPAT"]]
+    E[["YouTube\nvideo private/unlisted"]]
+
+    A -- "HTTPS / JSON" --> B
+    B --> A
+    B --> C
+    B --> D
+    B --> E
 ```
 
 Tidak ada framework/bundler di frontend — murni ES Modules (`<script type="module">`)
