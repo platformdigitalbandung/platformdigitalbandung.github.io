@@ -6,13 +6,17 @@
   <title>Platform Digital Bandung — Modul Tugas</title>
   <meta name="description" content="Platform Digital Bandung — modul pengumpulan tugas dengan pemeriksaan kemiripan.">
   <link rel="icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
   <header class="top">
     <div class="wrap">
-      <h1><a href="./">Platform Digital Bandung</a></h1>
-      <p>Modul Tugas — pengumpulan tugas &amp; pemeriksaan kemiripan</p>
+      <p class="kop">Platform Digital Bandung</p>
+      <h1><a href="./">Modul Tugas</a></h1>
+      <p>Pengumpulan tugas &amp; pemeriksaan kemiripan antar-kiriman</p>
     </div>
   </header>
 
@@ -44,14 +48,20 @@
       status.innerHTML = `<span class="status-dot ok"></span>backend tersambung (${API_BASE})`;
       const { tugas } = await apiGet('/api/tugas');
       if (!tugas.length) {
-        isi.innerHTML = '<div class="kartu"><h3>Belum ada tugas</h3>' +
-          '<p class="meta">Dosen dapat membuat tugas lewat Halaman Dosen.</p></div>';
+        isi.innerHTML = '<div class="kosong">Belum ada tugas. Dosen dapat membuat tugas lewat Halaman Dosen.</div>';
       } else {
-        isi.innerHTML = tugas.map(t =>
-          `<a class="kartu" href="tugas.html?id=${t.id}">
-             <h3>${esc(t.judul)}</h3>
-             <p class="meta">${t.n_kiriman} kiriman · klik untuk mengumpulkan jawaban</p>
-           </a>`).join('');
+        isi.innerHTML = `
+          <div class="gulir">
+            <table>
+              <tr><th>Kode</th><th>Judul</th><th class="num">Kiriman</th></tr>
+              ${tugas.map(t => `
+                <tr class="daftar-tugas" onclick="location.href='tugas.html?id=${t.id}'">
+                  <td>#${t.id}</td>
+                  <td>${esc(t.judul)}</td>
+                  <td class="num">${t.n_kiriman}</td>
+                </tr>`).join('')}
+            </table>
+          </div>`;
       }
     } catch (err) {
       status.innerHTML = `<span class="status-dot gagal"></span>backend tidak terjangkau (${API_BASE})`;

@@ -1,67 +1,118 @@
-/* Platform Digital Bandung — Modul Tugas. Mobile-first, tanpa dependensi eksternal. */
+/* Platform Digital Bandung — Modul Tugas. Mobile-first, tanpa dependensi eksternal (fonts via Google Fonts link di head). */
 :root {
-  --biru: #0a58ca; --biru-tua: #084298; --bg: #f4f6fa; --kartu: #fff;
-  --teks: #1f2430; --redup: #6b7280; --garis: #e3e7ee;
-  --merah-bg: #fde2e2; --kuning-bg: #fdf3d8; --hijau-bg: #e8f6e8;
+  --biru: #0a58ca; --biru-tua: #084298;
+  --kertas: #faf9f6; --permukaan: #fff;
+  --tinta: #17181c; --redup: #63666f; --garis: #dcd8cf; --garis-kuat: #b9b4a7;
+  --tinggi: #a3271e; --sedang: #8a5a0a; --rendah: #1f6b3d;
+  --font-judul: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-teks: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-angka: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 * { box-sizing: border-box; }
 body {
-  margin: 0; background: var(--bg); color: var(--teks);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.55;
+  margin: 0; background: var(--kertas); color: var(--tinta);
+  font-family: var(--font-teks); line-height: 1.6; font-size: 15px;
 }
-.wrap { max-width: 720px; margin: 0 auto; padding: 1rem 1rem 4rem; }
+.wrap { max-width: 780px; margin: 0 auto; padding: 0 1.1rem 4rem; }
+
+/* Header letterhead */
 header.top {
-  background: linear-gradient(120deg, var(--biru), var(--biru-tua));
-  color: #fff; padding: 1.2rem 1rem;
+  background: var(--permukaan); border-bottom: 3px solid var(--tinta); padding: 1.4rem 0 1.1rem;
 }
-header.top .wrap { padding: 0; max-width: 720px; margin: 0 auto; }
-header.top h1 { margin: 0; font-size: 1.25rem; }
-header.top p { margin: .2rem 0 0; opacity: .85; font-size: .85rem; }
-header.top a { color: #fff; text-decoration: none; }
-nav.tabs { display: flex; gap: .5rem; margin: 1rem 0; }
+header.top .wrap { padding: 0 1.1rem; }
+header.top .kop {
+  font-family: var(--font-angka); font-size: .7rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--biru); margin: 0 0 .35rem;
+}
+header.top h1 {
+  margin: 0; font-family: var(--font-judul); font-weight: 600; font-size: 1.6rem;
+  letter-spacing: -.01em;
+}
+header.top h1 a { color: var(--tinta); text-decoration: none; }
+header.top p { margin: .3rem 0 0; color: var(--redup); font-size: .88rem; }
+
+/* Underline tabs */
+nav.tabs {
+  display: flex; gap: 1.4rem; margin: 1.3rem 0 1.6rem; border-bottom: 1px solid var(--garis);
+}
 nav.tabs a {
-  padding: .45rem .9rem; border-radius: 999px; text-decoration: none;
-  color: var(--teks); background: var(--kartu); border: 1px solid var(--garis);
-  font-size: .9rem;
+  padding: 0 0 .6rem; text-decoration: none; color: var(--redup); font-size: .92rem;
+  font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
-nav.tabs a.aktif { background: var(--biru); color: #fff; border-color: var(--biru); }
+nav.tabs a:hover { color: var(--tinta); }
+nav.tabs a.aktif { color: var(--biru); border-bottom-color: var(--biru); font-weight: 600; }
+
+/* Section / form panels — hairline, no shadow */
 .kartu {
-  background: var(--kartu); border: 1px solid var(--garis); border-radius: 12px;
-  padding: 1rem; margin: .8rem 0;
+  background: var(--permukaan); border: 1px solid var(--garis);
+  padding: 1.1rem 1.2rem; margin: 0 0 1.1rem;
 }
-.kartu h3 { margin: 0 0 .3rem; font-size: 1rem; }
+.kartu h3 {
+  margin: 0 0 .6rem; font-family: var(--font-judul); font-weight: 600; font-size: 1.15rem;
+  padding-bottom: .5rem; border-bottom: 1px solid var(--garis);
+}
 .kartu .meta { color: var(--redup); font-size: .85rem; }
-a.kartu { display: block; text-decoration: none; color: inherit; }
-a.kartu:hover { border-color: var(--biru); }
-label { display: block; margin: .7rem 0 .2rem; font-size: .9rem; font-weight: 600; }
+.kartu h4 { margin: 1.3rem 0 .5rem; font-family: var(--font-judul); font-weight: 600; font-size: .95rem; }
+.kartu h4:first-child { margin-top: 0; }
+
+label { display: block; margin: .9rem 0 .3rem; font-size: .87rem; font-weight: 600; }
+label:first-child { margin-top: 0; }
 input, textarea, select {
-  width: 100%; padding: .55rem .7rem; border: 1px solid var(--garis);
-  border-radius: 8px; font: inherit; background: #fff;
+  width: 100%; padding: .55rem .65rem; border: 1px solid var(--garis-kuat);
+  font: inherit; background: var(--permukaan); color: var(--tinta);
 }
+input:focus, textarea:focus, select:focus { outline: 2px solid var(--biru); outline-offset: 1px; }
 button {
-  margin-top: 1rem; padding: .6rem 1.4rem; border: 0; border-radius: 8px;
+  margin-top: 1.2rem; padding: .6rem 1.3rem; border: 1px solid var(--biru);
   background: var(--biru); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
 }
+button:hover { background: var(--biru-tua); border-color: var(--biru-tua); }
 button:disabled { opacity: .5; cursor: wait; }
-button.sekunder { background: #fff; color: var(--biru); border: 1px solid var(--biru); }
+button.sekunder { background: transparent; color: var(--biru); }
+button.sekunder:hover { background: var(--kertas); border-color: var(--biru-tua); color: var(--biru-tua); }
+
+/* Data tables — the primary listing pattern, not cards */
 table { border-collapse: collapse; width: 100%; font-size: .88rem; }
-th, td { border: 1px solid var(--garis); padding: .45rem .55rem; text-align: left; }
-th { background: #f0f3f8; }
-.band-tinggi { background: var(--merah-bg); }
-.band-sedang { background: var(--kuning-bg); }
-.band-rendah { background: var(--hijau-bg); }
-.pesan { padding: .7rem 1rem; border-radius: 8px; margin: .8rem 0; font-size: .9rem; }
-.pesan.sukses { background: var(--hijau-bg); }
-.pesan.gagal { background: var(--merah-bg); }
+th, td { border-bottom: 1px solid var(--garis); padding: .55rem .6rem; text-align: left; vertical-align: top; }
+th {
+  font-family: var(--font-angka); font-size: .72rem; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--redup); font-weight: 600; border-bottom: 1px solid var(--garis-kuat);
+}
+td.num, th.num { font-family: var(--font-angka); font-variant-numeric: tabular-nums; }
+tr.daftar-tugas { cursor: pointer; }
+tr.daftar-tugas:hover td { background: var(--kertas); }
+tr.daftar-tugas td:first-child { font-family: var(--font-angka); color: var(--redup); }
+
+/* Similarity bands — left-border accent, not full pastel fill */
+tr.band-tinggi { border-left: 3px solid var(--tinggi); }
+tr.band-sedang { border-left: 3px solid var(--sedang); }
+tr.band-rendah { border-left: 3px solid var(--rendah); }
+.lencana {
+  display: inline-block; font-family: var(--font-angka); font-size: .72rem;
+  letter-spacing: .03em; text-transform: uppercase; padding: .1rem .4rem; border: 1px solid;
+}
+.lencana.tinggi { color: var(--tinggi); border-color: var(--tinggi); }
+.lencana.sedang { color: var(--sedang); border-color: var(--sedang); }
+.lencana.rendah { color: var(--rendah); border-color: var(--rendah); }
+
+.pesan { padding: .7rem .9rem; margin: .9rem 0; font-size: .88rem; border-left: 3px solid; }
+.pesan.sukses { border-color: var(--rendah); background: var(--kertas); }
+.pesan.gagal { border-color: var(--tinggi); background: var(--kertas); }
 .redup { color: var(--redup); font-size: .85rem; }
+.kosong {
+  padding: 1.8rem 1rem; text-align: center; color: var(--redup);
+  border: 1px dashed var(--garis-kuat); font-size: .9rem;
+}
+
 footer {
-  max-width: 720px; margin: 2rem auto 0; padding: 0 1rem 2rem;
-  color: var(--redup); font-size: .8rem;
+  max-width: 780px; margin: 2rem auto 0; padding: 1.2rem 1.1rem 2rem;
+  border-top: 1px solid var(--garis); color: var(--redup); font-size: .8rem;
 }
 footer a { color: var(--redup); }
-.status-dot { display: inline-block; width: .6em; height: .6em; border-radius: 50%; margin-right: .35em; }
-.status-dot.ok { background: #1a9c46; }
-.status-dot.gagal { background: #c22; }
+footer a:hover { color: var(--biru); }
+.status-dot { display: inline-block; width: .5em; height: .5em; margin-right: .4em; border: 1px solid; }
+.status-dot.ok { background: var(--rendah); border-color: var(--rendah); }
+.status-dot.gagal { background: var(--tinggi); border-color: var(--tinggi); }
 .gulir { overflow-x: auto; }
-@media (min-width: 720px) { header.top h1 { font-size: 1.5rem; } }
+
+@media (min-width: 720px) { header.top h1 { font-size: 1.9rem; } }

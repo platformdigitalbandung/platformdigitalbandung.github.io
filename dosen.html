@@ -5,13 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Halaman Dosen — Platform Digital Bandung</title>
   <link rel="icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
   <header class="top">
     <div class="wrap">
-      <h1><a href="./">Platform Digital Bandung</a></h1>
-      <p>Halaman dosen: buat tugas &amp; laporan kemiripan</p>
+      <p class="kop">Platform Digital Bandung</p>
+      <h1><a href="./">Halaman Dosen</a></h1>
+      <p>Buat tugas &amp; tinjau laporan kemiripan</p>
     </div>
   </header>
 
@@ -105,21 +109,23 @@
         lap.innerHTML = '<p class="redup">Memuat laporan…</p>';
         try {
           const d = await apiGet(`/api/tugas/${tid}/laporan`, { auth: true });
+          const lencana = (b) => b === '-' ? '<span class="redup">–</span>' : `<span class="lencana ${b}">${b}</span>`;
           const baris = d.per_kiriman.map(r => `
-            <tr class="band-${r.band}"><td>#${r.id}</td>
-              <td>${esc(r.nama)} (${esc(r.nim)})</td>
-              <td>${r.max_score ?? '-'}</td>
-              <td>${r.pasangan_id ? '#' + r.pasangan_id + ' ' + esc(r.pasangan_nama || '') : '-'}</td>
-              <td>${r.band}</td></tr>`).join('');
+            <tr class="band-${r.band}"><td class="num">#${r.id}</td>
+              <td>${esc(r.nama)} <span class="redup">(${esc(r.nim)})</span></td>
+              <td class="num">${r.max_score ?? '–'}</td>
+              <td>${r.pasangan_id ? '#' + r.pasangan_id + ' ' + esc(r.pasangan_nama || '') : '–'}</td>
+              <td>${lencana(r.band)}</td></tr>`).join('');
           const pas = d.pasangan.slice(0, 20).map(p => `
-            <tr class="band-${p.band}"><td>#${p.a_id} ${esc(p.a_nama)}</td>
-              <td>#${p.b_id} ${esc(p.b_nama)}</td><td>${p.score}</td><td>${p.band}</td></tr>`).join('');
+            <tr class="band-${p.band}"><td class="num">#${p.a_id} <span class="redup">${esc(p.a_nama)}</span></td>
+              <td class="num">#${p.b_id} <span class="redup">${esc(p.b_nama)}</span></td>
+              <td class="num">${p.score}</td><td>${lencana(p.band)}</td></tr>`).join('');
           lap.innerHTML = `
             <h4>Per kiriman</h4>
-            <div class="gulir"><table><tr><th>Kiriman</th><th>Mahasiswa</th><th>Skor maks</th>
+            <div class="gulir"><table><tr><th>Kiriman</th><th>Mahasiswa</th><th class="num">Skor maks</th>
               <th>Paling mirip dengan</th><th>Band</th></tr>${baris || '<tr><td colspan="5">Belum ada kiriman</td></tr>'}</table></div>
             <h4>Pasangan paling mirip (top 20)</h4>
-            <div class="gulir"><table><tr><th>A</th><th>B</th><th>Skor</th><th>Band</th></tr>${pas || '<tr><td colspan="4">-</td></tr>'}</table></div>`;
+            <div class="gulir"><table><tr><th>A</th><th>B</th><th class="num">Skor</th><th>Band</th></tr>${pas || '<tr><td colspan="4">–</td></tr>'}</table></div>`;
         } catch (err) { lap.innerHTML = `<div class="pesan gagal">Gagal memuat laporan: ${esc(err.message)}</div>`; }
       };
     }
