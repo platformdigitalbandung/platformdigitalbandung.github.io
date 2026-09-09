@@ -8,7 +8,9 @@ Live di **https://platform.digitalbdg.ac.id** — deploy otomatis lewat GitHub P
 setiap kali ada perubahan di branch `main`.
 
 **Daftar isi:** [Ringkasan Untuk Investor](#ringkasan-untuk-investor) ·
-[Arsitektur](#arsitektur) · [Stack Teknologi](#stack-teknologi) ·
+[Arsitektur](#arsitektur) · [Proses Bisnis: Model Penyampaian](#proses-bisnis-model-penyampaian) ·
+[Task-Oriented UI — Peta Tugas](#task-oriented-ui--peta-tugas) ·
+[Stack Teknologi](#stack-teknologi) ·
 [Status Saat Ini](#status-saat-ini) · [Roadmap](#roadmap)
 
 ## Ringkasan Untuk Investor
@@ -101,6 +103,65 @@ sebagai identitas; nomor itu lalu dicocokkan ke daftar dosen berwenang di Mongo
 sebelum boleh membuat tugas atau melihat laporan kemiripan. Password khusus tetap
 disediakan sebagai jalur cadangan.
 
+## Proses Bisnis: Model Penyampaian
+
+PDB melayani dua program sarjana terapan Akademi Digital Bandung — **Teknologi
+Rekayasa Perangkat Lunak (TRPL)** dan **Bisnis Digital (BisDig)**, 145 SKS / 8
+semester — yang dirancang untuk mahasiswa yang juga bekerja penuh waktu. Bentuk
+penyampaiannya membentuk langsung apa yang harus disediakan perangkat lunak ini:
+
+- **Ritme mingguan tiga moda**: Jumat tatap muka luring, Kamis malam sinkron
+  daring, Senin–Rabu asinkron lewat LMS. Sabtu–Minggu bebas dari beban akademik.
+- **Kurikulum berbasis blok "rumpun"** — 2–3 mata kuliah yang berdekatan
+  kompetensinya digabung jadi satu blok dengan **satu proyek nyata sebagai
+  pengikat**; tiap mata kuliah dinilai lewat artefak proyek yang berbeda,
+  bukan ujian terpisah-pisah per mata kuliah.
+- **Konversi kerja/magang jadi kredit** — pada semester-semester akhir, satu
+  pekerjaan nyata di tempat kerja mahasiswa dapat dinilai terhadap beberapa
+  mata kuliah sekaligus, sepanjang tiap mata kuliah punya capaian dan bukti
+  penilaian (CPMK) yang berbeda dari pekerjaan yang sama.
+- **Kuis gerbang** sebelum sesi Jumat — mahasiswa wajib lulus kuis atas materi
+  asinkron pekan itu sebelum masuk sesi tatap muka, supaya waktu tatap muka
+  yang langka benar-benar dipakai diskusi & praktik, bukan mengulang materi.
+
+Dari model ini, perangkat lunak akademik (bukan sekadar portal tugas) perlu
+menyediakan sepuluh kapabilitas berikut:
+
+| # | Kapabilitas | Status |
+|---|---|---|
+| 1 | Pelacakan konsumsi materi asinkron (progres tonton/baca) | Roadmap |
+| 2 | Kuis gerbang pra-kelas dengan syarat lulus | Roadmap |
+| 3 | *Autograder* kode + integrasi repositori Git | Roadmap |
+| 4 | Lab awan/kontainer per mahasiswa dengan telemetri sesi | Roadmap |
+| 5 | Rekaman sesi sinkron, terbit maksimal tengah malam | Roadmap |
+| 6 | Dasbor beban belajar per mahasiswa per minggu | Roadmap |
+| 7 | Asesmen berpengawas (*proctoring*) | Roadmap |
+| 8 | Portofolio & jejak bukti untuk rekognisi kerja sebelumnya | Roadmap |
+| 9 | Forum asinkron dengan target respons dosen | Roadmap |
+| 10 | Ekspor laporan kepatuhan per mata kuliah | Roadmap |
+| — | Pengumpulan tugas + pemeriksaan kemiripan (Portal Tugas) | **Sudah berjalan** |
+
+## Task-Oriented UI — Peta Tugas
+
+Konsisten dengan arsitektur dua-kanal di atas: setiap kapabilitas dipetakan
+sebagai **tugas konkret** yang bisa dieksekusi lewat website (kartu tugas,
+bukan menu navigasi umum) maupun lewat Iteung (perintah WhatsApp), dengan
+model mental yang sama di kedua kanal.
+
+| Tugas | Peran | Web | Iteung (WhatsApp) | Status |
+|---|---|---|---|---|
+| Kumpulkan jawaban tugas | Mahasiswa | Halaman Tugas → unggah berkas | kirim lampiran + "kumpul tugas #id" | **Sudah berjalan** (web) |
+| Buat tugas baru | Dosen | Halaman Dosen → form | kirim "buat tugas", ikuti alur | Web sudah; Iteung roadmap |
+| Lihat laporan kemiripan | Dosen | Halaman Dosen → pilih tugas | kirim "laporan tugas #id" | Web sudah; Iteung roadmap |
+| Presensi Jumat | Mahasiswa | — | kirim "presensi masuk" / "presensi pulang" | Roadmap |
+| Isi kuis gerbang | Mahasiswa | Halaman Materi | — (perlu interaksi terstruktur) | Roadmap |
+| Ajukan konversi artefak kerja/magang | Mahasiswa semester akhir | Halaman Portofolio | kirim "ajukan konversi" + lampiran | Roadmap |
+| Cek beban belajar minggu ini | Mahasiswa | Dasbor | kirim "beban belajar saya" | Roadmap |
+
+Baris yang belum berjalan menunggu modul masing-masing (lihat Roadmap) — dua
+kanal dibangun sekali per tugas, bukan dua implementasi terpisah, karena
+keduanya memanggil fungsi domain yang sama di `mod/portaltugas` dkk.
+
 ## Stack Teknologi
 
 - **Frontend** — Vanilla JavaScript (ES Modules), tanpa framework/bundler.
@@ -140,5 +201,7 @@ Task-Oriented UI untuk dosen & mahasiswa) — lihat [Arsitektur](#arsitektur).
 - Migrasi alamat backend dari tunnel sementara (Cloudflare Quick Tunnel) ke
   domain permanen di bawah `digitalbdg.ac.id`.
 - WhatsAuth + Iteung (lihat di atas) — sedang berjalan.
-- Modul materi kuliah & presensi.
+- Sepuluh kapabilitas LMS pada [Proses Bisnis](#proses-bisnis-model-penyampaian):
+  kuis gerbang, pelacakan konsumsi materi, presensi, dasbor beban belajar,
+  portofolio/RPL, autograder, forum asinkron, ekspor kepatuhan per mata kuliah.
 - Modul nilai & rapor digital.
