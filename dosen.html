@@ -31,10 +31,12 @@
     <p>Band kemiripan: <b>tinggi</b> ≥ 0.85 · <b>sedang</b> ≥ 0.60 · <b>rendah</b> &lt; 0.60
     (ambang awal, belum dikalibrasi).</p>
     <p>Skor kemiripan adalah alat bantu prioritas pemeriksaan, bukan vonis plagiat.</p>
+    <p class="redup">Lewat WhatsApp: kirim "buat tugas | judul | deskripsi" atau
+    "laporan tugas #id" ke Iteung (nomor WhatsApp Anda perlu terdaftar sebagai dosen).</p>
   </footer>
 
   <script type="module">
-    import { apiGet, apiPostJson, loginDosen, logoutDosen, isDosen } from './assets/js/api.js';
+    import { apiGet, apiPostJson, loginDosenPassword, loginDosenWhatsAuth, logoutDosen, isDosen } from './assets/js/api.js';
 
     const isi = document.getElementById('isi');
     function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
@@ -44,19 +46,44 @@
         ${pesan ? `<div class="pesan gagal">${esc(pesan)}</div>` : ''}
         <div class="kartu">
           <h3>Masuk sebagai Dosen</h3>
-          <form id="login">
+          <p class="meta">Identitas dosen memakai nomor WhatsApp Anda (WhatsAuth) — tidak perlu akun baru.</p>
+          <button id="masuk-wa">Masuk dengan WhatsApp</button>
+          <div id="wa-status"></div>
+          <p style="margin-top:1.2rem"><button class="sekunder" id="toggle-pw">Pakai password sebagai gantinya</button></p>
+          <form id="login-pw" hidden>
             <label>Password dosen<input type="password" name="pw" required></label>
-            <button>Masuk</button>
+            <button>Masuk dengan Password</button>
           </form>
         </div>`;
-      document.getElementById('login').onsubmit = async (e) => {
+
+      document.getElementById('toggle-pw').onclick = () => {
+        document.getElementById('login-pw').hidden = false;
+      };
+
+      document.getElementById('login-pw').onsubmit = async (e) => {
         e.preventDefault();
         try {
-          await loginDosen(new FormData(e.target).get('pw'));
+          await loginDosenPassword(new FormData(e.target).get('pw'));
           tampilPanel();
         } catch (err) {
-          logoutDosen();
           tampilLogin(`Login gagal: ${err.message}`);
+        }
+      };
+
+      document.getElementById('masuk-wa').onclick = async () => {
+        const status = document.getElementById('wa-status');
+        const { waLink, waitForToken } = loginDosenWhatsAuth();
+        status.innerHTML = `
+          <div class="pesan sukses">
+            Buka WhatsApp dan kirim pesan lewat tautan ini untuk masuk:<br>
+            <a href="${waLink}" target="_blank" rel="noopener">${waLink}</a>
+          </div>
+          <p class="redup">Menunggu konfirmasi dari WhatsApp…</p>`;
+        try {
+          await waitForToken();
+          tampilPanel();
+        } catch (err) {
+          status.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
         }
       };
     }

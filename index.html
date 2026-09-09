@@ -33,6 +33,7 @@
     <p><span id="status-backend"><span class="status-dot gagal"></span>memeriksa backend…</span>
     · <a href="#" id="ganti-backend">alamat backend</a></p>
     <p>Skor kemiripan adalah alat bantu, bukan vonis plagiat; keputusan pada dosen.</p>
+    <p class="redup">Lewat WhatsApp: kirim "daftar tugas" ke Iteung untuk melihat daftar ini tanpa membuka situs.</p>
   </footer>
 
   <script type="module">
@@ -50,18 +51,12 @@
       if (!tugas.length) {
         isi.innerHTML = '<div class="kosong">Belum ada tugas. Dosen dapat membuat tugas lewat Halaman Dosen.</div>';
       } else {
-        isi.innerHTML = `
-          <div class="gulir">
-            <table>
-              <tr><th>Kode</th><th>Judul</th><th class="num">Kiriman</th></tr>
-              ${tugas.map(t => `
-                <tr class="daftar-tugas" onclick="location.href='tugas.html?id=${t.id}'">
-                  <td>#${t.id}</td>
-                  <td>${esc(t.judul)}</td>
-                  <td class="num">${t.n_kiriman}</td>
-                </tr>`).join('')}
-            </table>
-          </div>`;
+        isi.innerHTML = tugas.map(t => `
+          <div class="kartu">
+            <h3>${esc(t.judul)}</h3>
+            <p class="meta">#${t.id} · ${t.n_kiriman} kiriman</p>
+            <a class="aksi" href="tugas.html?id=${t.id}">Kumpulkan Jawaban</a>
+          </div>`).join('');
       }
     } catch (err) {
       status.innerHTML = `<span class="status-dot gagal"></span>backend tidak terjangkau (${API_BASE})`;

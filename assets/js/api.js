@@ -1,8 +1,8 @@
-import { API_BASE } from './config.js';
+import { API_BASE, WHATSAUTH_WS_BASE, WHATSAUTH_BOTNUMBER, WHATSAUTH_QRKEYWORD } from './config.js';
 
 function authHeader() {
-  const cred = sessionStorage.getItem('rlm_dosen_cred');
-  return cred ? { Authorization: `Basic ${cred}` } : {};
+  const token = sessionStorage.getItem('rlm_dosen_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 async function handle(res) {
@@ -33,17 +33,48 @@ export async function apiPostForm(path, formData) {
   return handle(res);
 }
 
-export function loginDosen(password) {
-  sessionStorage.setItem('rlm_dosen_cred', btoa(`dosen:${password}`));
-  return apiGet('/api/dosen/ping', { auth: true });
+// --- Masuk sebagai Dosen: dua jalur, satu kredensial hasil akhir (token PASETO) ---
+
+export async function loginDosenPassword(password) {
+  const { token } = await apiPostJson('/api/dosen/login', { password });
+  sessionStorage.setItem('rlm_dosen_token', token);
+  return token;
+}
+
+// Membuka websocket WhatsAuth, menghasilkan tautan wa.me untuk discan/diklik, dan
+// mengembalikan Promise yang selesai begitu token diterima lewat socket tsb.
+export function loginDosenWhatsAuth() {
+  const uuid = crypto.randomUUID();
+  const waLink = 'https://wa.me/' + WHATSAUTH_BOTNUMBER +
+    '?text=' + encodeURIComponent(WHATSAUTH_QRKEYWORD + uuid);
+
+  let sock;
+  const waitForToken = () => new Promise((resolve, reject) => {
+    sock = new WebSocket(WHATSAUTH_WS_BASE);
+    sock.onopen = () => sock.send(uuid);
+    sock.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data);
+        if (data.login) {
+          sessionStorage.setItem('rlm_dosen_token', data.login);
+          resolve(data.login);
+          sock.close();
+        }
+      } catch { /* abaikan frame yang bukan JSON login */ }
+    };
+    sock.onerror = () => reject(new Error('Koneksi WhatsAuth gagal, coba lagi.'));
+    sock.onclose = (ev) => { if (ev.code !== 1000) reject(new Error('Sesi WhatsAuth berakhir, coba lagi.')); };
+  });
+
+  return { waLink, waitForToken, cancel: () => sock && sock.close() };
 }
 
 export function logoutDosen() {
-  sessionStorage.removeItem('rlm_dosen_cred');
+  sessionStorage.removeItem('rlm_dosen_token');
 }
 
 export function isDosen() {
-  return Boolean(sessionStorage.getItem('rlm_dosen_cred'));
+  return Boolean(sessionStorage.getItem('rlm_dosen_token'));
 }
 
 export function gantiAlamatBackend() {

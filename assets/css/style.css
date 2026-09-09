@@ -71,6 +71,12 @@ button:disabled { opacity: .5; cursor: wait; }
 button.sekunder { background: transparent; color: var(--biru); }
 button.sekunder:hover { background: var(--kertas); border-color: var(--biru-tua); color: var(--biru-tua); }
 
+a.aksi {
+  display: inline-block; margin-top: 1.2rem; padding: .6rem 1.3rem; border: 1px solid var(--biru);
+  background: var(--biru); color: #fff; font-weight: 600; text-decoration: none;
+}
+a.aksi:hover { background: var(--biru-tua); border-color: var(--biru-tua); }
+
 /* Data tables — the primary listing pattern, not cards */
 table { border-collapse: collapse; width: 100%; font-size: .88rem; }
 th, td { border-bottom: 1px solid var(--garis); padding: .55rem .6rem; text-align: left; vertical-align: top; }
