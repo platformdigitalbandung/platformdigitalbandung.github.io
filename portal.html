@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform Digital Bandung — Modul Tugas</title>
+  <meta name="description" content="Platform Digital Bandung — modul pengumpulan tugas dengan pemeriksaan kemiripan.">
+  <link rel="icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <p class="kop"><a href="./">Platform Digital Bandung</a></p>
+      <h1><a href="portal.html">Modul Tugas</a></h1>
+      <p>Pengumpulan tugas &amp; pemeriksaan kemiripan antar-kiriman</p>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav class="tabs">
+      <a href="portal.html" class="aktif">Daftar Tugas</a>
+      <a href="dosen.html">Halaman Dosen</a>
+    </nav>
+
+    <div id="isi"><p class="redup">Memuat daftar tugas…</p></div>
+  </div>
+
+  <footer>
+    <p><span id="status-backend"><span class="status-dot gagal"></span>memeriksa backend…</span>
+    · <a href="#" id="ganti-backend">alamat backend</a></p>
+    <p>Skor kemiripan adalah alat bantu, bukan vonis plagiat; keputusan pada dosen.</p>
+    <p class="redup">Lewat WhatsApp: kirim "daftar tugas" ke Iteung untuk melihat daftar ini tanpa membuka situs.</p>
+  </footer>
+
+  <script type="module">
+    import { apiGet, gantiAlamatBackend } from './assets/js/api.js';
+    import { API_BASE } from './assets/js/config.js';
+
+    document.getElementById('ganti-backend').onclick = (e) => { e.preventDefault(); gantiAlamatBackend(); };
+
+    const isi = document.getElementById('isi');
+    const status = document.getElementById('status-backend');
+    try {
+      const h = await apiGet('/health');
+      status.innerHTML = `<span class="status-dot ok"></span>backend tersambung (${API_BASE})`;
+      const { tugas } = await apiGet('/api/tugas');
+      if (!tugas.length) {
+        isi.innerHTML = '<div class="kosong">Belum ada tugas. Dosen dapat membuat tugas lewat Halaman Dosen.</div>';
+      } else {
+        isi.innerHTML = tugas.map(t => `
+          <div class="kartu">
+            <h3>${esc(t.judul)}</h3>
+            <p class="meta">#${t.id} · ${t.n_kiriman} kiriman</p>
+            <a class="aksi" href="tugas.html?id=${t.id}">Kumpulkan Jawaban</a>
+          </div>`).join('');
+      }
+    } catch (err) {
+      status.innerHTML = `<span class="status-dot gagal"></span>backend tidak terjangkau (${API_BASE})`;
+      isi.innerHTML = `<div class="pesan gagal">Tidak bisa memuat daftar tugas: ${esc(err.message)}.<br>
+        Pastikan backend jalan, atau ganti <a href="#" onclick="return false" id="gb2">alamat backend</a>.</div>`;
+      document.getElementById('gb2').onclick = () => gantiAlamatBackend();
+    }
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+  </script>
+</body>
+</html>
