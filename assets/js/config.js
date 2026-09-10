@@ -12,11 +12,8 @@ export const WHATSAUTH_WS_BASE = API_BASE.replace(/^http/, 'ws') + '/ws/whatsaut
 export const WHATSAUTH_BOTNUMBER =
   localStorage.getItem('rlm_wa_botnumber') || '6282258512828';
 
-// Kata kunci login WhatsAuth — MASIH PLACEHOLDER. Bot di atas belum pernah
-// di-pairing (koleksi `profile` di Mongo masih kosong saat baris ini
-// ditulis), jadi `qrkeyword` sebenarnya belum ada nilainya untuk dibaca.
-// Begitu proses pairing dilakukan dan dokumen profile tercipta, ganti nilai
-// di bawah ini persis seperti field `profile.qrkeyword`-nya (termasuk spasi
-// di akhir bila ada — lihat GetUUID di helper/wa/hook.go, tidak ada TrimSpace).
+// Kata kunci login WhatsAuth — sama dengan konvensi bawaan platform ini
+// (config.QRKeyword di apkflydev), disimpan sebagai `user.waqrkeyword` di
+// Mongo untuk nomor bot di atas.
 export const WHATSAUTH_QRKEYWORD =
-  localStorage.getItem('rlm_wa_qrkeyword') || 'login ';
+  localStorage.getItem('rlm_wa_qrkeyword') || 'wh4t5auth0';
