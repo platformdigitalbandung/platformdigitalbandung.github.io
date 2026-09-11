@@ -171,3 +171,9 @@ footer a:hover { color: var(--biru); }
 .prodi-grid .rumpun-list li { margin: .15rem 0; }
 
 .cta-row { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1.4rem; }
+
+/* --- Kartu tugas (Task-Oriented UI): satu kartu = satu tugas yang bisa dikerjakan --- */
+.kartu-grid { display: grid; gap: 1.1rem; margin-bottom: 1.1rem; }
+@media (min-width: 640px) { .kartu-grid { grid-template-columns: 1fr 1fr; } }
+.kartu-grid .kartu { margin: 0; display: flex; flex-direction: column; }
+.kartu-grid .kartu .aksi { margin-top: auto; align-self: flex-start; }

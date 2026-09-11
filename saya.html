@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kirim Jawaban — Platform Digital Bandung</title>
+  <title>Beranda Saya — Platform Digital Bandung</title>
+  <meta name="robots" content="noindex">
   <link rel="icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,8 +15,8 @@
   <header class="top">
     <div class="wrap">
       <p class="kop"><a href="./">Platform Digital Bandung</a></p>
-      <h1><a href="portal.html">Kumpulkan Jawaban</a></h1>
-      <p>Unggah jawaban untuk tugas yang dipilih</p>
+      <h1><a href="saya.html">Beranda Saya</a></h1>
+      <p>Tugas yang bisa Anda kerjakan, sesuai peran nomor WhatsApp Anda</p>
     </div>
   </header>
 
@@ -23,16 +24,17 @@
     <nav class="tabs">
       <a href="./">Program</a>
       <a href="portal.html">Daftar Tugas</a>
-      <a href="saya.html">Beranda Saya</a>
+      <a href="saya.html" class="aktif">Beranda Saya</a>
     </nav>
-    <div id="isi"><p class="redup">Memuat tugas…</p></div>
+
+    <div id="isi"><p class="redup">Memuat…</p></div>
   </div>
 
   <footer>
-    <p>Berkas yang diterima: .txt, .docx, .pdf (maksimal 5 MB).</p>
-    <p class="redup">Lewat WhatsApp: lampirkan berkas dengan caption "kumpul tugas #id | nama | nim" ke Iteung.</p>
+    <p>Masuk memakai nomor WhatsApp (WhatsAuth). Peran ditentukan data di database, bukan pendaftaran mandiri.</p>
+    <p class="redup">Lewat WhatsApp: kirim "daftar proyek saya" atau "daftar tugas" ke Iteung untuk tugas yang sama tanpa membuka situs.</p>
   </footer>
 
-  <script type="module" src="assets/js/tugas.js"></script>
+  <script type="module" src="assets/js/saya.js"></script>
 </body>
 </html>
