@@ -1,7 +1,5 @@
-import { apiGet, gantiAlamatBackend } from './api.js';
+import { apiGet } from './api.js';
 import { API_BASE } from './config.js';
-
-document.getElementById('ganti-backend').onclick = (e) => { e.preventDefault(); gantiAlamatBackend(); };
 
 const isi = document.getElementById('isi');
 const status = document.getElementById('status-backend');
@@ -24,7 +22,5 @@ try {
   }
 } catch (err) {
   status.innerHTML = `<span class="status-dot gagal"></span>backend tidak terjangkau (${API_BASE})`;
-  isi.innerHTML = `<div class="pesan gagal">Tidak bisa memuat daftar tugas: ${esc(err.message)}.<br>
-    Pastikan backend jalan, atau ganti <a href="#" onclick="return false" id="gb2">alamat backend</a>.</div>`;
-  document.getElementById('gb2').onclick = () => gantiAlamatBackend();
+  isi.innerHTML = `<div class="pesan gagal">Tidak bisa memuat daftar tugas: ${esc(err.message)}.</div>`;
 }

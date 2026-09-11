@@ -33,13 +33,8 @@ export async function apiPostForm(path, formData) {
   return handle(res);
 }
 
-// --- Masuk sebagai Dosen: dua jalur, satu kredensial hasil akhir (token PASETO) ---
-
-export async function loginDosenPassword(password) {
-  const { token } = await apiPostJson('/api/dosen/login', { password });
-  sessionStorage.setItem('rlm_dosen_token', token);
-  return token;
-}
+// --- Masuk sebagai Dosen: satu-satunya jalur adalah WhatsAuth (lihat
+// pdb/README.md bagian Frontend, "Otorisasi di web wajib WhatsAuth") ---
 
 // Membuka websocket WhatsAuth, menghasilkan tautan wa.me untuk discan/diklik, dan
 // mengembalikan Promise yang selesai begitu token diterima lewat socket tsb.
@@ -75,13 +70,4 @@ export function logoutDosen() {
 
 export function isDosen() {
   return Boolean(sessionStorage.getItem('rlm_dosen_token'));
-}
-
-export function gantiAlamatBackend() {
-  const sekarang = localStorage.getItem('rlm_api_base') || '';
-  const baru = prompt('Alamat backend API (kosongkan untuk default):', sekarang);
-  if (baru === null) return;
-  if (baru.trim()) localStorage.setItem('rlm_api_base', baru.trim());
-  else localStorage.removeItem('rlm_api_base');
-  location.reload();
 }

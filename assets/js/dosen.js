@@ -1,4 +1,4 @@
-import { apiGet, apiPostJson, loginDosenPassword, loginDosenWhatsAuth, logoutDosen, isDosen } from './api.js';
+import { apiGet, apiPostJson, loginDosenWhatsAuth, logoutDosen, isDosen } from './api.js';
 
 const isi = document.getElementById('isi');
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
@@ -11,26 +11,7 @@ function tampilLogin(pesan = '') {
       <p class="meta">Identitas dosen memakai nomor WhatsApp Anda (WhatsAuth) — tidak perlu akun baru.</p>
       <button id="masuk-wa">Masuk dengan WhatsApp</button>
       <div id="wa-status"></div>
-      <p style="margin-top:1.2rem"><button class="sekunder" id="toggle-pw">Pakai password sebagai gantinya</button></p>
-      <form id="login-pw" hidden>
-        <label>Password dosen<input type="password" name="pw" required></label>
-        <button>Masuk dengan Password</button>
-      </form>
     </div>`;
-
-  document.getElementById('toggle-pw').onclick = () => {
-    document.getElementById('login-pw').hidden = false;
-  };
-
-  document.getElementById('login-pw').onsubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await loginDosenPassword(new FormData(e.target).get('pw'));
-      tampilPanel();
-    } catch (err) {
-      tampilLogin(`Login gagal: ${err.message}`);
-    }
-  };
 
   document.getElementById('masuk-wa').onclick = async () => {
     const status = document.getElementById('wa-status');
