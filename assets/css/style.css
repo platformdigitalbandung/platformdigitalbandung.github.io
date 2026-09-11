@@ -77,6 +77,8 @@ a.aksi {
   background: var(--biru); color: #fff; font-weight: 600; text-decoration: none;
 }
 a.aksi:hover { background: var(--biru-tua); border-color: var(--biru-tua); }
+a.aksi.sekunder { background: transparent; color: var(--biru); }
+a.aksi.sekunder:hover { background: var(--kertas); border-color: var(--biru-tua); color: var(--biru-tua); }
 
 /* Data tables — the primary listing pattern, not cards */
 table { border-collapse: collapse; width: 100%; font-size: .88rem; }
@@ -142,6 +144,7 @@ footer a:hover { color: var(--biru); }
   font-family: var(--font-judul); font-weight: 600; font-size: 1.3rem; margin: 0 0 .3rem;
 }
 .seksi p.intro { color: var(--redup); margin: 0 0 1rem; max-width: 46em; }
+.seksi p.intro.jarak-atas { margin-top: .9rem; }
 
 .stat-row { display: flex; flex-wrap: wrap; gap: 1.6rem; margin: 1rem 0; }
 .stat .angka {

@@ -1,5 +1,5 @@
-import { getJSON } from 'https://cdn.jsdelivr.net/gh/jscroot/lib@0.2.8/api.min.js';
-import { setInner } from 'https://cdn.jsdelivr.net/gh/jscroot/lib@0.2.8/element.min.js';
+import { getJSON } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/api.min.js';
+import { setInner } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/element.min.js';
 import { API_BASE } from './config.js';
 
 // Narasi karier per prodi tidak berasal dari data /api/kurikulum (belum dimodelkan
@@ -25,18 +25,13 @@ function kartuProdi(p, rumpun) {
     </div>`;
 }
 
-// getJSON (croot.js.org) diam-diam tidak memanggil callback kalau fetch gagal
-// (hanya console.log) — pasang batas waktu supaya placeholder tidak menggantung.
-let prodiSelesai = false;
-setTimeout(() => {
-  if (!prodiSelesai) {
+getJSON(API_BASE + '/api/kurikulum/prodi', async (res) => {
+  // status 0 = jaringan gagal atau timeout (crootjs selalu memanggil callback).
+  if (res.status !== 200) {
     setInner('prodi', `<p class="redup">Backend tidak terjangkau (${esc(API_BASE)}).
       Data program studi tidak bisa dimuat saat ini.</p>`);
+    return;
   }
-}, 8000);
-
-getJSON(API_BASE + '/api/kurikulum/prodi', async (res) => {
-  prodiSelesai = true;
   try {
     const list = (res.data && res.data.prodi) || [];
     if (!list.length) { setInner('prodi', '<p class="redup">Data program studi belum tersedia.</p>'); return; }
