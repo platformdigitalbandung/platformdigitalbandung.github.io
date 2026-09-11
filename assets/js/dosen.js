@@ -11,7 +11,7 @@ function tampilBukanDosen(pesan) {
     <div class="kartu">
       <h3>Halaman Dosen</h3>
       <p class="meta">Nomor WhatsApp yang sedang masuk belum dikenali sebagai dosen Portal Tugas.</p>
-      <button id="ganti-akun">Masuk dengan nomor lain</button>
+      <button id="ganti-akun">Ganti nomor lewat halaman login</button>
     </div>`;
   document.getElementById('ganti-akun').onclick = () => { logout(); arahkanKeLogin(); };
 }
