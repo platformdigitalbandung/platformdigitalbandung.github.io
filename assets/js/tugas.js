@@ -1,4 +1,4 @@
-import { apiGet, apiPostForm } from './api.js';
+import { apiGet, apiPostBerkas } from './api.js';
 
 const id = new URLSearchParams(location.search).get('id');
 const isi = document.getElementById('isi');
@@ -19,7 +19,7 @@ try {
         <label>Nama lengkap<input name="nama" required maxlength="120"></label>
         <label>NIM<input name="nim" required maxlength="40"></label>
         <label>Berkas jawaban
-          <input type="file" name="berkas" required accept=".txt,.docx,.pdf"></label>
+          <input type="file" id="berkas" name="berkas" required accept=".txt,.docx,.pdf"></label>
         <button id="kirim">Unggah Jawaban</button>
       </form>
       <div id="hasil"></div>
@@ -32,7 +32,8 @@ try {
     btn.disabled = true; hasil.innerHTML = '<p class="redup">Mengunggah…</p>';
     try {
       const fd = new FormData(e.target);
-      const r = await apiPostForm(`/api/tugas/${id}/kirim`, fd);
+      const r = await apiPostBerkas(`/api/tugas/${id}/kirim`,
+        { nama: fd.get('nama'), nim: fd.get('nim') }, 'berkas', 'berkas');
       hasil.innerHTML = `<div class="pesan sukses">Jawaban terkirim ✔ Nomor kiriman
         <b>#${r.kiriman_id}</b> (${r.n_kata} kata terbaca). Simpan nomor ini sebagai bukti.</div>`;
       e.target.reset();

@@ -1,34 +1,19 @@
-import { apiGet, apiPostJson, loginDosenWhatsAuth, logoutDosen, isDosen } from './api.js';
+import { apiGet, apiPostJson, isLoggedIn, logout, arahkanKeLogin } from './api.js';
 
 const isi = document.getElementById('isi');
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
-function tampilLogin(pesan = '') {
+// Form login hanya ada di repo login (/login/) — halaman ini tidak punya form
+// login sendiri, cukup mengarahkan ke sana (lihat pdb/README.md bagian Frontend).
+function tampilBukanDosen(pesan) {
   isi.innerHTML = `
-    ${pesan ? `<div class="pesan gagal">${esc(pesan)}</div>` : ''}
+    <div class="pesan gagal">${esc(pesan)}</div>
     <div class="kartu">
-      <h3>Masuk sebagai Dosen</h3>
-      <p class="meta">Identitas dosen memakai nomor WhatsApp Anda (WhatsAuth) — tidak perlu akun baru.</p>
-      <button id="masuk-wa">Masuk dengan WhatsApp</button>
-      <div id="wa-status"></div>
+      <h3>Halaman Dosen</h3>
+      <p class="meta">Nomor WhatsApp yang sedang masuk belum dikenali sebagai dosen Portal Tugas.</p>
+      <button id="ganti-akun">Masuk dengan nomor lain</button>
     </div>`;
-
-  document.getElementById('masuk-wa').onclick = async () => {
-    const status = document.getElementById('wa-status');
-    const { waLink, waitForToken } = loginDosenWhatsAuth();
-    status.innerHTML = `
-      <div class="pesan sukses">
-        Buka WhatsApp dan kirim pesan lewat tautan ini untuk masuk:<br>
-        <a href="${waLink}" target="_blank" rel="noopener">${waLink}</a>
-      </div>
-      <p class="redup">Menunggu konfirmasi dari WhatsApp…</p>`;
-    try {
-      await waitForToken();
-      tampilPanel();
-    } catch (err) {
-      status.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
-    }
-  };
+  document.getElementById('ganti-akun').onclick = () => { logout(); arahkanKeLogin(); };
 }
 
 async function tampilPanel() {
@@ -56,7 +41,7 @@ async function tampilPanel() {
     </div>
     <p><button class="sekunder" id="keluar">Keluar</button></p>`;
 
-  document.getElementById('keluar').onclick = () => { logoutDosen(); tampilLogin(); };
+  document.getElementById('keluar').onclick = () => { logout(); location.href = './'; };
 
   document.getElementById('buat').onsubmit = async (e) => {
     e.preventDefault();
@@ -100,7 +85,9 @@ async function tampilPanel() {
   };
 }
 
-if (isDosen()) {
+if (!isLoggedIn()) {
+  arahkanKeLogin();
+} else {
   try { await apiGet('/api/dosen/ping', { auth: true }); tampilPanel(); }
-  catch { logoutDosen(); tampilLogin(); }
-} else tampilLogin();
+  catch (err) { tampilBukanDosen(err.message); }
+}
