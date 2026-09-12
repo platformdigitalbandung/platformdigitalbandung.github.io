@@ -176,7 +176,7 @@ async function muat() {
     return;
   }
   if (!saya.nip) {
-    isi.innerHTML = '<div class="pesan gagal">Nomor ini terdaftar sebagai dosen, tetapi NIP-nya belum diisi di data dosen. Pembuatan dan penilaian proyek blok baru bisa dilakukan setelah pengelola melengkapi NIP.</div>';
+    isi.innerHTML = '<div class="pesan gagal">Nomor ini terdaftar sebagai dosen, tetapi NIP-nya belum diisi di data dosen. Pembuatan dan penilaian proyek blok baru bisa dilakukan setelah NIP terisi — dosen boleh mengisi NIP nomornya sendiri lewat <code>PUT /api/dosen/nip</code>.</div>';
     return;
   }
   const { prodi = [] } = await apiGet('/api/kurikulum/prodi');

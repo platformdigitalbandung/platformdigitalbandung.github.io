@@ -30,7 +30,7 @@ function tampil(saya) {
       + kartu('Proyek Kerja/Magang', 'Ajukan konversi pekerjaan di perusahaan jadi proyek, lalu ikuti status dan tinjauannya.', 'kerja.html', 'Ajukan / Lihat Proyek Kerja');
 
   const catatanNIP = dosen && !saya.nip
-    ? '<div class="pesan gagal">Nomor ini terdaftar sebagai dosen, tetapi NIP-nya belum diisi di data dosen. Pembuatan dan penilaian proyek blok baru bisa dilakukan setelah NIP dilengkapi pengelola.</div>'
+    ? '<div class="pesan gagal">Nomor ini terdaftar sebagai dosen, tetapi NIP-nya belum diisi di data dosen. Pembuatan dan penilaian proyek blok baru bisa dilakukan setelah NIP terisi — dosen boleh mengisi NIP nomornya sendiri lewat <code>PUT /api/dosen/nip</code>.</div>'
     : '';
 
   const jumlah = (saya.proyekblok || []).length;
