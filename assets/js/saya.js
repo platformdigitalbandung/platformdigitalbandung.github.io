@@ -18,11 +18,13 @@ function kartu(judul, keterangan, tautan, labelAksi) {
 
 function tampil(saya) {
   const dosen = saya.peran === 'dosen';
-  const kartuUmum = kartu('Daftar Tugas', 'Lihat tugas yang terbuka dan kumpulkan jawabannya.', 'portal.html', 'Buka Daftar Tugas');
+  const kartuUmum = kartu('Daftar Tugas', 'Lihat tugas yang terbuka dan kumpulkan jawabannya.', 'portal.html', 'Buka Daftar Tugas')
+    + kartu('Kalender Akademik', 'Jadwal per minggu: moda, jam, dan keterangan tiap sesi.', 'kalender.html', 'Lihat Kalender');
 
   const kartuPeran = dosen
     ? kartu('Buat Tugas & Laporan Kemiripan', 'Buat tugas baru dan tinjau laporan kemiripan antar-kiriman.', 'dosen.html', 'Buka Halaman Dosen')
       + kartu('Kelola Proyek Blok', 'Buat instance proyek per rumpun, lihat anggotanya, dan input nilai per mahasiswa per mata kuliah.', 'proyek.html', 'Kelola Proyek Blok')
+      + kartu('Kelola Kalender', 'Buat draft kalender semester dari ritme mingguan, lalu terbitkan sebelum semester mulai.', 'kalender.html', 'Kelola Kalender')
     : kartu('Nilai Proyek Saya', 'Lihat rekap nilai proyek blok Anda beserta rincian per mata kuliah.', 'nilai.html', 'Lihat Nilai Saya');
 
   const catatanNIP = dosen && !saya.nip

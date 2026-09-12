@@ -16,6 +16,11 @@
 <priority>0.90</priority>
 </url>
 <url>
+<loc>https://platform.digitalbdg.ac.id/kalender.html</loc>
+<lastmod>2026-09-12T00:00:00+00:00</lastmod>
+<priority>0.85</priority>
+</url>
+<url>
 <loc>https://platform.digitalbdg.ac.id/dosen.html</loc>
 <lastmod>2026-09-10T00:00:00+00:00</lastmod>
 <priority>0.80</priority>
