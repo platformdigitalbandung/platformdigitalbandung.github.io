@@ -1,4 +1,4 @@
-import { getJSON, postJSON, postFile } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/api.min.js';
+import { getJSON, postJSON, putJSON, deleteJSON, postFile } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/api.min.js';
 import { getCookie, deleteCookie, setCookieWithExpireHour } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/cookie.min.js';
 import { redirect } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/url.min.js';
 import { API_BASE } from './config.js';
@@ -11,11 +11,20 @@ const PESAN_TIDAK_TERJANGKAU = 'Backend tidak terjangkau, coba lagi.';
 
 // getJSON/postJSON crootjs selalu memanggil callback: status 0 berarti jaringan
 // gagal atau timeout, data null berarti balasan bukan JSON.
+// Galat membawa `status` HTTP-nya (0 = jaringan gagal) supaya pemanggil bisa
+// membedakan, mis., 422 "masih dirujuk" dari 404 "tidak ada" tanpa mencocokkan
+// teks pesan. Pemanggil lama yang hanya membaca err.message tidak terpengaruh.
+function galat(pesan, status) {
+  const e = new Error(pesan);
+  e.status = status;
+  return e;
+}
+
 function menurutStatus(resolve, reject) {
   return ({ status, data }) => {
     if (status >= 200 && status < 300) resolve(data);
-    else if (status === 0) reject(new Error(PESAN_TIDAK_TERJANGKAU));
-    else reject(new Error((data && data.detail) || `HTTP ${status}`));
+    else if (status === 0) reject(galat(PESAN_TIDAK_TERJANGKAU, 0));
+    else reject(galat((data && data.detail) || `HTTP ${status}`, status));
   };
 }
 
@@ -34,6 +43,21 @@ export function apiPostJson(path, body) {
   const [nama, nilai] = headerToken();
   return new Promise((resolve, reject) =>
     postJSON(API_BASE + path, body, menurutStatus(resolve, reject), nama, nilai));
+}
+
+export function apiPutJson(path, body) {
+  const [nama, nilai] = headerToken();
+  return new Promise((resolve, reject) =>
+    putJSON(API_BASE + path, body, menurutStatus(resolve, reject), nama, nilai));
+}
+
+// DELETE tanpa body: backend PDB membaca parameternya dari path dan query
+// (mis. ?konfirmasi=hapus), jadi datajson sengaja undefined — crootjs tidak
+// mengirim body sama sekali kalau undefined.
+export function apiDeleteJson(path) {
+  const [nama, nilai] = headerToken();
+  return new Promise((resolve, reject) =>
+    deleteJSON(API_BASE + path, undefined, menurutStatus(resolve, reject), nama, nilai));
 }
 
 // postFile crootjs hanya mengirim satu field berkas dari elemen input, jadi field
