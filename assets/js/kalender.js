@@ -96,7 +96,7 @@ function kartuKalender(k) {
     </div>`;
 }
 
-function formBuat(prodi) {
+function formBuat(prodi, ritme) {
   return `
     <div class="kartu">
       <h3>Buat Draft Kalender</h3>
@@ -111,6 +111,8 @@ function formBuat(prodi) {
           <select name="semester">${[1, 2, 3, 4, 5, 6, 7, 8].map(s => `<option value="${s}">${s}</option>`).join('')}</select></label>
         <label>Tanggal mulai <input type="date" name="tanggal_mulai" required></label>
         <label>Jumlah minggu <input type="number" name="jumlah_minggu" min="1" max="24" value="16"></label>
+        ${ritme.length > 1 ? `<label>Ritme mingguan
+          <select name="ritme_nama">${ritme.map(r => `<option value="${escAttr(r.nama)}">${esc(r.nama)} · ${esc(r.total_menit_per_minggu)} menit/minggu</option>`).join('')}</select></label>` : ''}
         <button>Buat Draft</button>
       </form>
       <div id="hasil-buat"></div>
@@ -261,6 +263,9 @@ async function buatKalender(e) {
       prodi_kode: fd.get('prodi_kode'), angkatan: fd.get('angkatan'),
       semester: Number(fd.get('semester')), tanggal_mulai: fd.get('tanggal_mulai'),
       jumlah_minggu: Number(fd.get('jumlah_minggu')),
+      // Kosong berarti ritme bawaan — prodi yang pola minggunya berbeda
+      // memilih ritmenya sendiri di sini.
+      ritme_nama: fd.get('ritme_nama') || '',
     });
     hasil.innerHTML = `<div class="pesan sukses">Draft kalender ${esc(k.prodi_kode)} angkatan ${esc(k.angkatan)} semester ${k.semester} dibuat (${(k.sesi || []).length} sesi).</div>`;
     await muatDaftar();
@@ -296,7 +301,14 @@ try {
     try { dosen = (await apiGet('/api/proyekblok/saya', { auth: true })).peran === 'dosen'; } catch { dosen = false; }
   }
   const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
-  isi.innerHTML = (dosen && prodi.length ? formBuat(prodi) : '') + '<div id="daftar"><p class="redup">Memuat kalender…</p></div>';
+  let ritme = [];
+  try {
+    ({ ritme = [] } = await apiGet('/api/kurikulum/ritme'));
+  } catch {
+    // Pilihan ritme hanya muncul kalau memang ada lebih dari satu; tanpa itu
+    // backend memakai ritme bawaan, jadi halaman tetap berguna.
+  }
+  isi.innerHTML = (dosen && prodi.length ? formBuat(prodi, ritme) : '') + '<div id="daftar"><p class="redup">Memuat kalender…</p></div>';
   if (dosen && prodi.length) document.getElementById('form-kalender').addEventListener('submit', buatKalender);
   pasangPendengarDaftar(document.getElementById('daftar'));
   await muatDaftar();

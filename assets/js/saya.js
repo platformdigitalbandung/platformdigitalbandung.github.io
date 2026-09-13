@@ -37,6 +37,7 @@ function tampil(saya) {
       + kartu('Laporan Kepatuhan','Menit asinkron, daring, dan luring per mata kuliah terhadap tuntutan SKS, beserta bukti nilai dan CPL — siap dicetak untuk akreditasi.', 'kepatuhan.html', 'Buka Laporan')
       + kartu('Kelola Materi','Tambah video YouTube dan bacaan asinkron per minggu rumpun — progres mahasiswa hanya tercatat untuk materi di katalog ini.', 'kelola-materi.html', 'Kelola Materi')
       + kartu('Hasil Autograder','Hasil tes otomatis atas kode yang dikirim mahasiswa lewat Pull Request, beserta pengaturan pembagian bobotnya.', 'autograder.html', 'Lihat Hasil Autograder')
+      + kartu('Kurikulum Program Studi','Daftarkan prodi, rumpun beserta mata kuliahnya, CPL, dan ritme mingguan — prasyarat sebelum kalender, roster, dan dasbor bisa dipakai prodi itu.', 'kurikulum.html', 'Kelola Kurikulum')
     : kartu('Dasbor Belajar', 'Beban belajar minggu ini dan capaian pembelajaran (CPL) yang sudah terbukti dari nilai dan RPL Anda.', 'dasbor.html', 'Buka Dasbor')
       + kartu('Rekaman Sesi Sinkron', 'Tidak bisa ikut sesi daring Kamis? Tonton rekamannya sebelum sesi Jumat.', 'rekaman.html', 'Buka Rekaman')
       + kartu('Forum Tanya Dosen','Tersendat di materi asinkron Senin–Rabu? Ajukan pertanyaan; dosen menargetkan jawaban 1×24 jam.', 'forum.html', 'Buka Forum')
