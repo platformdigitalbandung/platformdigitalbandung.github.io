@@ -32,6 +32,7 @@ function tampil(saya) {
       + kartu('Pengawas Ujian', 'Jadwalkan ujian berpengawas dan catat kehadiran mahasiswa di sesi yang Anda awasi.', 'ujian.html', 'Buka Pengawas Ujian')
       + kartu('Pantau Proyek Kerja', 'Untuk kaprodi: proyek kerja aktif dan yang telat tinjauan tengah semester, beserta siapa yang belum menilai.', 'kaprodi.html', 'Pantau Proyek Kerja')
       + kartu('Forum & SLA Jawaban', 'Balas pertanyaan mahasiswa dan pantau yang lewat target 1×24 jam (dihitung Senin–Rabu).', 'forum.html', 'Buka Forum')
+      + kartu('Rapor & Rekap Nilai', 'Buka rapor mahasiswa per NIM atau rekap nilai huruf dan IP satu angkatan per semester, siap dicetak.', 'rapor.html', 'Buka Rapor')
       + kartu('Laporan Kepatuhan','Menit asinkron, daring, dan luring per mata kuliah terhadap tuntutan SKS, beserta bukti nilai dan CPL — siap dicetak untuk akreditasi.', 'kepatuhan.html', 'Buka Laporan')
       + kartu('Kelola Materi','Tambah video YouTube dan bacaan asinkron per minggu rumpun — progres mahasiswa hanya tercatat untuk materi di katalog ini.', 'kelola-materi.html', 'Kelola Materi')
     : kartu('Dasbor Belajar', 'Beban belajar minggu ini dan capaian pembelajaran (CPL) yang sudah terbukti dari nilai dan RPL Anda.', 'dasbor.html', 'Buka Dasbor')
@@ -39,7 +40,8 @@ function tampil(saya) {
       + kartu('Materi Pekan Ini','Tonton video dan baca materi asinkron pekan ini; progresnya tercatat otomatis.', 'materi.html', 'Buka Materi')
       + kartu('Kuis Gerbang', 'Kerjakan kuis materi asinkron pekan ini sebelum sesi tatap muka Jumat.', 'kuis.html', 'Kerjakan Kuis')
       + kartu('Rekognisi Pembelajaran Lampau', 'Ajukan pengalaman kerja sebelum kuliah untuk diakui sebagai kredit satu rumpun.', 'rpl.html', 'Ajukan / Lihat RPL')
-      + kartu('Nilai Proyek Saya', 'Lihat rekap nilai proyek blok Anda beserta rincian per mata kuliah.', 'nilai.html', 'Lihat Nilai Saya')
+      + kartu('Rapor Saya', 'Nilai huruf, IP per semester, dan IPK — siap dicetak.', 'rapor.html', 'Buka Rapor')
+      + kartu('Nilai Proyek Saya','Lihat rekap nilai proyek blok Anda beserta rincian per mata kuliah.', 'nilai.html', 'Lihat Nilai Saya')
       + kartu('Proyek Kerja/Magang', 'Ajukan konversi pekerjaan di perusahaan jadi proyek, lalu ikuti status dan tinjauannya.', 'kerja.html', 'Ajukan / Lihat Proyek Kerja');
 
   const catatanNIP = dosen && !saya.nip
