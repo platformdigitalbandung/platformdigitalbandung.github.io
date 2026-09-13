@@ -27,7 +27,8 @@ function tampil(saya) {
       + kartu('Kelola Kalender', 'Buat draft kalender semester dari ritme mingguan, lalu terbitkan sebelum semester mulai.', 'kalender.html', 'Kelola Kalender')
       + kartu('Proyek Kerja Bimbingan', 'Putuskan pengajuan proyek di tempat kerja, kirim tinjauan, dan terbitkan tautan tinjauan untuk atasan.', 'kerja.html', 'Buka Proyek Kerja')
       + kartu('Roster Mahasiswa & NIP', 'Isi NIP Anda, tambah atau tempel banyak mahasiswa ke roster — sumber identitas akademik seluruh modul.', 'akademik.html', 'Kelola Roster')
-    : kartu('Nilai Proyek Saya', 'Lihat rekap nilai proyek blok Anda beserta rincian per mata kuliah.', 'nilai.html', 'Lihat Nilai Saya')
+    : kartu('Dasbor Belajar', 'Beban belajar minggu ini dan capaian pembelajaran (CPL) yang sudah terbukti dari nilai dan RPL Anda.', 'dasbor.html', 'Buka Dasbor')
+      + kartu('Nilai Proyek Saya', 'Lihat rekap nilai proyek blok Anda beserta rincian per mata kuliah.', 'nilai.html', 'Lihat Nilai Saya')
       + kartu('Proyek Kerja/Magang', 'Ajukan konversi pekerjaan di perusahaan jadi proyek, lalu ikuti status dan tinjauannya.', 'kerja.html', 'Ajukan / Lihat Proyek Kerja');
 
   const catatanNIP = dosen && !saya.nip

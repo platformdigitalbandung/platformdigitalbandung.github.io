@@ -174,7 +174,8 @@ async function tampilDaftar(e) {
         ${roster.map(m => `<tr>
           <td>${esc(m.nim)}</td><td>${esc(m.nama)}</td><td>${esc(m.prodi_kode)}</td><td>${esc(m.angkatan)}</td>
           <td class="num">${esc(m.semester)}</td><td>${esc(m.status)}</td><td>${esc(m.phonenumber || '–')}</td>
-          <td><button class="sekunder ubah" data-nim="${esc(m.nim)}">Ubah</button>
+          <td><a class="aksi sekunder" href="dasbor.html?nim=${encodeURIComponent(m.nim)}">Dasbor</a>
+              <button class="sekunder ubah" data-nim="${esc(m.nim)}">Ubah</button>
               <button class="sekunder hapus" data-nim="${esc(m.nim)}">Hapus</button></td></tr>`).join('')}
       </table></div><div id="hasil-hapus"></div>`
       : '<div class="kosong">Tidak ada mahasiswa untuk saringan ini.</div>';
