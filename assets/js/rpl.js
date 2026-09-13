@@ -20,8 +20,10 @@ async function rumpunSemuaProdi() {
   return hasil;
 }
 
-// model.StorageRef di backend belum punya tag json, jadi field-nya bisa keluar
-// sebagai Path (huruf besar) walau openapi menulis path. Dibaca keduanya.
+// model.StorageRef kini bertag json huruf kecil (repo/path/sha), sesuai
+// openapi. Sebelum 2026-09-13 kuncinya keluar huruf besar (Path); bentuk lama
+// tetap dibaca supaya halaman tidak kosong kalau frontend terbit lebih dulu
+// daripada deploy backend-nya.
 function pathBukti(ref) { return (ref && (ref.path || ref.Path)) || ''; }
 
 function barisPengajuan(p, untukDosen) {

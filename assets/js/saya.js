@@ -29,6 +29,8 @@ function tampil(saya) {
       + kartu('Roster Mahasiswa & NIP', 'Isi NIP Anda, tambah atau tempel banyak mahasiswa ke roster — sumber identitas akademik seluruh modul.', 'akademik.html', 'Kelola Roster')
       + kartu('Tinjau RPL', 'Setujui atau tolak pengajuan rekognisi pembelajaran lampau; yang disetujui jadi bukti CPL.', 'rpl.html', 'Tinjau Pengajuan')
       + kartu('Status Kuis Gerbang', 'Cek apakah mahasiswa sudah lulus kuis gerbang sebelum sesi Jumat.', 'kuis.html', 'Cek Status Kuis')
+      + kartu('Pengawas Ujian', 'Jadwalkan ujian berpengawas dan catat kehadiran mahasiswa di sesi yang Anda awasi.', 'ujian.html', 'Buka Pengawas Ujian')
+      + kartu('Pantau Proyek Kerja', 'Untuk kaprodi: proyek kerja aktif dan yang telat tinjauan tengah semester, beserta siapa yang belum menilai.', 'kaprodi.html', 'Pantau Proyek Kerja')
     : kartu('Dasbor Belajar', 'Beban belajar minggu ini dan capaian pembelajaran (CPL) yang sudah terbukti dari nilai dan RPL Anda.', 'dasbor.html', 'Buka Dasbor')
       + kartu('Kuis Gerbang', 'Kerjakan kuis materi asinkron pekan ini sebelum sesi tatap muka Jumat.', 'kuis.html', 'Kerjakan Kuis')
       + kartu('Rekognisi Pembelajaran Lampau', 'Ajukan pengalaman kerja sebelum kuliah untuk diakui sebagai kredit satu rumpun.', 'rpl.html', 'Ajukan / Lihat RPL')
