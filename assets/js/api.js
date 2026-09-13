@@ -1,4 +1,4 @@
-import { getJSON, postJSON, putJSON, deleteJSON, postFile } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/api.min.js';
+import { getJSON, postJSON, putJSON, deleteJSON, postFile, postFileJSON } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/api.min.js';
 import { getCookie, deleteCookie, setCookieWithExpireHour } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/cookie.min.js';
 import { redirect } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/url.min.js';
 import { API_BASE } from './config.js';
@@ -60,6 +60,23 @@ export function apiDeleteJson(path) {
     deleteJSON(API_BASE + path, undefined, menurutStatus(resolve, reject), nama, nilai));
 }
 
+// Unggah berkas untuk rute yang MEMBUTUHKAN token. postFileJSON crootjs
+// mengirim header Authorization dan membalas {status, data} — bentuk yang sama
+// dengan getJSON/postJSON, jadi galatnya ikut membawa status HTTP. Field teks
+// dikirim lewat query string, sama seperti apiPostBerkas.
+//
+// Hanya satu berkas per kiriman (crootjs mengambil input.files[0]).
+export function apiPostBerkasToken(path, fields, inputId, namaField) {
+  const [nama, nilai] = headerToken();
+  const url = API_BASE + path + '?' + new URLSearchParams(fields);
+  return new Promise((resolve, reject) =>
+    postFileJSON(url, nama, nilai, inputId, namaField, menurutStatus(resolve, reject)));
+}
+
+// PERHATIAN: apiPostBerkas TIDAK mengirim token — postFile crootjs tidak punya
+// parameter header sama sekali. Aman hanya untuk rute publik seperti kirim
+// tugas; untuk rute yang butuh token pakai apiPostBerkasToken di atas.
+//
 // postFile crootjs hanya mengirim satu field berkas dari elemen input, jadi field
 // teks dikirim lewat query string (backend membaca keduanya lewat c.FormValue).
 // Callback-nya menerima JSON balasan, atau null kalau jaringan gagal, timeout,

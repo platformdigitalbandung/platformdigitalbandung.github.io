@@ -27,7 +27,11 @@ function tampil(saya) {
       + kartu('Kelola Kalender', 'Buat draft kalender semester dari ritme mingguan, lalu terbitkan sebelum semester mulai.', 'kalender.html', 'Kelola Kalender')
       + kartu('Proyek Kerja Bimbingan', 'Putuskan pengajuan proyek di tempat kerja, kirim tinjauan, dan terbitkan tautan tinjauan untuk atasan.', 'kerja.html', 'Buka Proyek Kerja')
       + kartu('Roster Mahasiswa & NIP', 'Isi NIP Anda, tambah atau tempel banyak mahasiswa ke roster — sumber identitas akademik seluruh modul.', 'akademik.html', 'Kelola Roster')
+      + kartu('Tinjau RPL', 'Setujui atau tolak pengajuan rekognisi pembelajaran lampau; yang disetujui jadi bukti CPL.', 'rpl.html', 'Tinjau Pengajuan')
+      + kartu('Status Kuis Gerbang', 'Cek apakah mahasiswa sudah lulus kuis gerbang sebelum sesi Jumat.', 'kuis.html', 'Cek Status Kuis')
     : kartu('Dasbor Belajar', 'Beban belajar minggu ini dan capaian pembelajaran (CPL) yang sudah terbukti dari nilai dan RPL Anda.', 'dasbor.html', 'Buka Dasbor')
+      + kartu('Kuis Gerbang', 'Kerjakan kuis materi asinkron pekan ini sebelum sesi tatap muka Jumat.', 'kuis.html', 'Kerjakan Kuis')
+      + kartu('Rekognisi Pembelajaran Lampau', 'Ajukan pengalaman kerja sebelum kuliah untuk diakui sebagai kredit satu rumpun.', 'rpl.html', 'Ajukan / Lihat RPL')
       + kartu('Nilai Proyek Saya', 'Lihat rekap nilai proyek blok Anda beserta rincian per mata kuliah.', 'nilai.html', 'Lihat Nilai Saya')
       + kartu('Proyek Kerja/Magang', 'Ajukan konversi pekerjaan di perusahaan jadi proyek, lalu ikuti status dan tinjauannya.', 'kerja.html', 'Ajukan / Lihat Proyek Kerja');
 
