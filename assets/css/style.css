@@ -194,3 +194,22 @@ progress.progres { width: 100%; height: .5rem; }
 @media (min-width: 640px) { .kartu-grid { grid-template-columns: 1fr 1fr; } }
 .kartu-grid .kartu { margin: 0; display: flex; flex-direction: column; }
 .kartu-grid .kartu .aksi { margin-top: auto; align-self: flex-start; }
+
+/* --- Laporan kepatuhan: nama mata kuliah bisa diklik untuk rekap lintas angkatan --- */
+button.lintas {
+  background: none; border: 0; padding: 0; color: var(--biru);
+  font: inherit; text-align: left; cursor: pointer;
+}
+button.lintas:hover { background: none; color: var(--biru-tua); text-decoration: underline; }
+
+/* --- Cetak: halaman laporan jadi lampiran bersih (Ctrl+P / Simpan PDF) --- */
+@media print {
+  header.top, nav.tabs, footer, .tidak-cetak { display: none !important; }
+  body { background: #fff; }
+  .wrap { max-width: none; padding: 0; }
+  .kartu { border: 0; padding: 0; margin: 0; }
+  .gulir { overflow: visible; }
+  table { font-size: 9pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  button.lintas { color: inherit; }
+}
