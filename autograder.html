@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hasil Autograder — Platform Digital Bandung</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <p class="kop"><a href="./">Platform Digital Bandung</a></p>
+      <h1><a href="autograder.html">Hasil Autograder</a></h1>
+      <p>Hasil tes otomatis atas kode yang dikirim lewat Pull Request</p>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav class="tabs">
+      <a href="./">Program</a>
+      <a href="kalender.html">Kalender</a>
+      <a href="saya.html">Beranda Saya</a>
+    </nav>
+
+    <div id="isi"><p class="redup">Memuat…</p></div>
+  </div>
+
+  <footer>
+    <p>Angka di halaman ini hasil tes yang dijalankan GitHub Actions di dalam kontainer terisolasi, bukan penilaian dosen. Yang menentukan benar-salahnya program adalah <b>tes dosen</b>; coverage mengukur ketekunan menulis tes, bukan kebenaran.</p>
+    <p class="redup">Skor di sini adalah isi komponen autograder, bukan nilai akhir rumpun. Komponennya sendiri berbobot 15% dari nilai rumpun sesuai kurikulum, dan digabung dengan komponen lain di halaman nilai.</p>
+  </footer>
+
+  <script type="module" src="assets/js/autograder.js"></script>
+</body>
+</html>
