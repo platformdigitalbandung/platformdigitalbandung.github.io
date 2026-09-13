@@ -1,11 +1,15 @@
-import { apiGet, apiPostJson, isLoggedIn } from './api.js';
+import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, isLoggedIn } from './api.js';
 
 // Kalender akademik. Baca publik (hanya kalender yang sudah diterbitkan);
-// pembuatan draft dan penerbitan hanya muncul kalau backend memang mengenali
-// nomor yang sedang masuk sebagai dosen — kewenangannya tetap dicek server.
+// pembuatan draft, penyuntingan sesi, penerbitan, dan penghapusan hanya muncul
+// kalau backend memang mengenali nomor yang sedang masuk sebagai dosen —
+// kewenangannya tetap dicek server.
 
 const isi = document.getElementById('isi');
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+// esc tidak meloloskan tanda kutip, jadi nilai atribut (mis. keterangan sesi
+// yang memuat ") wajib lewat escAttr.
+function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 
 const HARI_TANGGAL = { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' };
 function tanggal(iso) {
@@ -13,7 +17,21 @@ function tanggal(iso) {
   return isNaN(d) ? '–' : d.toLocaleDateString('id-ID', HARI_TANGGAL);
 }
 
+// Nilai moda yang dipakai ritme mingguan kurikulum. Moda lain yang sudah
+// tersimpan tetap ditampilkan apa adanya supaya menyimpan tidak mengubahnya.
+const MODA = ['asinkron', 'daring_sinkron', 'opsional_luring_daring', 'bebas'];
+const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+// Tanggal sesi disimpan sebagai tengah malam UTC dari tanggal kalendernya,
+// jadi 10 karakter pertama ISO-nya adalah tanggal yang dimaksud.
+function tanggalInput(iso) { return String(iso || '').slice(0, 10); }
+function hariDari(ymd) {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  return isNaN(d) ? '' : HARI[d.getUTCDay()];
+}
+
 let dosen = false;
+let daftarKalender = [];
 
 function tabelSesi(sesi) {
   if (!sesi || !sesi.length) return '<p class="redup">Kalender ini belum punya sesi.</p>';
@@ -28,19 +46,53 @@ function tabelSesi(sesi) {
     </table></div>`;
 }
 
+function pilihanModa(sekarang) {
+  const semua = MODA.includes(sekarang) || !sekarang ? MODA : [...MODA, sekarang];
+  return semua.map(m => `<option value="${escAttr(m)}"${m === sekarang ? ' selected' : ''}>${esc(m)}</option>`).join('');
+}
+
+function formSunting(k) {
+  return `
+    <form class="form-sesi" data-id="${escAttr(k.id)}">
+      <p class="meta">Mengubah tanggal ikut mengubah harinya. Jam boleh dikosongkan (mis. hari bebas), tapi mulai dan selesai harus diisi berpasangan.</p>
+      <div class="gulir"><table class="tabel-sunting">
+        <tr><th class="num">Minggu</th><th>Tanggal</th><th>Hari</th><th>Moda</th><th>Mulai</th><th>Selesai</th><th>Keterangan</th></tr>
+        ${k.sesi.map((s, i) => `<tr data-i="${i}">
+          <td class="num">${s.minggu}</td>
+          <td><input type="date" name="tanggal" value="${escAttr(tanggalInput(s.tanggal))}" required></td>
+          <td class="hari">${esc(s.hari)}</td>
+          <td><select name="moda">${pilihanModa(s.moda)}</select></td>
+          <td><input type="time" name="jam_mulai" value="${escAttr(s.jam_mulai || '')}"></td>
+          <td><input type="time" name="jam_selesai" value="${escAttr(s.jam_selesai || '')}"></td>
+          <td><input name="keterangan" value="${escAttr(s.keterangan || '')}" maxlength="300"></td></tr>`).join('')}
+      </table></div>
+      <div class="cta-row">
+        <button>Simpan Sesi</button>
+        <button type="button" class="sekunder batal-sunting" data-id="${escAttr(k.id)}">Batal</button>
+      </div>
+    </form>`;
+}
+
 function kartuKalender(k) {
   const status = k.diterbitkan
     ? '<span class="lencana rendah">terbit</span>'
     : '<span class="lencana sedang">draft</span>';
-  const tombolTerbit = (!k.diterbitkan && dosen)
-    ? `<button class="sekunder terbitkan" data-id="${esc(k.id)}">Terbitkan Kalender Ini</button>`
+  const id = escAttr(k.id);
+  const aksi = dosen
+    ? `<div class="cta-row">
+        ${k.diterbitkan ? '' : `
+          <button class="sekunder sunting" data-id="${id}">Sunting Sesi</button>
+          <button class="sekunder terbitkan" data-id="${id}">Terbitkan Kalender Ini</button>`}
+        <button class="sekunder hapus" data-id="${id}">${k.diterbitkan ? 'Hapus Kalender Terbit' : 'Hapus Draft'}</button>
+      </div>`
     : '';
   return `
-    <div class="kartu">
+    <div class="kartu" data-kartu="${id}">
       <h3>${esc(k.prodi_kode.toUpperCase())} · angkatan ${esc(k.angkatan)} · semester ${k.semester} ${status}</h3>
       <p class="meta">Mulai ${esc(tanggal(k.tanggal_mulai))} · ${(k.sesi || []).length} sesi</p>
-      ${tabelSesi(k.sesi)}
-      ${tombolTerbit}
+      <div class="isi-sesi">${tabelSesi(k.sesi)}</div>
+      <div class="aksi-kartu">${aksi}</div>
+      <div class="hasil-kartu"></div>
     </div>`;
 }
 
@@ -52,7 +104,7 @@ function formBuat(prodi) {
       <form id="form-kalender">
         <label>Program studi
           <select name="prodi_kode" required>
-            ${prodi.map(p => `<option value="${esc(p.kode)}">${esc(p.nama)}</option>`).join('')}
+            ${prodi.map(p => `<option value="${escAttr(p.kode)}">${esc(p.nama)}</option>`).join('')}
           </select></label>
         <label>Angkatan <input name="angkatan" required maxlength="9" placeholder="2026"></label>
         <label>Semester
@@ -65,16 +117,25 @@ function formBuat(prodi) {
     </div>`;
 }
 
-async function muatDaftar(filter = {}) {
+let filterAktif = {};
+
+async function muatDaftar(filter = filterAktif) {
+  filterAktif = filter;
   const q = new URLSearchParams();
   Object.entries(filter).forEach(([k, v]) => { if (v) q.set(k, v); });
   if (dosen) q.set('draft', '1');
   const { kalender = [] } = await apiGet('/api/kalender' + (q.toString() ? `?${q}` : ''), { auth: dosen });
-  const daftar = document.getElementById('daftar');
-  daftar.innerHTML = kalender.length
+  daftarKalender = kalender;
+  document.getElementById('daftar').innerHTML = kalender.length
     ? kalender.map(kartuKalender).join('')
     : '<div class="kosong">Belum ada kalender yang diterbitkan. Kalender resmi terbit sebelum semester dimulai.</div>';
-  daftar.querySelectorAll('.terbitkan').forEach(b => b.addEventListener('click', () => terbitkan(b.dataset.id)));
+}
+
+function kartuDari(id) { return document.querySelector(`[data-kartu="${CSS.escape(id)}"]`); }
+function cariKalender(id) { return daftarKalender.find(k => k.id === id); }
+
+function pesanDaftar(html) {
+  document.getElementById('daftar').insertAdjacentHTML('afterbegin', html);
 }
 
 async function terbitkan(id) {
@@ -82,8 +143,111 @@ async function terbitkan(id) {
     await apiPostJson(`/api/kalender/${encodeURIComponent(id)}/terbitkan`, {});
     await muatDaftar();
   } catch (err) {
-    document.getElementById('daftar').insertAdjacentHTML('afterbegin',
-      `<div class="pesan gagal">Gagal menerbitkan: ${esc(err.message)}</div>`);
+    pesanDaftar(`<div class="pesan gagal">Gagal menerbitkan: ${esc(err.message)}</div>`);
+  }
+}
+
+function bukaSunting(id) {
+  const k = cariKalender(id);
+  const kartu = kartuDari(id);
+  if (!k || !kartu) return;
+  kartu.querySelector('.isi-sesi').innerHTML = formSunting(k);
+  kartu.querySelector('.aksi-kartu').hidden = true;
+  kartu.querySelector('.hasil-kartu').innerHTML = '';
+}
+
+function tutupSunting(id) {
+  const k = cariKalender(id);
+  const kartu = kartuDari(id);
+  if (!k || !kartu) return;
+  kartu.querySelector('.isi-sesi').innerHTML = tabelSesi(k.sesi);
+  kartu.querySelector('.aksi-kartu').hidden = false;
+}
+
+// kumpulkanSesi menyusun ulang seluruh larik sesi: PUT /api/kalender/:id
+// mengganti larik itu utuh, jadi field yang tidak disunting (minggu,
+// rumpun_kode, dan tanggal yang tidak diubah) wajib dikirim balik apa adanya.
+function kumpulkanSesi(form, k) {
+  const sesi = [];
+  for (const tr of form.querySelectorAll('tr[data-i]')) {
+    const asal = k.sesi[Number(tr.dataset.i)];
+    const nilai = n => tr.querySelector(`[name="${n}"]`).value.trim();
+    const tgl = nilai('tanggal');
+    if (!tgl) throw new Error(`Minggu ${asal.minggu}: tanggal wajib diisi.`);
+    const mulai = nilai('jam_mulai');
+    const selesai = nilai('jam_selesai');
+    if (Boolean(mulai) !== Boolean(selesai)) {
+      throw new Error(`Minggu ${asal.minggu} (${tgl}): jam mulai dan selesai harus diisi berpasangan.`);
+    }
+    if (mulai && selesai <= mulai) {
+      throw new Error(`Minggu ${asal.minggu} (${tgl}): jam selesai harus setelah jam mulai.`);
+    }
+    const berubahTanggal = tgl !== tanggalInput(asal.tanggal);
+    const s = {
+      ...asal,
+      tanggal: berubahTanggal ? `${tgl}T00:00:00Z` : asal.tanggal,
+      hari: berubahTanggal ? hariDari(tgl) : asal.hari,
+      moda: nilai('moda'),
+      keterangan: nilai('keterangan'),
+    };
+    delete s.jam_mulai;
+    delete s.jam_selesai;
+    if (mulai) { s.jam_mulai = mulai; s.jam_selesai = selesai; }
+    if (!s.keterangan) delete s.keterangan;
+    sesi.push(s);
+  }
+  return sesi;
+}
+
+async function simpanSesi(form) {
+  const id = form.dataset.id;
+  const k = cariKalender(id);
+  const hasil = kartuDari(id).querySelector('.hasil-kartu');
+  let sesi;
+  try {
+    sesi = kumpulkanSesi(form, k);
+  } catch (err) {
+    hasil.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
+    return;
+  }
+  const tombol = form.querySelector('button:not([type])');
+  tombol.disabled = true;
+  hasil.innerHTML = '<p class="redup">Menyimpan sesi…</p>';
+  try {
+    const baru = await apiPutJson(`/api/kalender/${encodeURIComponent(id)}`, { sesi });
+    daftarKalender = daftarKalender.map(x => (x.id === id ? baru : x));
+    tutupSunting(id);
+    kartuDari(id).querySelector('.hasil-kartu').innerHTML = `<div class="pesan sukses">${baru.sesi.length} sesi tersimpan. Kalender masih draft — terbitkan kalau sudah final.</div>`;
+  } catch (err) {
+    tombol.disabled = false;
+    hasil.innerHTML = `<div class="pesan gagal">Gagal menyimpan: ${esc(err.message)}</div>`;
+  }
+}
+
+// Kalender terbit hanya terhapus dengan konfirmasi=terbit, dan itu keputusan
+// sadar: mahasiswa sudah melihatnya. Kalau daftar di layar basi (kalender
+// ternyata sudah diterbitkan orang lain), server menjawab 422 dan pengguna
+// ditanya sekali lagi dengan alasan dari server.
+async function hapus(id, konfirmasiTerbit = false) {
+  const k = cariKalender(id);
+  const nama = k ? `${k.prodi_kode.toUpperCase()} angkatan ${k.angkatan} semester ${k.semester}` : id;
+  if (!konfirmasiTerbit) {
+    const tanya = k && k.diterbitkan
+      ? `Kalender ${nama} SUDAH DITERBITKAN dan sudah dilihat mahasiswa. Tetap hapus? Umumkan pembatalannya sesudah ini.`
+      : `Hapus draft kalender ${nama}?`;
+    if (!window.confirm(tanya)) return;
+    konfirmasiTerbit = Boolean(k && k.diterbitkan);
+  }
+  try {
+    await apiDeleteJson(`/api/kalender/${encodeURIComponent(id)}${konfirmasiTerbit ? '?konfirmasi=terbit' : ''}`);
+    await muatDaftar();
+    pesanDaftar(`<div class="pesan sukses">Kalender ${esc(nama)} dihapus.${konfirmasiTerbit ? ' Jangan lupa umumkan pembatalannya ke mahasiswa.' : ''}</div>`);
+  } catch (err) {
+    if (err.status === 422 && !konfirmasiTerbit && /konfirmasi=terbit/.test(err.message)) {
+      if (window.confirm(`${err.message}\n\nTetap hapus?`)) await hapus(id, true);
+      return;
+    }
+    pesanDaftar(`<div class="pesan gagal">Gagal menghapus: ${esc(err.message)}</div>`);
   }
 }
 
@@ -105,6 +269,28 @@ async function buatKalender(e) {
   }
 }
 
+// Satu set pendengar di #daftar untuk semua kartu, karena isinya dirender
+// ulang setiap kali daftar dimuat.
+function pasangPendengarDaftar(daftar) {
+  daftar.addEventListener('click', e => {
+    const b = e.target.closest('button[data-id]');
+    if (!b) return;
+    if (b.classList.contains('terbitkan')) terbitkan(b.dataset.id);
+    else if (b.classList.contains('sunting')) bukaSunting(b.dataset.id);
+    else if (b.classList.contains('batal-sunting')) tutupSunting(b.dataset.id);
+    else if (b.classList.contains('hapus')) hapus(b.dataset.id);
+  });
+  daftar.addEventListener('submit', e => {
+    if (!e.target.classList.contains('form-sesi')) return;
+    e.preventDefault();
+    simpanSesi(e.target);
+  });
+  daftar.addEventListener('change', e => {
+    if (e.target.name !== 'tanggal' || !e.target.closest('.form-sesi')) return;
+    e.target.closest('tr').querySelector('.hari').textContent = hariDari(e.target.value);
+  });
+}
+
 try {
   if (isLoggedIn()) {
     try { dosen = (await apiGet('/api/proyekblok/saya', { auth: true })).peran === 'dosen'; } catch { dosen = false; }
@@ -112,6 +298,7 @@ try {
   const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
   isi.innerHTML = (dosen && prodi.length ? formBuat(prodi) : '') + '<div id="daftar"><p class="redup">Memuat kalender…</p></div>';
   if (dosen && prodi.length) document.getElementById('form-kalender').addEventListener('submit', buatKalender);
+  pasangPendengarDaftar(document.getElementById('daftar'));
   await muatDaftar();
 } catch (err) {
   isi.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
