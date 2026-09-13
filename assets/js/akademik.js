@@ -47,6 +47,7 @@ function kartuSatu(m = {}) {
         <label>Angkatan <input name="angkatan" required maxlength="9" value="${esc(m.angkatan || '')}" placeholder="2026"></label>
         <label>Semester <input type="number" name="semester" min="0" max="14" value="${esc(m.semester ?? '')}"></label>
         <label>Status <select name="status">${opsiStatus(m.status)}</select></label>
+        <label>Username GitHub <input name="github_username" maxlength="40" value="${esc(m.github_username || '')}" placeholder="opsional — untuk autograder"></label>
         <button>Simpan Mahasiswa</button>
       </form>
       <div id="hasil-satu"></div>
@@ -100,6 +101,7 @@ function bodyForm(fd) {
     nim: fd.get('nim'), nama: fd.get('nama'), phonenumber: fd.get('phonenumber') || '',
     email: fd.get('email') || '', prodi_kode: fd.get('prodi_kode'), angkatan: fd.get('angkatan'),
     semester: Number(fd.get('semester')) || 0, status: fd.get('status'),
+    github_username: (fd.get('github_username') || '').trim(),
   };
 }
 
@@ -170,10 +172,10 @@ async function tampilDaftar(e) {
     const res = await apiGet(`/api/mahasiswa?${q}`, { auth: true });
     roster = res.mahasiswa || [];
     daftar.innerHTML = roster.length ? `<div class="gulir"><table>
-        <tr><th>NIM</th><th>Nama</th><th>Prodi</th><th>Angkatan</th><th class="num">Smt</th><th>Status</th><th>Nomor</th><th></th></tr>
+        <tr><th>NIM</th><th>Nama</th><th>Prodi</th><th>Angkatan</th><th class="num">Smt</th><th>Status</th><th>Nomor</th><th>GitHub</th><th></th></tr>
         ${roster.map(m => `<tr>
           <td>${esc(m.nim)}</td><td>${esc(m.nama)}</td><td>${esc(m.prodi_kode)}</td><td>${esc(m.angkatan)}</td>
-          <td class="num">${esc(m.semester)}</td><td>${esc(m.status)}</td><td>${esc(m.phonenumber || '–')}</td>
+          <td class="num">${esc(m.semester)}</td><td>${esc(m.status)}</td><td>${esc(m.phonenumber || '–')}</td><td>${esc(m.github_username || '–')}</td>
           <td><a class="aksi sekunder" href="dasbor.html?nim=${encodeURIComponent(m.nim)}">Dasbor</a>
               <button class="sekunder ubah" data-nim="${esc(m.nim)}">Ubah</button>
               <button class="sekunder hapus" data-nim="${esc(m.nim)}">Hapus</button></td></tr>`).join('')}
