@@ -1,6 +1,7 @@
 import { apiGet } from './api.js';
 import { sayaSekarang, peranAktif, labelPeran } from './akun.js';
 import { esc, keadaanKosong } from './ui.js';
+import { LAYANAN } from './menu.js';
 import { terdaftar as sudahTerdaftar, langkahMulai, semuaSelesai, ringkasMulai, htmlDaftarMulai, jenisTercakup, muatTugasMahasiswa } from './hal-beranda.js';
 
 // Beranda LMS. Isinya bergantung pada peran aktif (pemilih peran di bilah atas,
@@ -36,81 +37,8 @@ const KEGIATAN = {
   bebas: ['Tanpa agenda akademik', ''],
 };
 
-// Menu layanan per peran aktif. Laporan tingkat prodi (kaprodi.html,
-// kepatuhan.html, rekap rapor, SLA forum, rekap rekaman) hanya untuk kaprodi
-// dan admin — halamannya sendiri berganti ke tampilan laporan untuk peran itu,
-// dan backend tetap menolak 403 untuk yang lain.
-const LAYANAN = {
-  mahasiswa: [
-    ['Pembelajaran', [
-      ['materi.html', 'Materi pekan ini', 'Video dan bacaan asinkron'],
-      ['kuis.html', 'Kuis gerbang', 'Syarat sebelum sesi Jumat'],
-      ['forum.html', 'Forum tanya dosen', 'Target jawaban 1×24 jam'],
-      ['rekaman.html', 'Rekaman sesi', 'Kelas daring yang terlewat'],
-      ['portal.html', 'Tugas', 'Kumpulkan dan pantau tugas'],
-      ['kalender.html', 'Kalender akademik', 'Jadwal semester'],
-    ]],
-    ['Nilai dan kemajuan', [
-      ['dasbor.html', 'Dasbor belajar', 'Beban belajar dan capaian CPL'],
-      ['nilai.html', 'Nilai proyek', 'Rincian per mata kuliah'],
-      ['rapor.html', 'Rapor', 'IP per semester dan IPK'],
-      ['autograder.html', 'Hasil autograder', 'Tes otomatis kode praktikum'],
-    ]],
-    ['Administrasi', [
-      ['kerja.html', 'Proyek kerja / magang', 'Konversi pekerjaan jadi kredit'],
-      ['rpl.html', 'Rekognisi pembelajaran lampau', 'Pengakuan pengalaman kerja'],
-    ]],
-  ],
-  dosen: [
-    ['Pengajaran', [
-      ['kelola-materi.html', 'Kelola materi', 'Video dan bacaan per minggu'],
-      ['kuis.html', 'Kuis gerbang', 'Susun soal dan cek kelulusan'],
-      ['dosen.html', 'Buat tugas', 'Termasuk laporan kemiripan'],
-      ['forum.html', 'Forum tanya mahasiswa', 'Pertanyaan yang menunggu jawaban'],
-      ['rekaman.html', 'Rekaman sesi', 'Terbitkan sebelum tenggat'],
-    ]],
-    ['Penilaian', [
-      ['proyek.html', 'Proyek blok', 'Anggota dan nilai per mata kuliah'],
-      ['ujian.html', 'Pengawas ujian', 'Jadwal dan kehadiran'],
-      ['autograder.html', 'Autograder', 'Hasil tes otomatis dan bobot'],
-      ['rapor.html', 'Rapor mahasiswa', 'Rapor per NIM'],
-      ['rpl.html', 'Tinjau RPL', 'Pengajuan yang menunggu'],
-      ['kerja.html', 'Proyek kerja bimbingan', 'Putusan dan tinjauan'],
-    ]],
-    ['Akademik', [
-      ['kalender.html', 'Kalender akademik', 'Jadwal semester'],
-      ['akademik.html', 'Roster dan email dosen', 'Data mahasiswa dan email kampus Anda'],
-      ['kurikulum.html', 'Kurikulum', 'Program studi dan data kurikulumnya'],
-    ]],
-  ],
-  kaprodi: [
-    ['Kurikulum dan pengajar', [
-      ['kurikulum.html', 'Kurikulum program studi', 'Rumpun, mata kuliah, CPL, dan ritme'],
-      ['pengampu.html', 'Dosen pengampu prodi', 'Centang dosen yang mengajar di prodi Anda'],
-      ['kalender.html', 'Kalender akademik', 'Susun dan terbitkan kalender prodi Anda'],
-    ]],
-    ['Laporan prodi', [
-      ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
-      ['kepatuhan.html', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi'],
-      ['rapor.html', 'Rekap rapor angkatan', 'Nilai huruf dan IP per semester'],
-      ['forum.html', 'SLA forum', 'Pertanyaan yang lewat target jawaban'],
-      ['rekaman.html', 'Rekap rekaman', 'Sesi daring yang terlambat direkam'],
-    ]],
-  ],
-  admin: [
-    ['Penyiapan', [
-      ['jabatan.html', 'Kelola kaprodi', 'Tetapkan atau ganti kaprodi tiap prodi'],
-      ['kurikulum.html', 'Program studi baru', 'Buat prodi, lalu serahkan ke kaprodinya'],
-    ]],
-    ['Laporan semua prodi', [
-      ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
-      ['kepatuhan.html', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi'],
-      ['rapor.html', 'Rekap rapor angkatan', 'Nilai huruf dan IP per semester'],
-      ['forum.html', 'SLA forum', 'Pertanyaan yang lewat target jawaban'],
-      ['rekaman.html', 'Rekap rekaman', 'Sesi daring yang terlambat direkam'],
-    ]],
-  ],
-};
+// Menu layanan per peran aktif: satu sumber dengan navigasi (menu.js), supaya
+// Beranda, nav atas, dan bilah bawah HP tidak pernah berbeda.
 
 const CATATAN_PERAN = {
   kaprodi: 'Menu mengajar — materi, kuis, tugas, dan penilaian — ada di peran dosen. Ganti lewat pemilih peran di pojok kanan atas.',
