@@ -42,7 +42,7 @@ function formBuat(prodi) {
         <label>Deskripsi <textarea name="deskripsi" rows="2"></textarea></label>
         <fieldset class="kelompok-anggota">
           <legend>Anggota dari roster</legend>
-          <p class="meta">Isi angkatan, lalu centang mahasiswa prodi itu. Anggota boleh dikosongkan dan ditambah belakangan.</p>
+          <p class="meta">Isi angkatan, lalu centang mahasiswa prodi itu. Pilih anggota sekarang — daftar anggota belum bisa diubah setelah proyek dibuat.</p>
           <div id="pilih-anggota"><p class="redup">Isi angkatan untuk memuat roster.</p></div>
         </fieldset>
         <label>Status
