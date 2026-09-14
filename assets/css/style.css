@@ -54,15 +54,36 @@ code { font-family: var(--mono); font-size: .82rem; background: var(--latar); pa
 .merek-teks b { font-size: .95rem; font-weight: 600; }
 .merek-teks small { font-size: .72rem; color: var(--redup); }
 
-.navutama { display: flex; gap: .15rem; flex: 1; overflow-x: auto; min-width: 0; }
 .navutama a {
-  color: var(--redup); padding: 1.15rem .7rem 1.05rem; white-space: nowrap;
+  color: var(--redup); white-space: nowrap; text-align: center;
   border-bottom: 2px solid transparent; font-weight: 500;
 }
 .navutama a:hover { color: var(--tinta); text-decoration: none; }
 .navutama a.aktif { color: var(--aksen); border-bottom-color: var(--aksen); }
 
-.akun { display: flex; align-items: center; gap: .6rem; margin-left: auto; font-size: .85rem; }
+/* Navigasi utama tidak pernah menyusut atau terpotong (audit UX R01):
+   - >= 1200px: satu baris merek | nav | akun.
+   - 621–1199px: merek + akun di baris pertama, nav selebar penuh di bawahnya.
+   - <= 620px: merek, lalu akun, lalu nav kisi 3 kolom (6 tautan = 2 baris,
+     target sentuh >= 44px) — tanpa gulir tersembunyi, tanpa JavaScript. */
+.merek { order: 1; }
+.akun { order: 2; }
+.navutama {
+  order: 3; flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 0 .15rem;
+  border-top: 1px solid var(--garis-halus); margin: 0 -.35rem;
+}
+.navutama a { padding: .7rem .7rem .6rem; }
+@media (min-width: 1200px) {
+  .navutama { order: 2; flex: 0 0 auto; flex-wrap: nowrap; border-top: 0; margin: 0; }
+  .navutama a { padding: 1.15rem .6rem 1.05rem; }
+  .akun { order: 3; }
+}
+@media (max-width: 620px) {
+  .navutama { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin: 0 -1rem; }
+  .navutama a { min-height: 44px; padding: .65rem .3rem .55rem; }
+}
+
+.akun { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem .6rem; margin-left: auto; font-size: .85rem; }
 .akun .peran {
   background: var(--aksen-muda); color: var(--aksen-tua);
   padding: .15rem .5rem; border-radius: 3px; font-size: .75rem; font-weight: 500;
@@ -86,11 +107,18 @@ a.status-akun.masuk:hover { color: var(--aksen); text-decoration: none; }
 .status-akun .titik { width: .55rem; height: .55rem; border-radius: 50%; background: var(--garis-kuat); flex: none; }
 .status-akun .titik.aktif { background: var(--rendah); box-shadow: 0 0 0 2px var(--rendah-muda); }
 .status-akun .titik.berakhir { background: var(--sedang); }
-.nama-akun { max-width: 14em; overflow: hidden; text-overflow: ellipsis; }
-.nomor-induk { font-family: var(--mono); font-size: .76rem; color: var(--redup); white-space: nowrap; }
+.nama-akun { max-width: 12em; overflow: hidden; text-overflow: ellipsis; }
+/* Email/NIM di bilah atas hanya di layar lebar; selalu ada di tooltip nama. */
+.nomor-induk {
+  display: none; font-family: var(--mono); font-size: .76rem; color: var(--redup); white-space: nowrap;
+  max-width: 16em; overflow: hidden; text-overflow: ellipsis;
+}
+@media (min-width: 1280px) { .nomor-induk { display: inline-block; } }
+/* Pemegang jabatan (ada pemilih peran) tidak muat email di satu baris dengan nav. */
+.akun:has(select.pilih-peran) .nomor-induk { display: none; }
 @media (max-width: 620px) {
-  .akun { width: 100%; margin-left: 0; padding-bottom: .5rem; flex-wrap: wrap; }
-  .nomor-induk { display: none; }
+  .akun { width: 100%; margin-left: 0; padding-bottom: .5rem; }
+  .nama-akun { max-width: 9em; }
 }
 
 /* ===== Halaman ===== */
@@ -155,7 +183,7 @@ input, textarea, select {
   width: 100%; padding: .5rem .6rem; border: 1px solid var(--garis-kuat); border-radius: 4px;
   font: inherit; font-size: .9rem; background: var(--permukaan); color: var(--tinta);
 }
-input[type="checkbox"], input[type="radio"] { width: auto; }
+input[type="checkbox"], input[type="radio"] { width: 1.25rem; height: 1.25rem; margin: 0 .45rem 0 0; vertical-align: -.25rem; accent-color: var(--aksen); }
 textarea { line-height: 1.5; }
 input:focus, textarea:focus, select:focus { outline: 2px solid var(--aksen); outline-offset: 0; border-color: var(--aksen); }
 select.kecil { width: auto; font-size: .82rem; padding: .3rem .45rem; max-width: 100%; }
@@ -174,7 +202,16 @@ button.sekunder:hover, a.aksi.sekunder:hover { background: var(--aksen-muda); bo
 td button, td a.aksi { margin-top: 0; padding: .25rem .6rem; font-size: .8rem; }
 
 /* ===== Tabel ===== */
-.gulir { overflow-x: auto; }
+/* Wadah tabel lebar. Bayangan tepi kiri/kanan muncul hanya bila masih ada isi
+   yang bisa digulir (latar 'local' menutup bayangan di ujung gulir). */
+.gulir {
+  overflow-x: auto;
+  background:
+    linear-gradient(to right, var(--permukaan) 30%, rgba(255,255,255,0)) left center / 2rem 100% no-repeat local,
+    linear-gradient(to left, var(--permukaan) 30%, rgba(255,255,255,0)) right center / 2rem 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.14), rgba(0,0,0,0)) left center / .6rem 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.14), rgba(0,0,0,0)) right center / .6rem 100% no-repeat scroll;
+}
 table { border-collapse: collapse; width: 100%; font-size: .86rem; }
 th, td { border-bottom: 1px solid var(--garis-halus); padding: .5rem .65rem; text-align: left; vertical-align: top; }
 th { font-weight: 500; color: var(--redup); font-size: .78rem; background: #fafbfc; border-bottom-color: var(--garis); }
@@ -199,7 +236,7 @@ tr.band-rendah { border-left: 3px solid var(--rendah); }
 
 /* ===== Label status ===== */
 .lencana {
-  display: inline-block; font-size: .72rem; font-weight: 500; line-height: 1.4;
+  display: inline-block; font-size: .75rem; font-weight: 500; line-height: 1.4;
   padding: .05rem .45rem; border: 1px solid var(--garis-kuat); border-radius: 3px;
   color: var(--redup); background: var(--permukaan); white-space: nowrap;
 }
@@ -229,7 +266,7 @@ table.jadwal tr.hari-ini td { background: var(--aksen-muda); }
 table.jadwal tr.libur td { color: var(--redup); }
 .waktu { font-family: var(--mono); font-size: .8rem; white-space: nowrap; }
 .label-moda {
-  display: inline-block; font-size: .72rem; padding: .05rem .4rem; border-radius: 3px;
+  display: inline-block; font-size: .75rem; padding: .05rem .4rem; border-radius: 3px;
   border: 1px solid var(--garis); color: var(--redup); margin-left: .35rem; white-space: nowrap;
 }
 .label-hari-ini { border-color: var(--aksen); color: var(--aksen); }
@@ -350,7 +387,8 @@ button.lintas:hover { background: none; color: var(--aksen-tua); text-decoration
   .kartu, .panel { border: 0; padding: 0; margin: 0 0 .8rem; }
   .kartu h3 { margin: 0 0 .5rem; padding: 0; }
   .kartu > .gulir { margin: .4rem 0; }
-  .gulir { overflow: visible; }
+  .gulir { overflow: visible; background: none; }
+  table.tabel-kartu thead { display: table-header-group; }
   table { font-size: 9pt; page-break-inside: auto; }
   tr { page-break-inside: avoid; }
   button.lintas { color: inherit; }
@@ -368,3 +406,75 @@ button.lintas:hover { background: none; color: var(--aksen-tua); text-decoration
 
 /* Sel tabel berteks panjang (halaman Kurikulum) */
 td.kecil { font-size: .8rem; }
+
+/* ===== Komponen bersama (assets/js/ui.js) — audit UX 2026-09-14 ===== */
+
+/* Tabel berisi kontrol menjadi kartu bertumpuk di HP. JS: labelTabel(tabel)
+   mengisi td[data-label] dari <th> dan menambah kelas tabel-kartu. */
+@media (max-width: 620px) {
+  table.tabel-kartu, table.tabel-kartu tbody, table.tabel-kartu tr, table.tabel-kartu td { display: block; width: 100%; }
+  table.tabel-kartu thead { display: none; }
+  table.tabel-kartu tr { padding: .6rem 1rem; border-bottom: 1px solid var(--garis); }
+  table.tabel-kartu td {
+    display: grid; grid-template-columns: minmax(6.5rem, 38%) minmax(0, 1fr); gap: .5rem;
+    padding: .2rem 0; border: 0; overflow-wrap: anywhere;
+  }
+  table.tabel-kartu td::before { content: attr(data-label); color: var(--redup); font-size: .78rem; font-weight: 500; }
+  table.tabel-kartu td[data-label=""] { grid-template-columns: minmax(0, 1fr); }
+  table.tabel-kartu td[data-label=""]::before { display: none; }
+  table.tabel-kartu td input, table.tabel-kartu td select, table.tabel-kartu td textarea { width: 100%; min-width: 0; }
+  table.tabel-kartu td input[type="checkbox"], table.tabel-kartu td input[type="radio"] { width: 1.25rem; }
+  table.tabel-kartu td button, table.tabel-kartu td a.aksi { justify-self: start; }
+  .kartu > .gulir table.tabel-kartu td:first-child, .kartu > .gulir table.tabel-kartu td:last-child { padding-left: 0; padding-right: 0; }
+  .gulir:has(> table.tabel-kartu) { background: none; }
+}
+
+/* Keadaan kosong "langkah berikutnya": keadaanKosong({...}) */
+.kosong-langkah {
+  padding: 1rem 1.1rem; border: 1px dashed var(--garis-kuat); border-radius: var(--radius);
+  background: var(--permukaan); color: var(--tinta); font-size: .88rem;
+}
+.kosong-langkah p { margin: 0 0 .45rem; max-width: 72ch; }
+.kosong-langkah .kosong-judul { font-weight: 600; font-size: .95rem; }
+.kosong-langkah .kosong-siapa { color: var(--redup); font-size: .84rem; }
+.kosong-langkah .cta-row { margin-top: .7rem; margin-bottom: 0; }
+
+/* Pemberitahuan halaman bukan untuk peran aktif: halamanUntuk(...) */
+.pemberitahuan-peran { border-left: 3px solid var(--aksen); }
+.pemberitahuan-peran .cta-row { margin-bottom: 0; }
+
+/* Istilah yang bisa diketuk: istilah('rumpun') */
+details.istilah { display: inline-block; vertical-align: baseline; }
+details.istilah summary {
+  display: inline; list-style: none; cursor: pointer;
+  border-bottom: 1px dotted var(--redup); color: inherit;
+}
+details.istilah summary::-webkit-details-marker { display: none; }
+.istilah-tanda {
+  display: inline-block; margin-left: .2rem; width: 1rem; height: 1rem; line-height: 1rem;
+  text-align: center; font-size: .68rem; font-weight: 600; border-radius: 50%;
+  background: var(--aksen-muda); color: var(--aksen-tua); vertical-align: .1rem;
+}
+details.istilah[open] { display: block; margin: .3rem 0; }
+.istilah-isi {
+  display: block; margin-top: .3rem; padding: .45rem .65rem; max-width: 60ch;
+  background: var(--aksen-muda); border-radius: 4px; font-size: .82rem; font-weight: 400; color: var(--tinta);
+}
+
+/* Panjang baris nyaman di layar lebar (R06). */
+.kartu > p, .kartu .meta, .kaki-catatan p, .kosong, .panel-isi > p { max-width: 72ch; }
+.kosong { margin-left: auto; margin-right: auto; }
+
+/* Target sentuh >= 44px di layar sentuh (R04, R05). */
+@media (pointer: coarse) {
+  label:has(> input[type="checkbox"]), label:has(> input[type="radio"]) {
+    display: flex; align-items: center; min-height: 44px; margin-top: .2rem; margin-bottom: .2rem;
+  }
+  button, a.aksi, .tautan-tombol, button.tautan-tombol, .akun select.pilih-peran { min-height: 44px; }
+  td button, td a.aksi, .pilihan-kuis button { min-height: 40px; min-width: 40px; }
+  .remah a, .kaki-baris a, .panel-kepala a {
+    display: inline-block; padding: .65rem .25rem; margin: -.65rem -.25rem;
+  }
+  a.status-akun.masuk { min-height: 44px; }
+  .kaki-baris { gap: .9rem 1.5rem; }
+}

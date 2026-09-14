@@ -128,6 +128,18 @@ function simpanPeranAktif(nilai) {
   try { localStorage.setItem(KUNCI_PERAN, nilai); } catch { /* peramban menolak penyimpanan: tetap peran bawaan */ }
 }
 
+/** Semua peran yang dipegang (admin, kaprodi, dosen, atau mahasiswa), urut dari yang tertinggi. */
+export function peranDipegang(saya) {
+  if (!saya) return [];
+  const pilihan = pilihanPeran(saya).map(([nilai]) => nilai);
+  return pilihan.length ? pilihan : [saya.peran].filter(Boolean);
+}
+/** Ganti peran aktif lalu muat ulang halaman (dipakai tombol "Pakai peran …" di ui.js). */
+export function gantiPeranAktif(nilai) {
+  simpanPeranAktif(nilai);
+  location.reload();
+}
+
 /** Menu khusus kaprodi (Dosen Pengampu Prodi) ditampilkan: peran aktif kaprodi. */
 export function adalahKaprodiAktif(saya) { return peranAktif(saya) === 'kaprodi'; }
 /** Menu super admin (Kelola Kaprodi, laporan semua prodi) ditampilkan. */
