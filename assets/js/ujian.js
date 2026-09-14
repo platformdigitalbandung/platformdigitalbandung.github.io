@@ -33,7 +33,7 @@ function kartuJadwalkan() {
   return `
     <div class="kartu">
       <h3>Jadwalkan Sesi Ujian</h3>
-      <p class="meta">Kosongkan pengawas untuk menjadikan Anda sendiri pengawasnya (butuh NIP Anda terisi).</p>
+      <p class="meta">Kosongkan pengawas untuk menjadikan Anda sendiri pengawasnya (butuh email kampus Anda terisi).</p>
       <form id="form-jadwal">
         <label>Rumpun <select name="rumpun_kode" required>
           ${rumpun.map(r => `<option value="${esc(r.kode)}">${esc(r.kode)} — ${esc(r.nama)} (${esc(r.prodi)})</option>`).join('')}
@@ -44,7 +44,7 @@ function kartuJadwalkan() {
         </select></label>
         <label>Tanggal &amp; jam (WIB) <input type="datetime-local" name="tanggal_jam" required></label>
         <label>Lokasi <input name="lokasi" required maxlength="120" placeholder="Lab Komputer 2"></label>
-        <label>NIP pengawas (opsional) <input name="pengawas" maxlength="30"></label>
+        <label>Email kampus pengawas (opsional) <input type="email" name="pengawas" maxlength="120" placeholder="nama@digitalbdg.ac.id"></label>
         <button>Jadwalkan</button>
       </form>
       <div id="hasil-jadwal"></div>
@@ -55,7 +55,7 @@ function kartuSesi(s) {
   return `
     <div class="kartu">
       <h3>${esc(s.rumpun_kode)} · ${esc(s.jenis)}</h3>
-      <p class="meta">${waktuLokal(s.tanggal_jam)} WIB · ${esc(s.lokasi)} · pengawas NIP ${esc(s.pengawas)}</p>
+      <p class="meta">${waktuLokal(s.tanggal_jam)} WIB · ${esc(s.lokasi)} · pengawas ${esc(s.pengawas)}</p>
       <form class="form-hadir" data-id="${esc(s.id)}">
         <label>NIM hadir <input name="nim" required maxlength="30"></label>
         <button>Catat Hadir</button>
@@ -103,9 +103,9 @@ async function jadwalkan(e) {
     const s = await apiPostJson('/api/sesiujian', {
       rumpun_kode: fd.get('rumpun_kode'), jenis: fd.get('jenis'),
       tanggal_jam: `${fd.get('tanggal_jam')}:00${ZONA_KAMPUS}`,
-      lokasi: fd.get('lokasi'), pengawas: (fd.get('pengawas') || '').trim(),
+      lokasi: fd.get('lokasi'), pengawas: (fd.get('pengawas') || '').trim().toLowerCase(),
     });
-    hasil.innerHTML = `<div class="pesan sukses">Sesi ${esc(s.rumpun_kode)} ${esc(s.jenis)} dijadwalkan ${waktuLokal(s.tanggal_jam)} WIB, pengawas NIP ${esc(s.pengawas)}.</div>`;
+    hasil.innerHTML = `<div class="pesan sukses">Sesi ${esc(s.rumpun_kode)} ${esc(s.jenis)} dijadwalkan ${waktuLokal(s.tanggal_jam)} WIB, pengawas ${esc(s.pengawas)}.</div>`;
     muatSesi();
   } catch (err) {
     hasil.innerHTML = `<div class="pesan gagal">Gagal menjadwalkan: ${esc(err.message)}</div>`;
@@ -124,8 +124,8 @@ async function muatSesi() {
     wadah.querySelectorAll('.form-hadir').forEach(f => f.addEventListener('submit', catatHadir));
     sesi.forEach(s => muatRekap(s.id));
   } catch (err) {
-    // 422 = NIP belum diisi, jadi "sesi yang saya awasi" tidak bisa dicari.
-    wadah.innerHTML = `<div class="pesan gagal">${esc(err.message)}${err.status === 422 ? ' <a href="akademik.html">Isi NIP Anda</a>.' : ''}</div>`;
+    // 422 = email kampus belum diisi, jadi "sesi yang saya awasi" tidak bisa dicari.
+    wadah.innerHTML = `<div class="pesan gagal">${esc(err.message)}${err.status === 422 ? ' <a href="akademik.html">Isi email kampus Anda</a>.' : ''}</div>`;
   }
 }
 

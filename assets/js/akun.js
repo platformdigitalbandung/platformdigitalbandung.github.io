@@ -68,7 +68,8 @@ function render(hasil) {
     const nama = isi.alias || isi.id || 'Pengguna';
     const peran = labelPeran(saya);
     const bisaPilih = pilihanPeran(saya).length > 1;
-    const nomorInduk = saya && saya.nip ? `NIP ${saya.nip}` : (saya && saya.nim ? `NIM ${saya.nim}` : '');
+    // Dosen dikenali lewat email kampus (pengganti NIP sejak 2026-09-14), mahasiswa lewat NIM.
+    const nomorInduk = saya && saya.peran === 'dosen' ? (saya.email || '') : (saya && saya.nim ? `NIM ${saya.nim}` : '');
     const judul = [`Masuk sebagai ${nama}`, isi.id ? `nomor ${isi.id}` : '', nomorInduk, isi.exp ? `berlaku sampai ${waktu(isi.exp)}` : '',
       hasil.status === 'tak-terjangkau' ? 'backend tidak terjangkau, peran belum bisa dipastikan' : ''].filter(Boolean).join(' · ');
     wadah.innerHTML = `

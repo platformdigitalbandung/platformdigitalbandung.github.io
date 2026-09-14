@@ -112,7 +112,7 @@ function kartuDosen(nimAwal) {
   return `
     <div class="kartu">
       <h3>Status Kuis Mahasiswa</h3>
-      <p class="meta">Cek apakah seorang mahasiswa sudah lulus kuis gerbang sebelum sesi Jumat. Daftar NIM ada di <a href="akademik.html">Roster Mahasiswa &amp; NIP</a>.</p>
+      <p class="meta">Cek apakah seorang mahasiswa sudah lulus kuis gerbang sebelum sesi Jumat. Daftar NIM ada di <a href="akademik.html">Roster Mahasiswa &amp; Email Dosen</a>.</p>
       <form id="form-nim">
         <label>NIM <input name="nim" required maxlength="30" value="${esc(nimAwal || '')}"></label>
         <button>Tampilkan</button>

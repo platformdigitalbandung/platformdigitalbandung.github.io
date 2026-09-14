@@ -1,7 +1,8 @@
 import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
 
-// Roster Mahasiswa & NIP (dosen). Kewenangan tetap dicek backend — halaman ini
-// hanya menyiapkan formulir. Peran dan NIP datang dari GET /api/proyekblok/saya,
+// Roster Mahasiswa & Email Dosen (dosen). Kewenangan tetap dicek backend — halaman
+// ini hanya menyiapkan formulir. Peran dan email kampus datang dari
+// GET /api/proyekblok/saya,
 // bukan ditebak di browser.
 
 const isi = document.getElementById('isi');
@@ -19,17 +20,22 @@ function opsiStatus(terpilih = 'aktif') {
   return STATUS.map(s => `<option value="${s}"${s === terpilih ? ' selected' : ''}>${s}</option>`).join('');
 }
 
-function kartuNIP() {
+// Email kampus menggantikan NIP sebagai identitas dosen (keputusan pemilik
+// produk 2026-09-14). Dosen mengisinya sendiri; backend tetap memeriksa domain,
+// keabsahan, dan keunikannya.
+const DOMAIN_KAMPUS = '@digitalbdg.ac.id';
+
+function kartuEmail() {
   return `
     <div class="kartu">
-      <h3>NIP Anda</h3>
-      <p class="meta">NIP menentukan proyek mana yang boleh Anda nilai dan pengajuan mana yang boleh Anda putuskan. Anda hanya bisa mengisi NIP nomor Anda sendiri.</p>
-      ${saya.nip ? `<p>NIP tercatat: <b>${esc(saya.nip)}</b></p>` : '<div class="pesan gagal">NIP belum diisi — pembuatan & penilaian proyek blok serta putusan proyek kerja belum bisa dilakukan.</div>'}
-      <form id="form-nip">
-        <label>NIP <input name="nip" required minlength="4" maxlength="30" value="${esc(saya.nip || '')}" placeholder="198001012005011001"></label>
-        <button>${saya.nip ? 'Perbarui NIP' : 'Simpan NIP'}</button>
+      <h3>Email Kampus Anda</h3>
+      <p class="meta">Email kampus menentukan proyek mana yang boleh Anda nilai, pengajuan mana yang boleh Anda putuskan, dan sesi ujian yang Anda awasi. Anda hanya bisa mengisi email kampus nomor Anda sendiri, dan wajib berakhiran ${DOMAIN_KAMPUS}.</p>
+      ${saya.email ? `<p>Email kampus tercatat: <b>${esc(saya.email)}</b></p>` : '<div class="pesan gagal">Email kampus belum diisi — pembuatan & penilaian proyek blok serta putusan proyek kerja belum bisa dilakukan.</div>'}
+      <form id="form-email">
+        <label>Email kampus <input type="email" name="email" required maxlength="120" value="${esc(saya.email || '')}" placeholder="nama${DOMAIN_KAMPUS}"></label>
+        <button>${saya.email ? 'Perbarui Email' : 'Simpan Email'}</button>
       </form>
-      <div id="hasil-nip"></div>
+      <div id="hasil-email"></div>
     </div>`;
 }
 
@@ -105,16 +111,21 @@ function bodyForm(fd) {
   };
 }
 
-async function simpanNIP(e) {
+async function simpanEmail(e) {
   e.preventDefault();
-  const hasil = document.getElementById('hasil-nip');
+  const hasil = document.getElementById('hasil-email');
+  const email = String(new FormData(e.target).get('email') || '').trim().toLowerCase();
+  if (!email.endsWith(DOMAIN_KAMPUS)) {
+    hasil.innerHTML = `<div class="pesan gagal">Email kampus wajib berakhiran ${DOMAIN_KAMPUS}.</div>`;
+    return;
+  }
   hasil.innerHTML = '<p class="redup">Menyimpan…</p>';
   try {
-    const d = await apiPutJson('/api/dosen/nip', { nip: new FormData(e.target).get('nip') });
-    saya.nip = d.nip;
-    hasil.innerHTML = `<div class="pesan sukses">NIP ${esc(d.nama)} tersimpan: <b>${esc(d.nip)}</b>.</div>`;
+    const d = await apiPutJson('/api/dosen/email', { email });
+    saya.email = d.email || email;
+    hasil.innerHTML = `<div class="pesan sukses">Email kampus ${esc(d.nama)} tersimpan: <b>${esc(saya.email)}</b>.</div>`;
   } catch (err) {
-    hasil.innerHTML = `<div class="pesan gagal">Gagal menyimpan NIP: ${esc(err.message)}</div>`;
+    hasil.innerHTML = `<div class="pesan gagal">Gagal menyimpan email kampus: ${esc(err.message)}</div>`;
   }
 }
 
@@ -230,13 +241,13 @@ async function muat() {
   const res = await apiGet('/api/kurikulum/prodi');
   prodi = res.prodi || [];
   if (!prodi.length) {
-    isi.innerHTML = kartuNIP() + '<div class="pesan gagal">Data program studi kosong; jalankan seed kurikulum dahulu sebelum mengisi roster.</div>';
-    document.getElementById('form-nip').addEventListener('submit', simpanNIP);
+    isi.innerHTML = kartuEmail() + '<div class="pesan gagal">Data program studi kosong; jalankan seed kurikulum dahulu sebelum mengisi roster.</div>';
+    document.getElementById('form-email').addEventListener('submit', simpanEmail);
     return;
   }
-  isi.innerHTML = kartuNIP() + '<div id="wadah-satu"></div>' + kartuTempel() + kartuDaftar();
+  isi.innerHTML = kartuEmail() + '<div id="wadah-satu"></div>' + kartuTempel() + kartuDaftar();
   document.getElementById('wadah-satu').innerHTML = kartuSatu();
-  document.getElementById('form-nip').addEventListener('submit', simpanNIP);
+  document.getElementById('form-email').addEventListener('submit', simpanEmail);
   document.getElementById('form-satu').addEventListener('submit', simpanSatu);
   document.getElementById('form-tempel').addEventListener('submit', prosesTempel);
   document.getElementById('form-saring').addEventListener('submit', tampilDaftar);

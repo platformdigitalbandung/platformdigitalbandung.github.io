@@ -49,7 +49,7 @@ function tampil(r) {
         ${r.telat.map(t => `<tr class="band-tinggi">
           <td>${esc(t.nim)}</td><td>${esc(t.judul_pekerjaan)} — ${esc(t.nama_perusahaan)}</td>
           <td>${esc(t.rumpun_kode)}</td><td>${(t.kurang || []).map(esc).join(' & ')}</td>
-          <td class="num">${esc(t.hari_terlambat)}</td><td>${esc(t.dosen_nip || '–')}</td></tr>`).join('')}
+          <td class="num">${esc(t.hari_terlambat)}</td><td>${esc(t.dosen_email || '–')}</td></tr>`).join('')}
       </table></div>
       <p class="redup">Kolom "Belum menilai" menunjukkan siapa yang perlu ditagih: dosen pembimbing, atasan di kantor, atau keduanya.</p>
     </div>` : ''}`;

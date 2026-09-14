@@ -5,7 +5,7 @@ import { prodiPimpinan, adalahKaprodiAktif } from './akun.js';
 // (dosentugas.prodi_kode). Centang itu menentukan kuis gerbang dan katalog
 // materi prodi mana yang boleh dikelola dosen. Keputusan pemilik produk
 // 2026-09-14: peran utamanya di kaprodi, admin hanya menyiapkan kaprodi.
-// Kewenangan tetap diputuskan backend (PUT /api/jabatan/dosen/:nip/prodi hanya
+// Kewenangan tetap diputuskan backend (PUT /api/jabatan/dosen/:email/prodi hanya
 // mengubah centang prodi yang dipimpin pengirimnya).
 
 const isi = document.getElementById('isi');
@@ -16,28 +16,37 @@ let dosen = [];
 let prodiSaya = [];
 
 function tabel() {
-  if (!dosen.length) return '<div class="kosong">Belum ada dosen aktif yang ber-NIP.</div>';
+  if (!dosen.length) return '<div class="kosong">Belum ada dosen aktif.</div>';
+  // Baris dikunci email kampus. Dosen yang belum mengisinya tetap tampil,
+  // tetapi centangnya nonaktif: pengampu disimpan lewat email.
   return `<div class="gulir"><table class="tabel-sunting">
     <tr><th>Dosen</th>${prodiSaya.map(p => `<th>${esc(p.kode.toUpperCase())}</th>`).join('')}<th></th></tr>
-    ${dosen.map(d => `<tr data-nip="${escAttr(d.nip)}">
-      <td>${esc(d.nama || '(tanpa nama)')}<br><span class="redup">NIP ${esc(d.nip)}</span></td>
-      ${prodiSaya.map(p => `<td><input type="checkbox" name="prodi" value="${escAttr(p.kode)}"${(d.prodi_kode || []).includes(p.kode) ? ' checked' : ''} aria-label="${escAttr(d.nama || d.nip)} mengajar di ${escAttr(p.nama)}"></td>`).join('')}
-      <td><button type="button" class="sekunder" data-aksi="simpan">Simpan</button></td>
-    </tr>`).join('')}
+    ${dosen.map(d => {
+      const mati = d.email ? '' : ' disabled';
+      return `<tr data-email="${escAttr(d.email || '')}">
+      <td>${esc(d.nama || '(tanpa nama)')}<br><span class="redup">${d.email ? esc(d.email) : 'belum mengisi email kampus'}</span></td>
+      ${prodiSaya.map(p => `<td><input type="checkbox" name="prodi" value="${escAttr(p.kode)}"${(d.prodi_kode || []).includes(p.kode) ? ' checked' : ''}${mati} aria-label="${escAttr(d.nama || d.email)} mengajar di ${escAttr(p.nama)}"></td>`).join('')}
+      <td><button type="button" class="sekunder" data-aksi="simpan"${mati}>Simpan</button></td>
+    </tr>`;
+    }).join('')}
   </table></div>`;
 }
 
 async function simpan(baris) {
-  const nip = baris.dataset.nip;
+  const email = baris.dataset.email;
   const pesan = document.getElementById('pesan');
+  if (!email) {
+    pesan.innerHTML = '<div class="pesan gagal">Dosen ini belum mengisi email kampus, jadi belum bisa dijadikan pengampu.</div>';
+    return;
+  }
   // Yang dikirim hanya centang prodi yang Anda pimpin; backend mempertahankan
   // centang prodi lain milik dosen itu.
   const pilihan = [...baris.querySelectorAll('input[name="prodi"]:checked')].map(c => c.value);
   try {
-    const r = await apiPutJson(`/api/jabatan/dosen/${encodeURIComponent(nip)}/prodi`, { prodi_kode: pilihan });
-    const d = dosen.find(x => x.nip === nip);
+    const r = await apiPutJson(`/api/jabatan/dosen/${encodeURIComponent(email)}/prodi`, { prodi_kode: pilihan });
+    const d = dosen.find(x => x.email === email);
     if (d) d.prodi_kode = r.prodi_kode || [];
-    const nama = d ? (d.nama || `NIP ${d.nip}`) : `NIP ${nip}`;
+    const nama = d ? (d.nama || d.email) : email;
     const diSaya = (r.prodi_kode || []).filter(k => prodiSaya.some(p => p.kode === k));
     pesan.innerHTML = `<div class="pesan sukses">${esc(nama)} ${diSaya.length ? `kini pengampu ${esc(diSaya.join(', ').toUpperCase())}` : 'tidak lagi pengampu prodi Anda'}.</div>`;
   } catch (err) {
@@ -69,7 +78,7 @@ async function muat() {
     </div>`;
   isi.addEventListener('click', e => {
     const b = e.target.closest('button[data-aksi="simpan"]');
-    if (b) simpan(b.closest('tr[data-nip]'));
+    if (b) simpan(b.closest('tr[data-email]'));
   });
 }
 

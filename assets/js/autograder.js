@@ -81,7 +81,7 @@ function kartuBobot() {
         <button>Simpan Bobot</button>
       </form>
       <div id="pesan-bobot"></div>` : ''}
-      ${bobot.diubah_oleh ? `<p class="redup">Terakhir diubah ${waktuWIB(bobot.diperbarui)} oleh NIP ${esc(bobot.diubah_oleh)}.</p>` : '<p class="redup">Belum pernah diatur — memakai nilai bawaan.</p>'}
+      ${bobot.diubah_oleh ? `<p class="redup">Terakhir diubah ${waktuWIB(bobot.diperbarui)} oleh ${esc(bobot.diubah_oleh)}.</p>` : '<p class="redup">Belum pernah diatur — memakai nilai bawaan.</p>'}
     </div>`;
 }
 

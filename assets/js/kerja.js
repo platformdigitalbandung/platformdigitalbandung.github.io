@@ -175,12 +175,14 @@ async function muat() {
   const daftar = saya.proyekkerja || [];
   const judul = saya.peran === 'dosen' ? 'Proyek kerja yang Anda bimbing' : 'Proyek kerja Anda';
 
-  // Tidak ada cabang "dosen tanpa NIP" di sini: sejak d921dca backend menjawab
-  // 422 untuk kasus itu, jadi peran dosen yang sampai ke sini pasti ber-NIP.
-  // Nomor di luar roster mahasiswa dijawab 404. Keduanya ditangani penangkap
-  // galat di bawah, yang menampilkan pesan backend apa adanya — pesannya sudah
-  // menyebut sebab dan jalan keluarnya.
+  // Dosen yang belum mengisi email kampus tetap sampai ke sini (email kosong) —
+  // putusan dan tinjauannya akan ditolak backend, jadi diberi tahu di awal.
+  // Nomor di luar roster mahasiswa dijawab 404 dan ditangani penangkap galat di
+  // bawah, yang menampilkan pesan backend apa adanya.
   let atas = '';
+  if (saya.peran === 'dosen' && !saya.email) {
+    atas += '<div class="pesan gagal">Nomor ini terdaftar sebagai dosen, tetapi email kampusnya belum diisi. Putusan pengajuan dan tinjauan proyek kerja baru bisa dilakukan setelah email kampus terisi — <a href="akademik.html">isi email kampus Anda di halaman Roster &amp; Email Dosen</a>.</div>';
+  }
   if (saya.peran !== 'dosen') {
     try {
       atas += formAjukan(await rumpunSemuaProdi());

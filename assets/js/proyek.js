@@ -32,7 +32,7 @@ function formBuat(prodi) {
   return `
     <div class="kartu">
       <h3>Buat Proyek Blok</h3>
-      <p class="meta">Proyek dibuat atas nama NIP Anda (${esc(saya.nip)}) sebagai pembimbing.</p>
+      <p class="meta">Proyek dibuat atas nama email kampus Anda (${esc(saya.email)}) sebagai pembimbing.</p>
       <form id="form-buat">
         <label>Program studi
           <select name="prodi_kode" id="pilih-prodi" required>
@@ -149,7 +149,7 @@ async function buatProyek(e) {
     const p = await apiPostJson('/api/proyekblok', {
       rumpun_kode: fd.get('rumpun_kode'), prodi_kode: fd.get('prodi_kode'),
       angkatan: fd.get('angkatan'), judul: fd.get('judul'), deskripsi: fd.get('deskripsi') || '',
-      dosen_nip: saya.nip, anggota: parseAnggota(fd.get('anggota') || ''), status: fd.get('status'),
+      dosen_email: saya.email, anggota: parseAnggota(fd.get('anggota') || ''), status: fd.get('status'),
     });
     hasil.innerHTML = `<div class="pesan sukses">Proyek <b>${esc(p.judul)}</b> dibuat.</div>`;
     muat();
@@ -175,8 +175,8 @@ async function muat() {
       <a class="aksi" href="nilai.html">Lihat Nilai Saya</a></div>`;
     return;
   }
-  if (!saya.nip) {
-    isi.innerHTML = '<div class="pesan gagal">Nomor ini terdaftar sebagai dosen, tetapi NIP-nya belum diisi di data dosen. Pembuatan dan penilaian proyek blok baru bisa dilakukan setelah NIP terisi — <a href="akademik.html">isi NIP Anda di halaman Roster &amp; NIP</a>.</div>';
+  if (!saya.email) {
+    isi.innerHTML = '<div class="pesan gagal">Nomor ini terdaftar sebagai dosen, tetapi email kampusnya belum diisi. Pembuatan dan penilaian proyek blok baru bisa dilakukan setelah email kampus terisi — <a href="akademik.html">isi email kampus Anda di halaman Roster &amp; Email Dosen</a>.</div>';
     return;
   }
   const { prodi = [] } = await apiGet('/api/kurikulum/prodi');

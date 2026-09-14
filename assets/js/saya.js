@@ -27,7 +27,7 @@ function tampil(saya) {
       + kartu('Kelola Proyek Blok', 'Buat instance proyek per rumpun, lihat anggotanya, dan input nilai per mahasiswa per mata kuliah.', 'proyek.html', 'Kelola Proyek Blok')
       + kartu('Kelola Kalender', 'Buat draft kalender semester dari ritme mingguan, lalu terbitkan sebelum semester mulai.', 'kalender.html', 'Kelola Kalender')
       + kartu('Proyek Kerja Bimbingan', 'Putuskan pengajuan proyek di tempat kerja, kirim tinjauan, dan terbitkan tautan tinjauan untuk atasan.', 'kerja.html', 'Buka Proyek Kerja')
-      + kartu('Roster Mahasiswa & NIP', 'Isi NIP Anda, tambah atau tempel banyak mahasiswa ke roster — sumber identitas akademik seluruh modul.', 'akademik.html', 'Kelola Roster')
+      + kartu('Roster Mahasiswa & Email Dosen', 'Isi email kampus Anda, tambah atau tempel banyak mahasiswa ke roster — sumber identitas akademik seluruh modul.', 'akademik.html', 'Kelola Roster')
       + kartu('Tinjau RPL', 'Setujui atau tolak pengajuan rekognisi pembelajaran lampau; yang disetujui jadi bukti CPL.', 'rpl.html', 'Tinjau Pengajuan')
       + kartu('Kuis Gerbang', 'Susun kuis pilihan ganda per prodi, rumpun, dan minggu, lalu cek apakah mahasiswa sudah lulus sebelum sesi Jumat.', 'kuis.html', 'Kelola Kuis')
       + kartu('Pengawas Ujian', 'Jadwalkan ujian berpengawas dan catat kehadiran mahasiswa di sesi yang Anda awasi.', 'ujian.html', 'Buka Pengawas Ujian')
@@ -59,8 +59,8 @@ function tampil(saya) {
       + (adalahAdmin(saya) ? kartu('Kelola Kaprodi', 'Tetapkan atau ganti kaprodi tiap program studi, atau kosongkan jabatannya.', 'jabatan.html', 'Kelola Kaprodi') : '')
     : '';
 
-  const catatanNIP = dosen && !saya.nip
-    ? '<div class="pesan gagal">Nomor ini terdaftar sebagai dosen, tetapi NIP-nya belum diisi di data dosen. Pembuatan dan penilaian proyek blok baru bisa dilakukan setelah NIP terisi — <a href="akademik.html">isi NIP Anda di halaman Roster &amp; NIP</a>.</div>'
+  const catatanEmail = dosen && !saya.email
+    ? '<div class="pesan gagal">Nomor ini terdaftar sebagai dosen, tetapi email kampusnya belum diisi. Pembuatan dan penilaian proyek blok baru bisa dilakukan setelah email kampus terisi — <a href="akademik.html">isi email kampus Anda di halaman Roster &amp; Email Dosen</a>.</div>'
     : '';
 
   const jumlah = (saya.proyekblok || []).length;
@@ -69,7 +69,7 @@ function tampil(saya) {
     : `${jumlah} proyek blok yang Anda ikuti${saya.nim ? ` · NIM ${esc(saya.nim)}` : ''}.`;
 
   isi.innerHTML = `
-    ${catatanNIP}
+    ${catatanEmail}
     <p class="redup">Peran: ${esc(saya.peran)} · ${ringkas}</p>
     <div class="kartu-grid">${kartuPimpinan}${kartuUmum}${kartuPeran}</div>
     <p><button class="sekunder" id="keluar">Keluar</button></p>`;

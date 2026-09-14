@@ -89,7 +89,7 @@ function formDosen(nimAwal) {
   return `
     <div class="kartu">
       <h3>Lihat Dasbor Mahasiswa</h3>
-      <p class="meta">Sebagai dosen, Anda bisa melihat dasbor mahasiswa mana pun. Daftar NIM ada di halaman <a href="akademik.html">Roster Mahasiswa &amp; NIP</a>.</p>
+      <p class="meta">Sebagai dosen, Anda bisa melihat dasbor mahasiswa mana pun. Daftar NIM ada di halaman <a href="akademik.html">Roster Mahasiswa &amp; Email Dosen</a>.</p>
       <form id="form-nim">
         <label>NIM <input name="nim" required maxlength="30" value="${esc(nimAwal || '')}"></label>
         <button>Tampilkan</button>

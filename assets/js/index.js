@@ -70,7 +70,7 @@ const LAYANAN = {
       ['kalender.html', 'Kalender akademik', 'Susun dan terbitkan'],
       ['kurikulum.html', 'Kurikulum', 'Rumpun, mata kuliah, CPL prodi Anda'],
       ['pengampu.html', 'Dosen pengampu prodi', 'Centang dosen yang mengajar di prodi Anda'],
-      ['akademik.html', 'Roster dan NIP', 'Data mahasiswa'],
+      ['akademik.html', 'Roster dan email dosen', 'Data mahasiswa'],
       ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
       ['kepatuhan.html', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi'],
       ['jabatan.html', 'Kelola kaprodi', 'Tetapkan atau ganti kaprodi tiap prodi'],

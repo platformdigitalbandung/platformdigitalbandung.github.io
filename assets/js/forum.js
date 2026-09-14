@@ -168,7 +168,7 @@ async function kirimTanya(e) {
 }
 
 function kartuBalasan(b) {
-  const siapa = b.peran === 'dosen' ? `Dosen · NIP ${esc(b.nip)}` : `Mahasiswa · NIM ${esc(b.nim)}`;
+  const siapa = b.peran === 'dosen' ? `Dosen · ${esc(b.email || '–')}` : `Mahasiswa · NIM ${esc(b.nim)}`;
   return `
     <div class="kartu">
       <p class="meta"><span class="lencana ${b.peran === 'dosen' ? 'rendah' : ''}">${esc(b.peran)}</span> ${siapa} · ${waktu(b.dibuat)}</p>
