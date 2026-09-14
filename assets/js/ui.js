@@ -162,13 +162,31 @@ export function artiIstilah(kunci) {
  * sentuh — tidak mengandalkan atribut title). `teks` bawaan = kunci.
  *
  *   `Pilih ${istilah('rumpun')} dan minggu`
+ *
+ * Hasilnya hanya elemen inline (<span> + <button>), jadi sah diletakkan di
+ * dalam <p>, .meta, <label>, atau sel tabel tanpa memutus kalimat. Penjelasan
+ * muncul di bawahnya saat diketuk; buka/tutup diurus satu pendengar klik
+ * bersama di modul ini.
  */
+let nomorIstilah = 0;
 export function istilah(kunci, teks = '') {
   const arti = artiIstilah(kunci);
   const label = esc(teks || kunci);
   if (!arti) return label;
-  return `<details class="istilah"><summary>${label}<span class="istilah-tanda" aria-hidden="true">?</span></summary><span class="istilah-isi">${esc(arti)}</span></details>`;
+  const id = `istilah-${++nomorIstilah}`;
+  return `<span class="istilah"><button type="button" class="istilah-tombol" aria-expanded="false" aria-controls="${id}">${label}<span class="istilah-tanda" aria-hidden="true">?</span></button><span class="istilah-isi" id="${id}" role="note" hidden>${esc(arti)}</span></span>`;
 }
+
+document.addEventListener('click', (e) => {
+  const tombol = e.target.closest && e.target.closest('.istilah-tombol');
+  if (!tombol) return;
+  e.preventDefault(); // di dalam <label> jangan ikut memfokuskan/mencentang isian
+  const isi = document.getElementById(tombol.getAttribute('aria-controls'));
+  if (!isi) return;
+  const buka = tombol.getAttribute('aria-expanded') !== 'true';
+  tombol.setAttribute('aria-expanded', String(buka));
+  isi.hidden = !buka;
+});
 
 // ===== Moda sesi =====
 
@@ -194,6 +212,19 @@ export function opsiModa(terpilih = '', daftar = Object.keys(MODA)) {
 
 // ===== Tabel menjadi kartu di HP =====
 
+// Sel berisi lebih dari satu simpul (teks + <br> + <span>, beberapa tombol)
+// dibungkus satu <div class="sel-isi">, supaya di mode kartu isinya tetap satu
+// blok di kolom kanan dan tidak pecah menjadi beberapa baris grid.
+function bungkusIsiSel(td) {
+  const simpul = [...td.childNodes].filter(n => n.nodeType === 1 || (n.nodeType === 3 && n.textContent.trim()));
+  if (simpul.length < 2) return;
+  if (td.childNodes.length === 1 && td.firstChild.classList && td.firstChild.classList.contains('sel-isi')) return;
+  const wadah = document.createElement('div');
+  wadah.className = 'sel-isi';
+  while (td.firstChild) wadah.appendChild(td.firstChild);
+  td.appendChild(wadah);
+}
+
 /**
  * Isi data-label setiap <td> dari teks <th> kolomnya, supaya tabel ber-kelas
  * `tabel-kartu` tampil sebagai kartu bertumpuk di layar ≤ 620px. Panggil
@@ -213,7 +244,10 @@ export function labelTabel(tabel) {
   for (const tr of baris) {
     let kolom = 0;
     for (const td of tr.cells) {
-      if (td.tagName === 'TD' && !td.hasAttribute('data-label')) td.setAttribute('data-label', kepala[kolom] || '');
+      if (td.tagName === 'TD') {
+        if (!td.hasAttribute('data-label')) td.setAttribute('data-label', kepala[kolom] || '');
+        bungkusIsiSel(td);
+      }
       kolom += td.colSpan || 1;
     }
   }

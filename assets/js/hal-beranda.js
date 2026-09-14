@@ -1,3 +1,4 @@
+import { apiGet } from './api.js';
 import { esc } from './ui.js';
 
 // Bantuan bersama Beranda (index.js) dan Beranda Saya (saya.js): checklist
@@ -24,7 +25,7 @@ export function terdaftar(saya) {
  * Tiap langkah: { kunci, judul, keterangan, status, href, label, selesai, jenis }
  * — `jenis`: butir agenda yang statusnya diwakili langkah itu.
  */
-export function langkahMulai(peran, saya, agenda) {
+export function langkahMulai(peran, saya, agenda, tugas = null) {
   const butir = agenda && Array.isArray(agenda[peran]) ? agenda[peran] : [];
   const tahu = !!agenda;
   const cek = nilai => (tahu ? nilai : null);
@@ -115,6 +116,9 @@ export function langkahMulai(peran, saya, agenda) {
 
   // Mahasiswa.
   const prodi = besar(saya && saya.prodi_kode);
+  // Status kumpul tugas dari GET /api/tugas (sudah_kirim per tugas untuk token
+  // mahasiswa); null bila daftar tugas tidak termuat → langkah tanpa status.
+  const tugasBelum = Array.isArray(tugas) ? tugas.filter(t => t.sudah_kirim === false).length : null;
   const kal = ada(butir, 'kalender_belum_terbit');
   const materi = ada(butir, 'materi_belum_selesai');
   const kuis = ada(butir, 'kuis_belum_lulus');
@@ -143,9 +147,21 @@ export function langkahMulai(peran, saya, agenda) {
     {
       kunci: 'tugas', judul: 'Kumpulkan tugas',
       keterangan: 'Periksa tugas yang masih terbuka dan kumpulkan sebelum tenggatnya.',
-      status: '', href: 'portal.html', label: 'Buka daftar tugas', selesai: null,
+      status: tugasBelum === null ? '' : tugasBelum ? `${tugasBelum} tugas belum dikumpulkan.` : (tugas.length ? 'Semua tugas sudah dikumpulkan.' : 'Belum ada tugas dari dosen.'),
+      href: 'portal.html', label: 'Buka daftar tugas', selesai: tugasBelum === null ? null : tugasBelum === 0,
     },
   ];
+}
+
+/** Daftar tugas untuk checklist mahasiswa (null bila bukan mahasiswa atau gagal dimuat). */
+export async function muatTugasMahasiswa(peran) {
+  if (peran !== 'mahasiswa') return null;
+  try {
+    const { tugas = [] } = await apiGet('/api/tugas', { auth: true });
+    return Array.isArray(tugas) ? tugas : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Semua langkah yang punya status sudah selesai (checklist boleh disembunyikan). */

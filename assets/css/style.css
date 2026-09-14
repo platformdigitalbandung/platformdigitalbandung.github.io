@@ -186,6 +186,7 @@ input, textarea, select {
 input[type="checkbox"], input[type="radio"] { width: 1.25rem; height: 1.25rem; margin: 0 .45rem 0 0; vertical-align: -.25rem; accent-color: var(--aksen); }
 textarea { line-height: 1.5; }
 input:focus, textarea:focus, select:focus { outline: 2px solid var(--aksen); outline-offset: 0; border-color: var(--aksen); }
+select { min-height: 40px; }
 select.kecil { width: auto; font-size: .82rem; padding: .3rem .45rem; max-width: 100%; }
 
 button, a.aksi {
@@ -425,6 +426,10 @@ td.kecil { font-size: .8rem; }
   table.tabel-kartu td input, table.tabel-kartu td select, table.tabel-kartu td textarea { width: 100%; min-width: 0; }
   table.tabel-kartu td input[type="checkbox"], table.tabel-kartu td input[type="radio"] { width: 1.25rem; }
   table.tabel-kartu td button, table.tabel-kartu td a.aksi { justify-self: start; }
+  /* Sel bersimpul banyak dibungkus .sel-isi oleh labelTabel: satu blok, tombol berderet membungkus. */
+  table.tabel-kartu td > .sel-isi { min-width: 0; }
+  table.tabel-kartu td > .sel-isi > button, table.tabel-kartu td > .sel-isi > a.aksi { margin: .25rem .4rem .25rem 0; }
+  table.tabel-kartu td > .lencana, table.tabel-kartu td > .sel-isi > .lencana { justify-self: start; }
   .kartu > .gulir table.tabel-kartu td:first-child, .kartu > .gulir table.tabel-kartu td:last-child { padding-left: 0; padding-right: 0; }
   .gulir:has(> table.tabel-kartu) { background: none; }
 }
@@ -443,23 +448,26 @@ td.kecil { font-size: .8rem; }
 .pemberitahuan-peran { border-left: 3px solid var(--aksen); }
 .pemberitahuan-peran .cta-row { margin-bottom: 0; }
 
-/* Istilah yang bisa diketuk: istilah('rumpun') */
-details.istilah { display: inline-block; vertical-align: baseline; }
-details.istilah summary {
-  display: inline; list-style: none; cursor: pointer;
-  border-bottom: 1px dotted var(--redup); color: inherit;
+/* Istilah yang bisa diketuk: istilah('rumpun') — elemen inline, sah di dalam <p>. */
+.istilah { display: inline; }
+.istilah .istilah-tombol {
+  display: inline; position: relative; margin: 0; padding: 0; min-height: 0; min-width: 0;
+  border: 0; border-bottom: 1px dotted var(--redup); border-radius: 0; background: none;
+  color: inherit; font: inherit; font-weight: inherit; line-height: inherit; cursor: pointer; text-align: inherit;
 }
-details.istilah summary::-webkit-details-marker { display: none; }
+.istilah .istilah-tombol:hover { border-bottom-color: var(--aksen); }
+.istilah .istilah-tombol:focus-visible { outline: 2px solid var(--aksen); outline-offset: 2px; }
 .istilah-tanda {
   display: inline-block; margin-left: .2rem; width: 1rem; height: 1rem; line-height: 1rem;
   text-align: center; font-size: .68rem; font-weight: 600; border-radius: 50%;
   background: var(--aksen-muda); color: var(--aksen-tua); vertical-align: .1rem;
 }
-details.istilah[open] { display: block; margin: .3rem 0; }
 .istilah-isi {
-  display: block; margin-top: .3rem; padding: .45rem .65rem; max-width: 60ch;
+  display: block; margin: .3rem 0; padding: .45rem .65rem; max-width: 60ch;
   background: var(--aksen-muda); border-radius: 4px; font-size: .82rem; font-weight: 400; color: var(--tinta);
+  white-space: normal; text-align: left;
 }
+.istilah-isi[hidden] { display: none; }
 
 /* Panjang baris nyaman di layar lebar (R06). */
 .kartu > p, .kartu .meta, .kaki-catatan p, .kosong, .panel-isi > p { max-width: 72ch; }
@@ -471,6 +479,10 @@ details.istilah[open] { display: block; margin: .3rem 0; }
     display: flex; align-items: center; min-height: 44px; margin-top: .2rem; margin-bottom: .2rem;
   }
   button, a.aksi, .tautan-tombol, button.tautan-tombol, .akun select.pilih-peran { min-height: 44px; }
+  select { min-height: 44px; }
+  /* Istilah: area ketuk 44px tanpa menambah tinggi baris. */
+  .istilah .istilah-tombol { min-height: 0; }
+  .istilah .istilah-tombol::after { content: ""; position: absolute; left: -.35rem; right: -.35rem; top: 50%; height: 44px; transform: translateY(-50%); }
   td button, td a.aksi, .pilihan-kuis button { min-height: 40px; min-width: 40px; }
   .remah a, .kaki-baris a, .panel-kepala a {
     display: inline-block; padding: .65rem .25rem; margin: -.65rem -.25rem;

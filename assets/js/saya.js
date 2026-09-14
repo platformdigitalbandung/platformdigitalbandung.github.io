@@ -1,7 +1,7 @@
 import { apiGet, logout, arahkanKeLogin } from './api.js';
 import { statusAkun, peranAktif, labelPeran, prodiPimpinan } from './akun.js';
 import { esc, keadaanKosong, istilah } from './ui.js';
-import { terdaftar, langkahMulai, ringkasMulai, htmlKartuLangkah } from './hal-beranda.js';
+import { terdaftar, langkahMulai, ringkasMulai, htmlKartuLangkah, muatTugasMahasiswa } from './hal-beranda.js';
 
 // Beranda Saya: kartu tugas sesuai peran aktif (Task-Oriented UI) — bukan menu
 // navigasi umum. Bagian pertama adalah langkah kerja peran itu, sama urutan
@@ -92,9 +92,9 @@ function pasangKeluar(keLogin = false) {
   });
 }
 
-function tampil(saya, agenda) {
+function tampil(saya, agenda, tugas) {
   const peran = peranAktif(saya);
-  const langkah = langkahMulai(peran, saya, agenda);
+  const langkah = langkahMulai(peran, saya, agenda, tugas);
   const mengajar = saya.prodi_mengajar || [];
 
   // Dosen yang belum dicentang: tujuan tautan butir agenda "belum_pengampu".
@@ -156,6 +156,7 @@ if (hasil.status === 'belum') {
   pasangKeluar(true);
 } else {
   let agenda = null;
+  const tugasJanji = muatTugasMahasiswa(peranAktif(hasil.saya));
   try { agenda = await apiGet('/api/beranda/agenda', { auth: true }); } catch { /* langkah tanpa status */ }
-  tampil(hasil.saya, agenda);
+  tampil(hasil.saya, agenda, await tugasJanji);
 }

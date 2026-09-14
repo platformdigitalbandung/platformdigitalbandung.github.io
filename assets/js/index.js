@@ -1,7 +1,7 @@
 import { apiGet } from './api.js';
 import { sayaSekarang, peranAktif, labelPeran } from './akun.js';
 import { esc, keadaanKosong } from './ui.js';
-import { terdaftar as sudahTerdaftar, langkahMulai, semuaSelesai, ringkasMulai, htmlDaftarMulai, jenisTercakup } from './hal-beranda.js';
+import { terdaftar as sudahTerdaftar, langkahMulai, semuaSelesai, ringkasMulai, htmlDaftarMulai, jenisTercakup, muatTugasMahasiswa } from './hal-beranda.js';
 
 // Beranda LMS. Isinya bergantung pada peran aktif (pemilih peran di bilah atas,
 // akun.js): admin, kaprodi, dosen, atau mahasiswa — masing-masing punya agenda
@@ -256,8 +256,8 @@ function tampilAgenda(agenda, peran, saya, tercakup) {
 // semua langkah berstatus sudah selesai (audit UX U09, §3.3).
 // Mengembalikan jenis butir agenda yang sudah diwakili checklist (kosong bila
 // checklist disembunyikan), supaya agenda tidak mengulangnya.
-function tampilMulai(peran, saya, agenda) {
-  const langkah = langkahMulai(peran, saya, agenda);
+function tampilMulai(peran, saya, agenda, tugas) {
+  const langkah = langkahMulai(peran, saya, agenda, tugas);
   const panel = document.getElementById('panel-mulai');
   if (semuaSelesai(langkah)) { panel.hidden = true; return new Set(); }
   document.getElementById('ringkas-mulai').textContent = ringkasMulai(langkah);
@@ -268,8 +268,8 @@ function tampilMulai(peran, saya, agenda) {
 
 async function muatAgenda(peran, saya) {
   try {
-    const agenda = await apiGet('/api/beranda/agenda', { auth: true });
-    const tercakup = tampilMulai(peran, saya, agenda || {});
+    const [agenda, tugas] = await Promise.all([apiGet('/api/beranda/agenda', { auth: true }), muatTugasMahasiswa(peran)]);
+    const tercakup = tampilMulai(peran, saya, agenda || {}, tugas);
     tampilAgenda(agenda || {}, peran, saya, tercakup);
   } catch (err) {
     const sebab = err.status === 404 ? '' : ` (${esc(err.message)})`;
