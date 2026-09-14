@@ -74,6 +74,8 @@ code { font-family: var(--mono); font-size: .82rem; background: var(--latar); pa
 }
 .tautan-tombol:hover, button.tautan-tombol:hover { background: var(--latar); border-color: var(--garis-kuat); color: var(--tinta); text-decoration: none; }
 .tautan-tombol.aktif { border-color: var(--aksen); color: var(--aksen); }
+.tautan-tombol.utama, button.tautan-tombol.utama { background: var(--aksen); border-color: var(--aksen); color: #fff; font-weight: 500; }
+.tautan-tombol.utama:hover, button.tautan-tombol.utama:hover { background: var(--aksen-tua); border-color: var(--aksen-tua); color: #fff; }
 
 /* Status akun (assets/js/akun.js): siapa yang sedang masuk, atau belum masuk. */
 .status-akun { display: inline-flex; align-items: center; gap: .4rem; color: var(--redup); font-size: .84rem; white-space: nowrap; }

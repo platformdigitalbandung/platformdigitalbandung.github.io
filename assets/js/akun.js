@@ -1,5 +1,5 @@
 import { getCookie } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/cookie.min.js';
-import { apiGet, logout } from './api.js';
+import { apiGet, logout, arahkanKeLogin } from './api.js';
 
 // Status akun di pojok kanan bilah atas, dipakai semua halaman: sedang masuk
 // sebagai siapa, atau belum masuk. Diisi ke elemen .akun di header.appbar.
@@ -10,8 +10,10 @@ import { apiGet, logout } from './api.js';
 // sesi masih sah tetap backend, lewat GET /api/proyekblok/saya. Kalau backend
 // menolak (token kedaluwarsa atau dicabut), statusnya "Sesi berakhir".
 //
-// Tidak ada tombol login di sini (form login hanya di /login/). Tautan "Beranda
-// Saya" mengarahkan ke sana kalau belum masuk.
+// Tombol "Masuk" di sini HANYA mengarahkan ke /login/ lewat arahkanKeLogin()
+// (yang mengingat halaman asal) — tidak ada form, kartu, atau QR WhatsAuth di
+// luar repo login. Keputusan pemilik produk 2026-09-14; lihat pdb/README.md
+// bagian Frontend.
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
@@ -53,13 +55,14 @@ async function muatSaya() {
 function render(hasil) {
   const wadah = document.querySelector('.appbar .akun');
   if (!wadah) return;
-  const berandaSaya = '<a class="tautan-tombol" href="saya.html">Beranda Saya</a>';
   const keluar = '<button type="button" class="tautan-tombol" data-keluar>Keluar</button>';
 
   if (hasil.status === 'belum') {
-    wadah.innerHTML = `<span class="status-akun" title="Anda belum masuk. Buka Beranda Saya untuk masuk dengan WhatsApp."><span class="titik"></span>Belum masuk</span>${berandaSaya}`;
+    wadah.innerHTML = `<span class="status-akun"><span class="titik"></span>Belum masuk</span>
+      <button type="button" class="tautan-tombol utama" data-masuk title="Masuk dengan WhatsApp">Masuk</button>`;
   } else if (hasil.status === 'berakhir') {
-    wadah.innerHTML = `<span class="status-akun" title="Sesi login sudah tidak berlaku. Keluar lalu masuk lagi."><span class="titik berakhir"></span>Sesi berakhir</span>${keluar}`;
+    wadah.innerHTML = `<span class="status-akun" title="Sesi login sudah tidak berlaku."><span class="titik berakhir"></span>Sesi berakhir</span>
+      <button type="button" class="tautan-tombol utama" data-masuk-lagi>Masuk lagi</button>`;
   } else {
     const { isi, saya } = hasil;
     const nama = isi.alias || isi.id || 'Pengguna';
@@ -75,8 +78,14 @@ function render(hasil) {
       ${nomorInduk ? `<span class="nomor-induk">${esc(nomorInduk)}</span>` : ''}
       ${keluar}`;
   }
-  const tombol = wadah.querySelector('[data-keluar]');
-  if (tombol) tombol.addEventListener('click', () => { logout(); location.href = './'; });
+  const tombolKeluar = wadah.querySelector('[data-keluar]');
+  if (tombolKeluar) tombolKeluar.addEventListener('click', () => { logout(); location.href = './'; });
+  const tombolMasuk = wadah.querySelector('[data-masuk]');
+  if (tombolMasuk) tombolMasuk.addEventListener('click', () => arahkanKeLogin());
+  // Token lama dibuang dulu supaya halaman asal tidak langsung menolak lagi
+  // dengan token yang sama setelah kembali dari /login/.
+  const tombolMasukLagi = wadah.querySelector('[data-masuk-lagi]');
+  if (tombolMasukLagi) tombolMasukLagi.addEventListener('click', () => { logout(); arahkanKeLogin(); });
 }
 
 // Diekspor supaya halaman yang juga butuh peran (mis. beranda) tidak memanggil
