@@ -21,7 +21,7 @@ async function tampilPanel() {
       ${tugas.length ? `
         <label>Pilih tugas
           <select id="pilih">${tugas.map(t =>
-            `<option value="${t.id}">#${t.id} — ${esc(t.judul)} (${t.n_kiriman} kiriman)</option>`).join('')}
+            `<option value="${esc(t.id)}">${esc(t.judul)} (${esc(t.n_kiriman)} kiriman)</option>`).join('')}
           </select></label>
         <button id="muat">Tampilkan Laporan</button>`
         : '<p class="redup">Belum ada tugas. Buat tugas di atas; laporannya muncul di sini setelah mahasiswa mengumpulkan.</p>'}
@@ -52,15 +52,19 @@ async function tampilPanel() {
     try {
       const d = await apiGet(`/api/tugas/${tid}/laporan`, { auth: true });
       const lencana = (b) => b === '-' ? '<span class="redup">–</span>' : `<span class="lencana ${b}">${b}</span>`;
+      // Nomor urut kiriman menggantikan ObjectID mentah di tampilan; rujukan
+      // "paling mirip dengan" dan tabel pasangan memakai nomor yang sama.
+      const nomor = new Map(d.per_kiriman.map((r, i) => [r.id, i + 1]));
+      const noKiriman = id => `#${nomor.get(id) ?? '?'}`;
       const baris = d.per_kiriman.map(r => `
-        <tr class="band-${r.band}"><td class="num">#${r.id}</td>
+        <tr class="band-${r.band}"><td class="num">${noKiriman(r.id)}</td>
           <td>${esc(r.nama)} <span class="redup">(${esc(r.nim)})</span></td>
           <td class="num">${r.max_score ?? '–'}</td>
-          <td>${r.pasangan_id ? '#' + r.pasangan_id + ' ' + esc(r.pasangan_nama || '') : '–'}</td>
+          <td>${r.pasangan_id ? noKiriman(r.pasangan_id) + ' ' + esc(r.pasangan_nama || '') : '–'}</td>
           <td>${lencana(r.band)}</td></tr>`).join('');
       const pas = d.pasangan.slice(0, 20).map(p => `
-        <tr class="band-${p.band}"><td class="num">#${p.a_id} <span class="redup">${esc(p.a_nama)}</span></td>
-          <td class="num">#${p.b_id} <span class="redup">${esc(p.b_nama)}</span></td>
+        <tr class="band-${p.band}"><td class="num">${noKiriman(p.a_id)} <span class="redup">${esc(p.a_nama)}</span></td>
+          <td class="num">${noKiriman(p.b_id)} <span class="redup">${esc(p.b_nama)}</span></td>
           <td class="num">${p.score}</td><td>${lencana(p.band)}</td></tr>`).join('');
       lap.innerHTML = `
         <h4>Per kiriman</h4>
