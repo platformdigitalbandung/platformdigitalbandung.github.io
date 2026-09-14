@@ -125,6 +125,14 @@ async function kirimJawaban(e) {
   }
 }
 
+// Riwayat kuis menyebut rumpun dan minggu kuisnya (dari backend), bukan id kuis.
+// Kuis yang sudah dihapus tidak punya keterangan lagi.
+function labelKuisRiwayat(j) {
+  if (!j.rumpun_kode) return '<span class="redup">Kuis yang sudah dihapus</span>';
+  const rumpun = `Rumpun ${esc(j.rumpun_kode)}${j.rumpun_nama ? ` <span class="redup">${esc(j.rumpun_nama)}</span>` : ''}`;
+  return `${rumpun} · Minggu ${esc(j.minggu)}`;
+}
+
 async function muatRiwayat(nim) {
   const wadah = document.getElementById('riwayat');
   if (!wadah || !nim) return;
@@ -133,7 +141,7 @@ async function muatRiwayat(nim) {
     const { jawaban = [] } = await apiGet(`/api/mahasiswa/${encodeURIComponent(nim)}/kuisgerbang/status`, { auth: true });
     wadah.innerHTML = jawaban.length ? `<div class="gulir"><table>
         <tr><th>Kuis</th><th class="num">Skor</th><th>Status</th></tr>
-        ${jawaban.map(j => `<tr><td>#${esc(String(j.kuis_id).slice(-6))}</td>
+        ${jawaban.map(j => `<tr><td>${labelKuisRiwayat(j)}</td>
           <td class="num">${satuDesimal(j.skor)}%</td><td>${lencanaLulus(j.lulus)}</td></tr>`).join('')}
       </table></div>
       <p class="redup">Satu baris per kuis — percobaan terakhir menimpa yang sebelumnya.</p>`

@@ -46,6 +46,7 @@ if (!isLoggedIn()) {
     isi.innerHTML = `
     <div class="kartu">
       <h3>${esc(t.judul)}</h3>
+      <p class="meta">Prodi ${esc(t.prodi_kode ? String(t.prodi_kode).toUpperCase() : 'belum diisi — tidak tampil untuk mahasiswa')}</p>
       <p>${esc(t.deskripsi) || '<span class="redup">Tanpa deskripsi.</span>'}</p>
     </div>
     <div class="kosong">Pengumpulan jawaban hanya untuk mahasiswa di roster. Kiriman dan laporan kemiripannya ada di <a href="dosen.html">Buat Tugas &amp; Laporan Kemiripan</a>.</div>`;
@@ -54,6 +55,7 @@ if (!isLoggedIn()) {
     isi.innerHTML = `
       <div class="kartu">
         <h3>${esc(t.judul)}</h3>
+        ${t.prodi_kode ? `<p class="meta">Prodi ${esc(String(t.prodi_kode).toUpperCase())}</p>` : ''}
         <p>${esc(t.deskripsi) || '<span class="redup">Tanpa deskripsi.</span>'}</p>
         <div id="status-kirim">${pesanStatus(status)}</div>
       </div>
@@ -88,7 +90,7 @@ if (!isLoggedIn()) {
   isi.innerHTML = err.status === 404
     ? keadaanKosong({
       judul: 'Tugas tidak ditemukan',
-      keterangan: 'Tugas ini mungkin sudah dihapus, atau tautannya tidak lengkap.',
+      keterangan: 'Tugas ini mungkin sudah dihapus, tautannya tidak lengkap, atau tugas ini untuk prodi lain.',
       aksi: { href: 'portal.html', label: 'Buka Daftar Tugas' },
     })
     : `<div class="pesan gagal">${esc(err.message)}</div>`;

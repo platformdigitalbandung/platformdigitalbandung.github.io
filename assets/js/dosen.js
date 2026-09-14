@@ -1,46 +1,70 @@
 import { apiGet, apiPostJson } from './api.js';
-import { esc } from './ui.js';
-import { sayaHalaman, halamanMengajar } from './hal-dosen.js';
+import { esc, pilihProdiBawaan } from './ui.js';
+import { sayaHalaman, halamanMengajar, kartuPrasyarat } from './hal-dosen.js';
 
 const isi = document.getElementById('isi');
 
-async function tampilPanel() {
-  const { tugas } = await apiGet('/api/tugas');
-  isi.innerHTML = `
+// Label prodi pendek untuk daftar dan pilihan tugas; tugas lama tanpa prodi
+// ditandai supaya dosen tahu tugas itu tidak tampil untuk mahasiswa.
+const labelProdi = (kode) => kode ? String(kode).toUpperCase() : 'tanpa prodi';
+
+// Form buat tugas: tugas wajib milik satu prodi, dan hanya prodi tempat dosen
+// mengajar atau yang dipimpinnya yang bisa dipilih (keputusan pemilik produk
+// 2026-09-15; backend tetap memeriksa lewat jabatan.BolehBuatTugas).
+function kartuBuat(saya) {
+  const mengajar = (saya && saya.prodi_mengajar) || [];
+  const prasyarat = kartuPrasyarat(saya, { judul: 'Buat Tugas Baru', untuk: 'Membuat tugas', pengampu: true });
+  if (prasyarat || !mengajar.length) {
+    return prasyarat || '<div class="kartu"><h3>Buat Tugas Baru</h3><p class="redup">Anda belum tercatat mengajar di prodi mana pun.</p></div>';
+  }
+  return `
     <div class="kartu">
       <h3>Buat Tugas Baru</h3>
+      <p class="meta">Tugas hanya tampil dan bisa dikumpulkan mahasiswa prodi yang dipilih.</p>
       <form id="buat">
+        <label>Prodi
+          <select name="prodi_kode" id="prodi-tugas" required>
+            ${mengajar.map(k => `<option value="${esc(k)}">${esc(labelProdi(k))}</option>`).join('')}
+          </select></label>
         <label>Judul<input name="judul" required maxlength="200"></label>
         <label>Deskripsi<textarea name="deskripsi" rows="3"></textarea></label>
         <button>Simpan Tugas</button>
       </form>
       <div id="hasil-buat"></div>
-    </div>
+    </div>`;
+}
+
+async function tampilPanel(saya) {
+  const { tugas } = await apiGet('/api/tugas');
+  isi.innerHTML = `
+    ${kartuBuat(saya)}
     <div class="kartu">
       <h3>Laporan Kemiripan</h3>
       ${tugas.length ? `
         <label>Pilih tugas
           <select id="pilih">${tugas.map(t =>
-            `<option value="${esc(t.id)}">${esc(t.judul)} (${esc(t.n_kiriman)} kiriman)</option>`).join('')}
+            `<option value="${esc(t.id)}">${esc(labelProdi(t.prodi_kode))} · ${esc(t.judul)} (${esc(t.n_kiriman)} kiriman)</option>`).join('')}
           </select></label>
         <button id="muat">Tampilkan Laporan</button>`
         : '<p class="redup">Belum ada tugas. Buat tugas di atas; laporannya muncul di sini setelah mahasiswa mengumpulkan.</p>'}
       <div id="laporan"></div>
     </div>`;
 
-  document.getElementById('buat').addEventListener('submit', async (e) => {
+  pilihProdiBawaan(document.getElementById('prodi-tugas'), saya);
+  const formBuat = document.getElementById('buat');
+  if (formBuat) formBuat.addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const h = document.getElementById('hasil-buat');
     try {
       const r = await apiPostJson('/api/tugas', {
-        judul: fd.get('judul'), deskripsi: fd.get('deskripsi') || '' });
+        judul: fd.get('judul'), deskripsi: fd.get('deskripsi') || '', prodi_kode: fd.get('prodi_kode') });
       const link = `${location.origin}${location.pathname.replace('dosen.html', '')}tugas.html?id=${encodeURIComponent(r.id)}`;
       // Panel dirender ulang supaya tugas baru masuk daftar laporan; pesannya
       // ditulis sesudahnya, kalau tidak ikut terhapus.
-      await tampilPanel();
-      document.getElementById('hasil-buat').innerHTML = `<div class="pesan sukses">Tugas <b>${esc(r.judul || '')}</b> dibuat.
-        Bagikan tautan ini ke mahasiswa:<br><a href="${esc(link)}">${esc(link)}</a></div>`;
+      await tampilPanel(saya);
+      document.getElementById('hasil-buat').innerHTML = `<div class="pesan sukses">Tugas <b>${esc(r.judul || '')}</b> dibuat untuk prodi ${esc(labelProdi(r.prodi_kode))}.
+        Bagikan tautan ini ke mahasiswa prodi itu:<br><a href="${esc(link)}">${esc(link)}</a></div>`;
     } catch (err) { h.innerHTML = `<div class="pesan gagal">Gagal: ${esc(err.message)}</div>`; }
   });
 
@@ -107,7 +131,7 @@ async function mulai() {
     pesan: 'Membuat tugas dan memeriksa kemiripan kiriman dikerjakan di peran dosen.',
     untukMahasiswa: { href: 'portal.html', label: 'Buka Tugas', pesan: 'Tugas yang harus Anda kumpulkan ada di halaman Tugas.' },
   })) return;
-  try { await tampilPanel(); }
+  try { await tampilPanel(saya); }
   catch (err) { isi.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`; }
 }
 

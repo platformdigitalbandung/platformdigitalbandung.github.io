@@ -42,15 +42,24 @@ let saya = null;
 let dosen = false;
 let pimpinan = false;
 let kalenderAktif = '';
+// Boleh menerbitkan/menghapus rekaman kalender yang sedang dibuka: peran aktif
+// mengajar DAN prodi kalender termasuk prodi mengajar (pengampu atau kaprodi) —
+// keputusan pemilik produk 2026-09-15. Backend tetap menolak 403.
+let bolehTulis = false;
+
+function bolehTerbitkan(prodiKalender) {
+  const mengajar = ((saya && saya.prodi_mengajar) || []).map(k => String(k).toLowerCase());
+  return dosen && mengajar.includes(String(prodiKalender || '').toLowerCase());
+}
 
 function selRekaman(s) {
   const r = s.rekaman;
   if (r) {
     return `<div><a href="https://www.youtube.com/watch?v=${encodeURIComponent(r.youtube_id)}" target="_blank" rel="noopener">${esc(r.judul || 'Tonton rekaman')}</a>
       <br><span class="redup">terbit ${waktuWIB(r.diterbitkan_pada)}</span>
-      ${dosen ? `<br><button type="button" class="sekunder hapus-rekaman" data-id="${escAttr(r.id)}">Hapus</button>` : ''}</div>`;
+      ${bolehTulis ? `<br><button type="button" class="sekunder hapus-rekaman" data-id="${escAttr(r.id)}">Hapus</button>` : ''}</div>`;
   }
-  if (dosen && s.status !== 'belum-berlangsung') {
+  if (bolehTulis && s.status !== 'belum-berlangsung') {
     return `<form class="form-terbit" data-sesi="${escAttr(s.sesi_index)}">
       <input name="url_video" required placeholder="Tautan YouTube" aria-label="Tautan YouTube">
       <input name="judul" maxlength="150" placeholder="Judul (opsional)" aria-label="Judul rekaman">
@@ -62,7 +71,7 @@ function selRekaman(s) {
 function tabelSesi(d) {
   if (!d.sesi.length) return '<div class="kosong">Kalender ini tidak punya sesi daring sinkron.</div>';
   // Dosen punya form terbit di dalam sel: tabel-sunting membuat inputnya ringkas.
-  return `<div class="gulir"><table${dosen ? ' class="tabel-sunting"' : ''}>
+  return `<div class="gulir"><table${bolehTulis ? ' class="tabel-sunting"' : ''}>
     <thead><tr><th class="num">Minggu</th><th>Sesi</th><th>Status</th><th>Tenggat terbit</th><th>Rekaman</th></tr></thead><tbody>
     ${d.sesi.map(s => `<tr>
       <td class="num">${esc(s.minggu)}</td>
@@ -79,8 +88,14 @@ async function muatKalender(id) {
   wadah.innerHTML = '<p class="redup">Memuat sesi…</p>';
   try {
     const d = await apiGet(`/api/rekaman/kalender/${encodeURIComponent(id)}`, { auth: true });
+    bolehTulis = bolehTerbitkan(d.prodi_kode);
+    const P = esc(d.prodi_kode.toUpperCase());
+    const catatanTulis = dosen && !bolehTulis
+      ? `<div class="pesan info">Rekaman kalender ${P} hanya diterbitkan atau dihapus dosen pengampu ${P} atau kaprodi ${P}. Anda bisa melihatnya saja.</div>`
+      : '';
     wadah.innerHTML = `<div class="kartu">
-      <h3>${esc(d.prodi_kode.toUpperCase())} · angkatan ${esc(d.angkatan)} · semester ${esc(d.semester)}</h3>
+      <h3>${P} · angkatan ${esc(d.angkatan)} · semester ${esc(d.semester)}</h3>
+      ${catatanTulis}
       <p class="catatan-istilah">${istilah('daring sinkron', 'Sesi daring sinkron')}: rekamannya diterbitkan dosen paling lambat pada tenggat terbit.</p>
       ${tabelSesi(d)}
       <div id="hasil-rekaman"></div></div>`;
@@ -227,7 +242,7 @@ async function muat() {
     <div class="kartu">
       <h3>${mahasiswa ? `Rekaman Kelas ${esc(saya.prodi_kode.toUpperCase())}` : 'Pilih Kalender'}</h3>
       ${mahasiswa ? '<p class="meta">Hanya kalender prodi Anda yang ditampilkan.</p>' : ''}
-      ${prodiTanpaKalender ? `<div class="pesan info">Kalender ${esc(prodiSaya.toUpperCase())} belum diterbitkan kaprodinya, jadi belum ada sesi untuk diberi rekaman. Pilih kalender prodi lain di bawah hanya bila Anda juga mengajar di sana.</div>` : ''}
+      ${prodiTanpaKalender ? `<div class="pesan info">Kalender ${esc(prodiSaya.toUpperCase())} belum diterbitkan kaprodinya, jadi belum ada sesi untuk diberi rekaman. Kalender prodi lain di bawah hanya bisa dilihat; rekamannya diterbitkan dosen pengampu prodi itu.</div>` : ''}
       <form id="form-kalender">
         <label>Kalender terbit
           <select name="kalender">${pilihan}</select></label>
