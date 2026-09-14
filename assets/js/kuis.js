@@ -1,9 +1,12 @@
-import { apiGet, apiPostJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { apiGet, apiPostJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
 
-// Kuis Gerbang. Mahasiswa mengerjakan kuis rumpun/minggu; NIM-nya diambil
-// server dari roster lewat token, bukan dikirim dari sini. Dosen melihat status
-// kuis mahasiswa lewat isian NIM. Kunci jawaban tidak pernah sampai ke
-// peramban — backend membuangnya sebelum membalas.
+// Kuis Gerbang. Mahasiswa mengerjakan kuis rumpun/minggu prodinya; NIM dan
+// prodinya diambil server dari roster lewat token, bukan dikirim dari sini.
+// Kunci jawaban tidak pernah sampai ke peramban mahasiswa — backend
+// membuangnya sebelum membalas.
+//
+// Dosen menyusun kuis (satu per prodi + rumpun + minggu) dan melihat status
+// kuis mahasiswa lewat isian NIM. Jalur dosen memang memuat kunci jawaban.
 
 const isi = document.getElementById('isi');
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
@@ -11,14 +14,11 @@ function satuDesimal(n) { return typeof n === 'number' ? n.toFixed(1) : '–'; }
 
 let kuisAktif = null;
 
-async function rumpunSemuaProdi() {
-  const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
-  const hasil = [];
-  for (const p of prodi) {
-    const { rumpun = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(p.kode)}/rumpun`);
-    rumpun.forEach(r => hasil.push({ kode: r.kode, nama: r.nama, prodi: p.kode }));
-  }
-  return hasil;
+// Mahasiswa hanya ditawari rumpun prodinya: kuis berkunci prodi, dan backend
+// memakai prodi dari roster.
+async function rumpunProdi(kode) {
+  const { rumpun = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(kode)}/rumpun`);
+  return (rumpun || []).map(r => ({ kode: r.kode, nama: r.nama, prodi: kode }));
 }
 
 function lencanaLulus(lulus) {
@@ -120,14 +120,248 @@ function kartuDosen(nimAwal) {
     </div>`;
 }
 
+// ===== Penyusun kuis (dosen) =====
+
+let daftarProdi = [];
+const cacheRumpun = {};
+let daftarKuis = [];
+
+async function rumpunDari(prodi) {
+  if (!prodi) return [];
+  if (!cacheRumpun[prodi]) cacheRumpun[prodi] = await rumpunProdi(prodi);
+  return cacheRumpun[prodi];
+}
+
+function opsiProdi(terpilih, denganSemua) {
+  return (denganSemua ? '<option value="">(semua prodi)</option>' : '')
+    + daftarProdi.map(p => `<option value="${esc(p.kode)}"${p.kode === terpilih ? ' selected' : ''}>${esc(p.nama)} (${esc(p.kode)})</option>`).join('');
+}
+
+function opsiRumpun(rumpun, terpilih, denganSemua) {
+  return (denganSemua ? '<option value="">(semua rumpun)</option>' : '')
+    + rumpun.map(r => `<option value="${esc(r.kode)}"${r.kode === terpilih ? ' selected' : ''}>${esc(r.kode)} — ${esc(r.nama)}</option>`).join('');
+}
+
+function kartuKelola() {
+  return `
+    <div class="kartu">
+      <h3>Kelola Kuis Gerbang</h3>
+      <p class="meta">Satu kuis untuk satu prodi, rumpun, dan minggu. Kuis yang sudah dikerjakan mahasiswa tidak bisa disunting — skor mereka dihitung dari soal itu.</p>
+      <form id="form-saring">
+        <label>Program studi <select name="prodi">${opsiProdi('', true)}</select></label>
+        <label>Rumpun <select name="rumpun"><option value="">(semua rumpun)</option></select></label>
+      </form>
+      <div id="daftar-kuis"><p class="redup">Memuat kuis…</p></div>
+      <div id="hasil-hapus"></div>
+    </div>
+    <div class="kartu">
+      <h3 id="judul-susun">Susun Kuis</h3>
+      <form id="form-susun">
+        <label>Program studi <select name="prodi_kode" required>${opsiProdi(daftarProdi[0] && daftarProdi[0].kode, false)}</select></label>
+        <label>Rumpun <select name="rumpun_kode" required></select></label>
+        <label>Minggu <input type="number" name="minggu" min="1" max="52" required value="1"></label>
+        <label>Ambang lulus (%) <input type="number" name="ambang_lulus" min="0" max="100" step="1" value="60"></label>
+        <p class="redup">Isi 0 untuk memakai ambang bawaan 60%.</p>
+        <div id="daftar-soal"></div>
+        <p><button type="button" class="sekunder" data-aksi="tambah-soal">+ Tambah Soal</button></p>
+        <button>Simpan Kuis</button>
+        <button type="button" class="sekunder" data-aksi="kosongkan">Kosongkan Formulir</button>
+      </form>
+      <div id="hasil-susun"></div>
+    </div>`;
+}
+
+let nomorSoal = 0;
+
+function htmlPilihan(namaRadio, teks, benar) {
+  return `<div class="pilihan-kuis">
+    <input type="radio" name="${namaRadio}"${benar ? ' checked' : ''} aria-label="Tandai sebagai jawaban benar">
+    <input type="text" class="teks-pilihan" required maxlength="500" placeholder="Teks pilihan" value="${esc(teks)}">
+    <button type="button" class="sekunder" data-aksi="hapus-pilihan" aria-label="Hapus pilihan">×</button>
+  </div>`;
+}
+
+function htmlSoal(soal = { pertanyaan: '', pilihan: ['', '', '', ''], indeks_benar: -1 }) {
+  nomorSoal += 1;
+  const nama = `benar-${nomorSoal}`;
+  return `<fieldset class="soal-kuis">
+    <legend>Soal</legend>
+    <label>Pertanyaan <textarea class="teks-pertanyaan" rows="2" required maxlength="2000">${esc(soal.pertanyaan)}</textarea></label>
+    <p class="redup">Tulis pilihan jawaban, lalu tandai bulatan di depan jawaban yang benar.</p>
+    <div class="daftar-pilihan">${soal.pilihan.map((p, j) => htmlPilihan(nama, p, j === soal.indeks_benar)).join('')}</div>
+    <p><button type="button" class="sekunder" data-aksi="tambah-pilihan" data-radio="${nama}">+ Pilihan</button>
+      <button type="button" class="sekunder" data-aksi="hapus-soal">Hapus Soal</button></p>
+  </fieldset>`;
+}
+
+function nomoriSoal() {
+  document.querySelectorAll('#daftar-soal .soal-kuis legend').forEach((l, i) => { l.textContent = `Soal ${i + 1}`; });
+}
+
+function tambahSoal(soal) {
+  document.getElementById('daftar-soal').insertAdjacentHTML('beforeend', htmlSoal(soal));
+  nomoriSoal();
+}
+
+async function isiRumpunSusun(terpilih) {
+  const form = document.getElementById('form-susun');
+  const rumpun = await rumpunDari(form.elements.prodi_kode.value);
+  form.elements.rumpun_kode.innerHTML = opsiRumpun(rumpun, terpilih, false);
+}
+
+async function kosongkanFormulir() {
+  const form = document.getElementById('form-susun');
+  form.reset();
+  document.getElementById('judul-susun').textContent = 'Susun Kuis';
+  document.getElementById('daftar-soal').innerHTML = '';
+  document.getElementById('hasil-susun').innerHTML = '';
+  tambahSoal();
+  await isiRumpunSusun();
+}
+
+// Membaca formulir apa adanya; kelengkapannya diperiksa backend
+// (kuisgerbang.NormalkanKuis) dan pesannya ditampilkan.
+function bacaFormulir(form) {
+  const fd = new FormData(form);
+  const soal = [...document.querySelectorAll('#daftar-soal .soal-kuis')].map(f => {
+    const baris = [...f.querySelectorAll('.pilihan-kuis')];
+    return {
+      pertanyaan: f.querySelector('.teks-pertanyaan').value,
+      pilihan: baris.map(b => b.querySelector('.teks-pilihan').value),
+      indeks_benar: baris.findIndex(b => b.querySelector('input[type=radio]').checked),
+    };
+  });
+  return {
+    prodi_kode: fd.get('prodi_kode'), rumpun_kode: fd.get('rumpun_kode'),
+    minggu: Number(fd.get('minggu')), ambang_lulus: Number(fd.get('ambang_lulus')) || 0, soal,
+  };
+}
+
+async function simpanKuis(e) {
+  e.preventDefault();
+  const hasil = document.getElementById('hasil-susun');
+  const data = bacaFormulir(e.target);
+  const tanpaKunci = data.soal.findIndex(s => s.indeks_benar < 0);
+  if (tanpaKunci >= 0) {
+    hasil.innerHTML = `<div class="pesan gagal">Tandai jawaban benar untuk soal ke-${tanpaKunci + 1}.</div>`;
+    return;
+  }
+  hasil.innerHTML = '<p class="redup">Menyimpan…</p>';
+  try {
+    const k = await apiPostJson('/api/kuisgerbang', data);
+    hasil.innerHTML = `<div class="pesan sukses">Kuis ${esc(k.prodi_kode.toUpperCase())} rumpun ${esc(k.rumpun_kode)} minggu ${esc(k.minggu)} tersimpan (${k.soal.length} soal).</div>`;
+    await muatDaftarKuis();
+  } catch (err) {
+    hasil.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
+  }
+}
+
+function tabelKuis() {
+  if (!daftarKuis.length) return '<div class="kosong">Belum ada kuis untuk saringan ini.</div>';
+  return `<div class="gulir"><table>
+    <tr><th>Prodi</th><th>Rumpun</th><th class="num">Minggu</th><th class="num">Soal</th><th class="num">Ambang</th><th class="num">Dikerjakan</th><th></th></tr>
+    ${daftarKuis.map(k => `<tr>
+      <td>${esc(k.prodi_kode.toUpperCase())}</td><td>${esc(k.rumpun_kode)}</td><td class="num">${esc(k.minggu)}</td>
+      <td class="num">${k.soal.length}</td><td class="num">${satuDesimal(k.ambang_lulus || 60)}%</td>
+      <td class="num">${esc(k.dikerjakan)}</td>
+      <td>${k.dikerjakan ? '' : `<button type="button" class="sekunder" data-aksi="sunting" data-id="${esc(k.id)}">Sunting</button> `}<button type="button" class="sekunder" data-aksi="hapus" data-id="${esc(k.id)}">Hapus</button></td>
+    </tr>`).join('')}
+  </table></div>`;
+}
+
+async function muatDaftarKuis() {
+  const fd = new FormData(document.getElementById('form-saring'));
+  const q = new URLSearchParams();
+  if (fd.get('prodi')) q.set('prodi', fd.get('prodi'));
+  if (fd.get('rumpun')) q.set('rumpun', fd.get('rumpun'));
+  const wadah = document.getElementById('daftar-kuis');
+  try {
+    ({ kuis: daftarKuis = [] } = await apiGet(`/api/kuisgerbang${q.toString() ? `?${q}` : ''}`));
+    wadah.innerHTML = tabelKuis();
+  } catch (err) {
+    wadah.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
+  }
+}
+
+async function suntingKuis(id) {
+  const k = daftarKuis.find(x => x.id === id);
+  if (!k) return;
+  const form = document.getElementById('form-susun');
+  form.elements.prodi_kode.value = k.prodi_kode;
+  await isiRumpunSusun(k.rumpun_kode);
+  form.elements.minggu.value = k.minggu;
+  form.elements.ambang_lulus.value = k.ambang_lulus || 0;
+  document.getElementById('daftar-soal').innerHTML = '';
+  k.soal.forEach(s => tambahSoal(s));
+  document.getElementById('judul-susun').textContent = `Sunting Kuis ${k.prodi_kode.toUpperCase()} · ${k.rumpun_kode} · minggu ${k.minggu}`;
+  document.getElementById('hasil-susun').innerHTML = '';
+  form.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function hapusKuis(id, konfirmasi = false) {
+  const k = daftarKuis.find(x => x.id === id);
+  const hasil = document.getElementById('hasil-hapus');
+  if (!konfirmasi && !window.confirm(`Hapus kuis ${k ? `${k.prodi_kode.toUpperCase()} ${k.rumpun_kode} minggu ${k.minggu}` : id}?`)) return;
+  hasil.innerHTML = '<p class="redup">Menghapus…</p>';
+  try {
+    await apiDeleteJson(`/api/kuisgerbang/${encodeURIComponent(id)}${konfirmasi ? '?konfirmasi=hapus' : ''}`);
+    hasil.innerHTML = '<div class="pesan sukses">Kuis dihapus.</div>';
+    await muatDaftarKuis();
+  } catch (err) {
+    if (err.status === 422 && !konfirmasi) {
+      hasil.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>
+        <p><button type="button" class="sekunder" data-aksi="tetap-hapus" data-id="${esc(id)}">Tetap hapus</button></p>`;
+      return;
+    }
+    hasil.innerHTML = `<div class="pesan gagal">Gagal menghapus: ${esc(err.message)}</div>`;
+  }
+}
+
+async function pasangPenyusun() {
+  const saring = document.getElementById('form-saring');
+  saring.elements.prodi.addEventListener('change', async () => {
+    saring.elements.rumpun.innerHTML = opsiRumpun(await rumpunDari(saring.elements.prodi.value), '', true);
+    muatDaftarKuis();
+  });
+  saring.elements.rumpun.addEventListener('change', muatDaftarKuis);
+
+  const susun = document.getElementById('form-susun');
+  susun.elements.prodi_kode.addEventListener('change', () => isiRumpunSusun());
+  susun.addEventListener('submit', simpanKuis);
+
+  isi.addEventListener('click', e => {
+    const b = e.target.closest('button[data-aksi]');
+    if (!b) return;
+    const aksi = b.dataset.aksi;
+    if (aksi === 'tambah-soal') tambahSoal();
+    else if (aksi === 'hapus-soal') { b.closest('.soal-kuis').remove(); nomoriSoal(); }
+    else if (aksi === 'tambah-pilihan') {
+      const daftar = b.closest('.soal-kuis').querySelector('.daftar-pilihan');
+      if (daftar.children.length < 6) daftar.insertAdjacentHTML('beforeend', htmlPilihan(b.dataset.radio, '', false));
+    } else if (aksi === 'hapus-pilihan') {
+      const daftar = b.closest('.daftar-pilihan');
+      if (daftar.children.length > 2) b.closest('.pilihan-kuis').remove();
+    } else if (aksi === 'kosongkan') kosongkanFormulir();
+    else if (aksi === 'sunting') suntingKuis(b.dataset.id);
+    else if (aksi === 'hapus') hapusKuis(b.dataset.id);
+    else if (aksi === 'tetap-hapus') hapusKuis(b.dataset.id, true);
+  });
+
+  tambahSoal();
+  await isiRumpunSusun();
+  await muatDaftarKuis();
+}
+
 async function muat() {
   const saya = await apiGet('/api/proyekblok/saya', { auth: true });
   if (saya.peran === 'dosen') {
-    isi.innerHTML = kartuDosen(new URLSearchParams(location.search).get('nim'));
+    ({ prodi: daftarProdi = [] } = await apiGet('/api/kurikulum/prodi'));
+    isi.innerHTML = kartuKelola() + kartuDosen(new URLSearchParams(location.search).get('nim'));
     document.getElementById('form-nim').addEventListener('submit', e => {
       e.preventDefault();
       muatRiwayat(new FormData(e.target).get('nim').trim());
     });
+    await pasangPenyusun();
     return;
   }
   if (!saya.nim) {
@@ -142,7 +376,11 @@ async function muat() {
     if (beban.minggu) mingguAwal = beban.minggu;
   } catch (_) { /* kalender belum terbit: biarkan 1 */ }
 
-  const rumpun = await rumpunSemuaProdi();
+  if (!saya.prodi_kode) {
+    isi.innerHTML = '<div class="kosong">Prodi Anda belum tercatat di roster, jadi kuis prodi Anda belum bisa ditampilkan. Hubungi pengelola prodi.</div>';
+    return;
+  }
+  const rumpun = await rumpunProdi(saya.prodi_kode);
   isi.innerHTML = kartuPilih(rumpun, mingguAwal)
     + '<div class="kartu"><h3>Riwayat Kuis Anda</h3><div id="riwayat"></div></div>';
   document.getElementById('form-pilih').addEventListener('submit', muatKuis);

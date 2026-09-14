@@ -1,4 +1,5 @@
 import { apiGet, apiPostBerkasToken, isLoggedIn, arahkanKeLogin } from './api.js';
+import { sayaSekarang } from './akun.js';
 
 const id = new URLSearchParams(location.search).get('id');
 const isi = document.getElementById('isi');
@@ -12,35 +13,45 @@ if (!isLoggedIn()) {
 } else try {
   if (!id) throw new Error('ID tugas tidak ada di URL');
   const t = await apiGet(`/api/tugas/${id}`);
-  isi.innerHTML = `
+  const saya = await sayaSekarang;
+  if (saya && saya.peran === 'dosen') {
+    isi.innerHTML = `
     <div class="kartu">
       <h3>${esc(t.judul)}</h3>
       <p>${esc(t.deskripsi) || '<span class="redup">Tanpa deskripsi.</span>'}</p>
     </div>
-    <div class="kartu">
-      <h3>Kirim Jawaban</h3>
-      <form id="form">
-        <label>Berkas jawaban
-          <input type="file" id="berkas" name="berkas" required accept=".txt,.docx,.pdf"></label>
-        <button id="kirim">Unggah Jawaban</button>
-      </form>
-      <div id="hasil"></div>
-    </div>`;
+    <div class="kosong">Pengumpulan jawaban hanya untuk mahasiswa di roster. Kiriman dan laporan kemiripannya ada di <a href="dosen.html">Halaman Dosen</a>.</div>`;
+  } else {
+    isi.innerHTML = `
+      <div class="kartu">
+        <h3>${esc(t.judul)}</h3>
+        <p>${esc(t.deskripsi) || '<span class="redup">Tanpa deskripsi.</span>'}</p>
+      </div>
+      <div class="kartu">
+        <h3>Kirim Jawaban</h3>
+        <form id="form">
+          <label>Berkas jawaban
+            <input type="file" id="berkas" name="berkas" required accept=".txt,.docx,.pdf"></label>
+          <button id="kirim">Unggah Jawaban</button>
+        </form>
+        <div id="hasil"></div>
+      </div>`;
 
-  document.getElementById('form').onsubmit = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('kirim');
-    const hasil = document.getElementById('hasil');
-    btn.disabled = true; hasil.innerHTML = '<p class="redup">Mengunggah…</p>';
-    try {
-      const r = await apiPostBerkasToken(`/api/tugas/${id}/kirim`, {}, 'berkas', 'berkas');
-      hasil.innerHTML = `<div class="pesan sukses">Jawaban terkirim ✔ Nomor kiriman
-        <b>#${r.kiriman_id}</b> (${r.n_kata} kata terbaca). Simpan nomor ini sebagai bukti.</div>`;
-      e.target.reset();
-    } catch (err) {
-      hasil.innerHTML = `<div class="pesan gagal">Gagal: ${esc(err.message)}</div>`;
-    } finally { btn.disabled = false; }
-  };
+    document.getElementById('form').onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('kirim');
+      const hasil = document.getElementById('hasil');
+      btn.disabled = true; hasil.innerHTML = '<p class="redup">Mengunggah…</p>';
+      try {
+        const r = await apiPostBerkasToken(`/api/tugas/${id}/kirim`, {}, 'berkas', 'berkas');
+        hasil.innerHTML = `<div class="pesan sukses">Jawaban terkirim ✔ Nomor kiriman
+          <b>#${r.kiriman_id}</b> (${r.n_kata} kata terbaca). Simpan nomor ini sebagai bukti.</div>`;
+        e.target.reset();
+      } catch (err) {
+        hasil.innerHTML = `<div class="pesan gagal">Gagal: ${esc(err.message)}</div>`;
+      } finally { btn.disabled = false; }
+    };
+  }
 } catch (err) {
   isi.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
 }

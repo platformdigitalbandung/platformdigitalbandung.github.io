@@ -29,7 +29,7 @@ function tampil(saya) {
       + kartu('Proyek Kerja Bimbingan', 'Putuskan pengajuan proyek di tempat kerja, kirim tinjauan, dan terbitkan tautan tinjauan untuk atasan.', 'kerja.html', 'Buka Proyek Kerja')
       + kartu('Roster Mahasiswa & NIP', 'Isi NIP Anda, tambah atau tempel banyak mahasiswa ke roster — sumber identitas akademik seluruh modul.', 'akademik.html', 'Kelola Roster')
       + kartu('Tinjau RPL', 'Setujui atau tolak pengajuan rekognisi pembelajaran lampau; yang disetujui jadi bukti CPL.', 'rpl.html', 'Tinjau Pengajuan')
-      + kartu('Status Kuis Gerbang', 'Cek apakah mahasiswa sudah lulus kuis gerbang sebelum sesi Jumat.', 'kuis.html', 'Cek Status Kuis')
+      + kartu('Kuis Gerbang', 'Susun kuis pilihan ganda per prodi, rumpun, dan minggu, lalu cek apakah mahasiswa sudah lulus sebelum sesi Jumat.', 'kuis.html', 'Kelola Kuis')
       + kartu('Pengawas Ujian', 'Jadwalkan ujian berpengawas dan catat kehadiran mahasiswa di sesi yang Anda awasi.', 'ujian.html', 'Buka Pengawas Ujian')
       + kartu('Rekaman Sesi & Tenggat', 'Terbitkan rekaman sesi daring sinkron sebelum tengah malam dan pantau yang terlambat atau belum ada.', 'rekaman.html', 'Kelola Rekaman')
       + kartu('Forum & SLA Jawaban','Balas pertanyaan mahasiswa dan pantau yang lewat target 1×24 jam (dihitung Senin–Rabu).', 'forum.html', 'Buka Forum')

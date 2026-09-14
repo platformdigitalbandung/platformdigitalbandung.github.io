@@ -1,4 +1,5 @@
 import { apiGet, isLoggedIn, arahkanKeLogin } from './api.js';
+import { sayaSekarang } from './akun.js';
 import { API_BASE } from './config.js';
 
 const isi = document.getElementById('isi');
@@ -12,6 +13,10 @@ if (!isLoggedIn()) {
   await apiGet('/health');
   status.innerHTML = `<span class="status-dot ok"></span>backend tersambung (${API_BASE})`;
   const { tugas } = await apiGet('/api/tugas');
+  // Pengumpulan khusus mahasiswa di roster (backend menolak yang lain), jadi
+  // dosen tidak ditawari tombol Kumpulkan Jawaban — cukup ke laporan kemiripan.
+  const saya = await sayaSekarang;
+  const dosen = Boolean(saya && saya.peran === 'dosen');
   if (!tugas.length) {
     isi.innerHTML = '<div class="kosong">Belum ada tugas. Dosen dapat membuat tugas lewat Halaman Dosen.</div>';
   } else {
@@ -19,7 +24,9 @@ if (!isLoggedIn()) {
       <div class="kartu">
         <h3>${esc(t.judul)}</h3>
         <p class="meta">#${t.id} · ${t.n_kiriman} kiriman</p>
-        <a class="aksi" href="tugas.html?id=${t.id}">Kumpulkan Jawaban</a>
+        ${dosen
+          ? '<a class="aksi sekunder" href="dosen.html">Laporan Kemiripan</a>'
+          : `<a class="aksi" href="tugas.html?id=${t.id}">Kumpulkan Jawaban</a>`}
       </div>`).join('');
   }
 } catch (err) {

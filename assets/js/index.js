@@ -56,7 +56,7 @@ const LAYANAN = {
       ['dosen.html', 'Buat tugas', 'Termasuk laporan kemiripan'],
       ['forum.html', 'Forum dan SLA', 'Pertanyaan yang menunggu jawaban'],
       ['rekaman.html', 'Rekaman sesi', 'Terbitkan sebelum tenggat'],
-      ['kuis.html', 'Status kuis gerbang', 'Kelulusan per mahasiswa'],
+      ['kuis.html', 'Kuis gerbang', 'Susun soal dan cek kelulusan'],
     ]],
     ['Penilaian', [
       ['proyek.html', 'Proyek blok', 'Anggota dan nilai per mata kuliah'],
