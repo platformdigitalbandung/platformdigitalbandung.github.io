@@ -1,4 +1,5 @@
-import { apiGet, isLoggedIn, logout } from './api.js';
+import { apiGet } from './api.js';
+import { sayaSekarang } from './akun.js';
 
 // Beranda LMS. Isi yang publik (jadwal dari kalender terbit, program studi)
 // tampil tanpa login; daftar layanan menyesuaikan peran kalau cookie login ada.
@@ -91,18 +92,6 @@ function tampilLayanan(peran) {
     + LAYANAN.dosen.map(([j, b]) => htmlKelompok(`Dosen · ${j}`, b)).join('');
 }
 
-function tampilAkun(saya) {
-  if (!saya) return;
-  const akun = document.getElementById('akun');
-  const keterangan = saya.peran === 'mahasiswa' && saya.nim ? `NIM ${esc(saya.nim)}` : '';
-  akun.innerHTML = `
-    <span class="peran">${esc(saya.peran)}</span>
-    ${keterangan ? `<span class="redup">${keterangan}</span>` : ''}
-    <a class="tautan-tombol" href="saya.html">Beranda Saya</a>
-    <button type="button" class="tautan-tombol" id="keluar">Keluar</button>`;
-  document.getElementById('keluar').addEventListener('click', () => { logout(); location.reload(); });
-}
-
 // Minggu yang ditampilkan: minggu yang memuat hari ini; kalau hari ini tanpa
 // sesi, minggu dari sesi terakhir yang lewat (maks. 7 hari). Sebelum semester
 // mulai ditampilkan minggu pertama; sesudah berakhir, tidak ada tabel.
@@ -180,12 +169,9 @@ async function muatProdi() {
 document.getElementById('hari-ini').textContent =
   new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: ZONA });
 
-let saya = null;
-if (isLoggedIn()) {
-  // Token kedaluwarsa atau nomor tak dikenal: beranda tetap tampil sebagai publik.
-  try { saya = await apiGet('/api/proyekblok/saya', { auth: true }); } catch { saya = null; }
-}
-tampilAkun(saya);
+// Status akun di bilah atas diurus akun.js; beranda cukup memakai hasilnya.
+// Token kedaluwarsa atau nomor tak dikenal: beranda tampil sebagai publik.
+const saya = await sayaSekarang;
 tampilLayanan(saya && saya.peran);
 muatProdi();
 muatJadwal(saya && saya.prodi_kode);

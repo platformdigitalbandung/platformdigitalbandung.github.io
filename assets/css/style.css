@@ -75,6 +75,20 @@ code { font-family: var(--mono); font-size: .82rem; background: var(--latar); pa
 .tautan-tombol:hover, button.tautan-tombol:hover { background: var(--latar); border-color: var(--garis-kuat); color: var(--tinta); text-decoration: none; }
 .tautan-tombol.aktif { border-color: var(--aksen); color: var(--aksen); }
 
+/* Status akun (assets/js/akun.js): siapa yang sedang masuk, atau belum masuk. */
+.status-akun { display: inline-flex; align-items: center; gap: .4rem; color: var(--redup); font-size: .84rem; white-space: nowrap; }
+a.status-akun.masuk { color: var(--tinta); font-weight: 500; }
+a.status-akun.masuk:hover { color: var(--aksen); text-decoration: none; }
+.status-akun .titik { width: .55rem; height: .55rem; border-radius: 50%; background: var(--garis-kuat); flex: none; }
+.status-akun .titik.aktif { background: var(--rendah); box-shadow: 0 0 0 2px var(--rendah-muda); }
+.status-akun .titik.berakhir { background: var(--sedang); }
+.nama-akun { max-width: 14em; overflow: hidden; text-overflow: ellipsis; }
+.nomor-induk { font-family: var(--mono); font-size: .76rem; color: var(--redup); white-space: nowrap; }
+@media (max-width: 620px) {
+  .akun { width: 100%; margin-left: 0; padding-bottom: .5rem; flex-wrap: wrap; }
+  .nomor-induk { display: none; }
+}
+
 /* ===== Halaman ===== */
 .halaman { flex: 1; width: 100%; max-width: 1180px; margin: 0 auto; padding: 1.1rem 1rem 3rem; }
 .kepala-halaman {
