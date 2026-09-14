@@ -210,6 +210,7 @@ tr.band-rendah { border-left: 3px solid var(--rendah); }
 .pesan { padding: .6rem .85rem; margin: .8rem 0; font-size: .86rem; border: 1px solid; border-left-width: 3px; border-radius: 4px; }
 .pesan.sukses { border-color: #b3d6c0; border-left-color: var(--rendah); background: var(--rendah-muda); }
 .pesan.gagal { border-color: #e3b4b0; border-left-color: var(--tinggi); background: var(--tinggi-muda); }
+.pesan.info { border-color: var(--garis); border-left-color: var(--aksen); background: var(--permukaan); color: var(--tinta); }
 .kosong {
   padding: 1.4rem 1rem; text-align: center; color: var(--redup);
   border: 1px dashed var(--garis-kuat); border-radius: var(--radius); font-size: .88rem; background: var(--permukaan);

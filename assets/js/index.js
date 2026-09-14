@@ -48,7 +48,7 @@ const LAYANAN = {
       ['forum.html', 'Forum tanya dosen', 'Target jawaban 1×24 jam'],
       ['rekaman.html', 'Rekaman sesi', 'Kelas daring yang terlewat'],
       ['portal.html', 'Tugas', 'Kumpulkan dan pantau tugas'],
-      ['kalender.html', 'Kalender akademik', 'Jadwal satu semester'],
+      ['kalender.html', 'Kalender akademik', 'Jadwal semester'],
     ]],
     ['Nilai dan kemajuan', [
       ['dasbor.html', 'Dasbor belajar', 'Beban belajar dan capaian CPL'],
@@ -78,7 +78,7 @@ const LAYANAN = {
       ['kerja.html', 'Proyek kerja bimbingan', 'Putusan dan tinjauan'],
     ]],
     ['Akademik', [
-      ['kalender.html', 'Kalender akademik', 'Susun dan terbitkan'],
+      ['kalender.html', 'Kalender akademik', 'Jadwal semester'],
       ['akademik.html', 'Roster dan email dosen', 'Data mahasiswa dan email kampus Anda'],
       ['kurikulum.html', 'Kurikulum', 'Program studi dan data kurikulumnya'],
     ]],
@@ -87,7 +87,7 @@ const LAYANAN = {
     ['Kurikulum dan pengajar', [
       ['kurikulum.html', 'Kurikulum program studi', 'Rumpun, mata kuliah, CPL, dan ritme'],
       ['pengampu.html', 'Dosen pengampu prodi', 'Centang dosen yang mengajar di prodi Anda'],
-      ['kalender.html', 'Kalender akademik', 'Susun dan terbitkan kalender semester'],
+      ['kalender.html', 'Kalender akademik', 'Susun dan terbitkan kalender prodi Anda'],
     ]],
     ['Laporan prodi', [
       ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],

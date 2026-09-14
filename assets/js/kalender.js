@@ -1,9 +1,13 @@
 import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { sayaSekarang, adalahKaprodiAktif } from './akun.js';
 
 // Kalender akademik. Baca untuk dosen dan mahasiswa terdaftar (hanya kalender
-// yang sudah diterbitkan); belum masuk diarahkan ke /login/. Pembuatan draft, penyuntingan sesi, penerbitan, dan penghapusan hanya muncul
-// kalau backend memang mengenali nomor yang sedang masuk sebagai dosen —
-// kewenangannya tetap dicek server.
+// yang sudah diterbitkan); belum masuk diarahkan ke /login/.
+//
+// Pembuatan draft, penyuntingan sesi, penerbitan, dan penghapusan hanya untuk
+// kaprodi prodi kalender itu (keputusan pemilik produk 2026-09-14): tombolnya
+// muncul selagi peran aktif kaprodi, dan hanya pada kalender prodi yang ia
+// pimpin. Kewenangannya tetap dicek server (403 untuk yang lain).
 
 const isi = document.getElementById('isi');
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
@@ -30,8 +34,11 @@ function hariDari(ymd) {
   return isNaN(d) ? '' : HARI[d.getUTCDay()];
 }
 
-let dosen = false;
+// Prodi yang kalendernya boleh disusun pengguna ini: prodi yang ia pimpin,
+// selagi peran aktifnya kaprodi. Kosong = hanya membaca.
+let prodiSusun = [];
 let daftarKalender = [];
+function bolehSusun(k) { return prodiSusun.includes(k.prodi_kode); }
 
 function tabelSesi(sesi) {
   if (!sesi || !sesi.length) return '<p class="redup">Kalender ini belum punya sesi.</p>';
@@ -78,7 +85,7 @@ function kartuKalender(k) {
     ? '<span class="lencana rendah">terbit</span>'
     : '<span class="lencana sedang">draft</span>';
   const id = escAttr(k.id);
-  const aksi = dosen
+  const aksi = bolehSusun(k)
     ? `<div class="cta-row">
         ${k.diterbitkan ? '' : `
           <button class="sekunder sunting" data-id="${id}">Sunting Sesi</button>
@@ -125,12 +132,16 @@ async function muatDaftar(filter = filterAktif) {
   filterAktif = filter;
   const q = new URLSearchParams();
   Object.entries(filter).forEach(([k, v]) => { if (v) q.set(k, v); });
-  if (dosen) q.set('draft', '1');
-  const { kalender = [] } = await apiGet('/api/kalender' + (q.toString() ? `?${q}` : ''));
+  if (prodiSusun.length) q.set('draft', '1');
+  const { kalender: semua = [] } = await apiGet('/api/kalender' + (q.toString() ? `?${q}` : ''));
+  // Draft hanya ditampilkan untuk prodi yang disusun pengguna ini.
+  const kalender = semua.filter(k => k.diterbitkan || bolehSusun(k));
   daftarKalender = kalender;
   document.getElementById('daftar').innerHTML = kalender.length
     ? kalender.map(kartuKalender).join('')
-    : '<div class="kosong">Belum ada kalender yang diterbitkan. Kalender resmi terbit sebelum semester dimulai.</div>';
+    : `<div class="kosong">${prodiSusun.length
+      ? `Belum ada kalender untuk ${esc(prodiSusun.join(', ').toUpperCase())}. Buat draft di atas, periksa sesinya, lalu terbitkan sebelum semester dimulai.`
+      : 'Belum ada kalender yang diterbitkan. Kalender resmi disusun dan diterbitkan kaprodi program studi sebelum semester dimulai.'}</div>`;
 }
 
 function kartuDari(id) { return document.querySelector(`[data-kartu="${CSS.escape(id)}"]`); }
@@ -299,8 +310,12 @@ function pasangPendengarDaftar(daftar) {
 if (!isLoggedIn()) {
   arahkanKeLogin();
 } else try {
-  try { dosen = (await apiGet('/api/proyekblok/saya')).peran === 'dosen'; } catch { dosen = false; }
-  const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
+  let saya = await sayaSekarang;
+  if (!saya) { try { saya = await apiGet('/api/proyekblok/saya'); } catch { saya = null; } }
+  const dipimpin = (saya && saya.kaprodi_prodi) || [];
+  prodiSusun = saya && adalahKaprodiAktif(saya) ? dipimpin : [];
+  const { prodi: semuaProdi = [] } = await apiGet('/api/kurikulum/prodi');
+  const prodi = semuaProdi.filter(p => prodiSusun.includes(p.kode));
   let ritme = [];
   try {
     ({ ritme = [] } = await apiGet('/api/kurikulum/ritme'));
@@ -308,8 +323,13 @@ if (!isLoggedIn()) {
     // Pilihan ritme hanya muncul kalau memang ada lebih dari satu; tanpa itu
     // backend memakai ritme bawaan, jadi halaman tetap berguna.
   }
-  isi.innerHTML = (dosen && prodi.length ? formBuat(prodi, ritme) : '') + '<div id="daftar"><p class="redup">Memuat kalender…</p></div>';
-  if (dosen && prodi.length) document.getElementById('form-kalender').addEventListener('submit', buatKalender);
+  const catatan = prodiSusun.length
+    ? `<p class="pesan info">Anda menyusun kalender ${esc(prodiSusun.join(', ').toUpperCase())} sebagai kaprodi. Kalender prodi lain hanya bisa dibaca.</p>`
+    : dipimpin.length
+      ? `<p class="pesan info">Kalender disusun kaprodi program studi. Untuk menyusun kalender ${esc(dipimpin.join(', ').toUpperCase())}, pilih peran <b>kaprodi</b> di pojok kanan atas.</p>`
+      : '<p class="pesan info">Kalender semester disusun dan diterbitkan kaprodi program studi masing-masing. Halaman ini menampilkan kalender yang sudah terbit.</p>';
+  isi.innerHTML = catatan + (prodi.length ? formBuat(prodi, ritme) : '') + '<div id="daftar"><p class="redup">Memuat kalender…</p></div>';
+  if (prodi.length) document.getElementById('form-kalender').addEventListener('submit', buatKalender);
   pasangPendengarDaftar(document.getElementById('daftar'));
   await muatDaftar();
 } catch (err) {

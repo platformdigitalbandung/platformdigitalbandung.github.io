@@ -83,6 +83,26 @@ async function tampilPanel() {
         <div class="gulir"><table><tr><th>A</th><th>B</th><th class="num">Skor</th><th>Band</th></tr>${pas || '<tr><td colspan="4">–</td></tr>'}</table></div>`;
     } catch (err) { lap.innerHTML = `<div class="pesan gagal">Gagal memuat laporan: ${esc(err.message)}</div>`; }
   };
+
+  bukaLaporanDariTautan(tugas);
+}
+
+// Tautan dari bot WhatsApp ("laporan tugas <id>"): dosen.html?laporan=<id>
+// langsung membuka laporan kemiripan tugas itu. Id wajib ObjectID (24 heksa)
+// dan harus ada di daftar tugas; selain itu hanya diberi tahu, tidak dimuat.
+function bukaLaporanDariTautan(tugas) {
+  const diminta = new URLSearchParams(location.search).get('laporan');
+  if (!diminta) return;
+  const lap = document.getElementById('laporan');
+  const pilih = document.getElementById('pilih');
+  if (!/^[0-9a-f]{24}$/i.test(diminta) || !pilih || !tugas.some(t => t.id === diminta)) {
+    if (lap) lap.innerHTML = `<div class="pesan gagal">Tugas #${esc(diminta)} dari tautan tidak ditemukan. Pilih tugas dari daftar di atas.</div>`;
+    else isi.insertAdjacentHTML('afterbegin', `<div class="pesan gagal">Tugas #${esc(diminta)} dari tautan tidak ditemukan.</div>`);
+    return;
+  }
+  pilih.value = diminta;
+  document.getElementById('muat').click();
+  lap.closest('.kartu').scrollIntoView({ block: 'start' });
 }
 
 if (!isLoggedIn()) {

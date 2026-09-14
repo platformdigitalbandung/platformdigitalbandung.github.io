@@ -23,14 +23,13 @@ function kartu(judul, keterangan, tautan, labelAksi) {
 // Laporan tingkat prodi tetap diputuskan backend (403 untuk yang lain).
 function kartuUmum() {
   return kartu('Daftar Tugas', 'Lihat tugas yang terbuka dan kumpulkan jawabannya.', 'portal.html', 'Buka Daftar Tugas')
-    + kartu('Kalender Akademik', 'Jadwal per minggu: moda, jam, dan keterangan tiap sesi.', 'kalender.html', 'Lihat Kalender');
+    + kartu('Kalender Akademik', 'Jadwal semester per minggu: moda, jam, dan keterangan tiap sesi. Kalender disusun dan diterbitkan kaprodi program studi.', 'kalender.html', 'Lihat Kalender');
 }
 
 function kartuDosen() {
   return kartuUmum()
     + kartu('Buat Tugas & Laporan Kemiripan', 'Buat tugas baru dan tinjau laporan kemiripan antar-kiriman.', 'dosen.html', 'Buka Halaman Dosen')
     + kartu('Kelola Proyek Blok', 'Buat instance proyek per rumpun, lihat anggotanya, dan input nilai per mahasiswa per mata kuliah.', 'proyek.html', 'Kelola Proyek Blok')
-    + kartu('Kelola Kalender', 'Buat draft kalender semester dari ritme mingguan, lalu terbitkan sebelum semester mulai.', 'kalender.html', 'Kelola Kalender')
     + kartu('Proyek Kerja Bimbingan', 'Putuskan pengajuan proyek di tempat kerja, kirim tinjauan, dan terbitkan tautan tinjauan untuk atasan.', 'kerja.html', 'Buka Proyek Kerja')
     + kartu('Roster Mahasiswa & Email Dosen', 'Isi email kampus Anda, tambah atau tempel banyak mahasiswa ke roster — sumber identitas akademik seluruh modul.', 'akademik.html', 'Kelola Roster')
     + kartu('Tinjau RPL', 'Setujui atau tolak pengajuan rekognisi pembelajaran lampau; yang disetujui jadi bukti CPL.', 'rpl.html', 'Tinjau Pengajuan')
@@ -70,7 +69,7 @@ function kartuKaprodi(saya) {
   const lingkup = (prodiPimpinan(saya) || []).join(', ').toUpperCase();
   return kartu('Kurikulum Program Studi', `Isi rumpun beserta mata kuliahnya, CPL, dan ritme mingguan — prasyarat sebelum kalender, roster, dan dasbor bisa dipakai prodi itu — ${lingkup}.`, 'kurikulum.html', 'Kelola Kurikulum')
     + kartu('Dosen Pengampu Prodi', `Centang dosen yang mengajar di prodi Anda — mereka yang bisa menyusun kuis gerbang dan materi — ${lingkup}.`, 'pengampu.html', 'Atur Pengampu')
-    + kartu('Kalender Akademik', `Susun draft kalender semester dari ritme mingguan, lalu terbitkan sebelum semester mulai — ${lingkup}.`, 'kalender.html', 'Kelola Kalender')
+    + kartu('Kalender Akademik', `Susun draft kalender semester dari ritme mingguan, lalu terbitkan sebelum semester mulai — hanya kaprodi yang bisa — ${lingkup}.`, 'kalender.html', 'Kelola Kalender')
     + kartuLaporan(lingkup);
 }
 
