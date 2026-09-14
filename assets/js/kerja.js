@@ -1,11 +1,12 @@
 import { apiGet, apiPostJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { sayaSekarang } from './akun.js';
+import { esc, keadaanKosong, istilah } from './ui.js';
 
 // Proyek Kerja/Magang. Peran datang dari backend (GET /api/proyekkerja/saya),
 // bukan ditebak di browser. NIM dan prodi tidak pernah dikirim dari sini:
 // keduanya diambil server dari data akademik lewat nomor WhatsApp pada token.
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 function angka(n) { return typeof n === 'number' ? n.toFixed(2) : '–'; }
 
 const LABEL_JENIS = { 'tengah-semester': 'tengah semester', 'akhir': 'akhir' };
@@ -20,27 +21,49 @@ function lencana(status) {
   return `<span class="lencana ${LENCANA[status] || 'sedang'}">${esc(status)}</span>`;
 }
 
-async function rumpunSemuaProdi() {
-  const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
-  const hasil = [];
-  for (const p of prodi) {
-    const { rumpun = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(p.kode)}/rumpun`);
-    rumpun.forEach(r => hasil.push({ kode: r.kode, nama: r.nama, prodi: p.kode }));
-  }
-  return hasil;
+// Rentang semester proyek kerja satu prodi — cermin proyekkerja.BatasSemester
+// di backend: bawaan 4–8, `semester_proyek_kerja_min` dan `semester` prodi
+// menimpanya. Backend tetap penentu; ini supaya mahasiswa yang belum waktunya
+// diberi tahu sebelum mengisi form, bukan ditolak saat mengirim.
+function batasSemester(prodi) {
+  let min = 4;
+  let max = 8;
+  if (prodi && prodi.semester_proyek_kerja_min > 0) min = prodi.semester_proyek_kerja_min;
+  if (prodi && prodi.semester > 0) max = prodi.semester;
+  if (min > max) min = max;
+  return { min, max };
 }
 
-function formAjukan(rumpun) {
+// Data untuk form pengajuan mahasiswa: rumpun prodinya sendiri (backend
+// menolak rumpun prodi lain), rentang semester prodinya, dan semester
+// berjalan dari roster (lewat rapor miliknya sendiri).
+async function dataPengajuan(identitas) {
+  const kode = identitas.prodi_kode;
+  const [{ prodi = [] }, { rumpun = [] }, rapor] = await Promise.all([
+    apiGet('/api/kurikulum/prodi'),
+    apiGet(`/api/kurikulum/prodi/${encodeURIComponent(kode)}/rumpun`),
+    apiGet(`/api/rapor/${encodeURIComponent(identitas.nim)}`).catch(() => null),
+  ]);
+  const dataProdi = prodi.find(p => p.kode === kode) || null;
+  return {
+    rumpun, prodi: dataProdi, ...batasSemester(dataProdi),
+    semester: rapor && Number(rapor.semester_berjalan) > 0 ? Number(rapor.semester_berjalan) : 0,
+  };
+}
+
+function formAjukan(d) {
+  const PRODI = String((d.prodi && d.prodi.kode) || '').toUpperCase();
   return `
     <div class="kartu">
-      <h3>Ajukan Proyek Kerja</h3>
-      <p class="meta">Pengajuan ditinjau dosen pembimbing dahulu. NIM dan program studi diambil dari data akademik Anda, tidak perlu diisi di sini.</p>
+      <h3>Ajukan ${istilah('proyek kerja', 'Proyek Kerja')}</h3>
+      <p class="meta">Proyek kerja ${esc(PRODI)} untuk semester ${d.min}–${d.max}${d.semester ? `; Anda sekarang semester ${d.semester}` : ''}. Pengajuan ditinjau dosen pembimbing dahulu. NIM dan program studi diambil dari data akademik Anda, tidak perlu diisi di sini.</p>
       <form id="form-ajukan">
         <label>Rumpun yang dikonversi
           <select name="rumpun_kode" required>
-            ${rumpun.map(r => `<option value="${esc(r.kode)}">${esc(r.kode)} — ${esc(r.nama)} (${esc(r.prodi)})</option>`).join('')}
+            <option value="">— pilih rumpun ${esc(PRODI)} —</option>
+            ${d.rumpun.map(r => `<option value="${esc(r.kode)}">${esc(r.kode)} — ${esc(r.nama)}</option>`).join('')}
           </select></label>
-        <label>Semester (kosongkan untuk ikut data akademik) <input type="number" name="semester" min="4" max="8"></label>
+        <label>Semester (kosongkan untuk ikut data akademik) <input type="number" name="semester" min="${d.min}" max="${d.max}"${d.semester ? ` placeholder="${d.semester}"` : ''}></label>
         <label>Nama perusahaan <input name="nama_perusahaan" required maxlength="120"></label>
         <label>Judul pekerjaan <input name="judul_pekerjaan" required maxlength="200"></label>
         <label>Deskripsi <textarea name="deskripsi" rows="3"></textarea></label>
@@ -51,6 +74,20 @@ function formAjukan(rumpun) {
       </form>
       <div id="hasil-ajukan"></div>
     </div>`;
+}
+
+// Kartu pengganti form bila semester roster di luar rentang prodi.
+function kartuBelumWaktunya(d) {
+  const PRODI = String((d.prodi && d.prodi.kode) || '').toUpperCase();
+  const awal = d.semester < d.min;
+  return `<div class="kartu"><h3>Ajukan ${istilah('proyek kerja', 'Proyek Kerja')}</h3>${keadaanKosong({
+    judul: awal ? `Pengajuan dibuka mulai semester ${d.min}` : `Masa pengajuan proyek kerja ${PRODI} sudah lewat`,
+    keterangan: awal
+      ? `Proyek kerja untuk ${PRODI} mulai semester ${d.min}. Menurut data akademik, Anda sekarang semester ${d.semester}, jadi form pengajuan belum ditampilkan. Kalau semester di data akademik keliru, minta pengelola prodi memperbaikinya.`
+      : `Proyek kerja untuk ${PRODI} berlaku semester ${d.min}–${d.max}, sedangkan menurut data akademik Anda semester ${d.semester}. Kalau data itu keliru, minta pengelola prodi memperbaikinya.`,
+    siapa: awal ? '' : 'pengelola program studi',
+    aksi: { href: './', label: 'Kembali ke Beranda' },
+  })}</div>`;
 }
 
 function kartuProyek(p) {
@@ -184,15 +221,29 @@ async function muat() {
     atas += '<div class="pesan gagal">Nomor ini terdaftar sebagai dosen, tetapi email kampusnya belum diisi. Putusan pengajuan dan tinjauan proyek kerja baru bisa dilakukan setelah email kampus terisi — <a href="akademik.html">isi email kampus Anda di halaman Roster &amp; Email Dosen</a>.</div>';
   }
   if (saya.peran !== 'dosen') {
-    try {
-      atas += formAjukan(await rumpunSemuaProdi());
-    } catch (err) {
-      atas += `<div class="pesan gagal">Data rumpun tidak bisa dimuat: ${esc(err.message)}</div>`;
+    const identitas = await sayaSekarang;
+    if (!identitas || !identitas.nim || !identitas.prodi_kode) {
+      atas += keadaanKosong({
+        judul: 'Data akademik Anda belum lengkap',
+        keterangan: 'Pengajuan proyek kerja memakai NIM dan program studi dari roster. Setelah pengelola prodi melengkapinya, form pengajuan tampil di sini.',
+        siapa: 'pengelola program studi',
+        aksi: { href: './', label: 'Kembali ke Beranda' },
+      });
+    } else {
+      try {
+        const d = await dataPengajuan(identitas);
+        atas += d.semester && (d.semester < d.min || d.semester > d.max) ? kartuBelumWaktunya(d) : formAjukan(d);
+      } catch (err) {
+        atas += `<div class="pesan gagal">Data rumpun tidak bisa dimuat: ${esc(err.message)}</div>`;
+      }
     }
   }
 
   isi.innerHTML = atas + `<h3>${esc(judul)}</h3>` +
-    (daftar.length ? daftar.map(kartuProyek).join('') : '<div class="kosong">Belum ada proyek kerja yang tercatat.</div>');
+    (daftar.length ? daftar.map(kartuProyek).join('')
+      : `<div class="kosong">${saya.peran === 'dosen'
+        ? 'Belum ada proyek kerja yang Anda bimbing. Pengajuan mahasiswa muncul di sini untuk diputuskan.'
+        : 'Belum ada proyek kerja yang Anda ajukan. Pengajuan dan tinjauannya tampil di sini setelah dikirim.'}</div>`);
 
   const formA = document.getElementById('form-ajukan');
   if (formA) formA.addEventListener('submit', ajukan);

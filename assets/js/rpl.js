@@ -1,4 +1,6 @@
 import { apiGet, apiPostJson, apiPostBerkasToken, isLoggedIn, arahkanKeLogin } from './api.js';
+import { sayaSekarang } from './akun.js';
+import { esc, keadaanKosong, istilah } from './ui.js';
 
 // Rekognisi Pembelajaran Lampau. Mahasiswa mengajukan (NIM diambil server dari
 // roster lewat token) dengan satu berkas bukti; dosen menyaring dan meninjau.
@@ -6,19 +8,8 @@ import { apiGet, apiPostJson, apiPostBerkasToken, isLoggedIn, arahkanKeLogin } f
 // biasa tidak mengirim Authorization sama sekali.
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
 const LENCANA = { diajukan: 'sedang', ditinjau: 'sedang', disetujui: 'rendah', ditolak: 'tinggi' };
-
-async function rumpunSemuaProdi() {
-  const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
-  const hasil = [];
-  for (const p of prodi) {
-    const { rumpun = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(p.kode)}/rumpun`);
-    rumpun.forEach(r => hasil.push({ kode: r.kode, nama: r.nama, prodi: p.kode }));
-  }
-  return hasil;
-}
 
 // model.StorageRef kini bertag json huruf kecil (repo/path/sha), sesuai
 // openapi. Sebelum 2026-09-13 kuncinya keluar huruf besar (Path); bentuk lama
@@ -31,7 +22,7 @@ function barisPengajuan(p, untukDosen) {
   return `
     <div class="kartu">
       <h3>Rumpun ${esc(p.rumpun_target)} <span class="lencana ${LENCANA[p.status] || 'sedang'}">${esc(p.status)}</span></h3>
-      <p class="meta">${untukDosen ? `NIM ${esc(p.nim)} · ` : ''}#${esc(String(p.id).slice(-6))}</p>
+      ${untukDosen ? `<p class="meta">NIM ${esc(p.nim)}</p>` : ''}
       <p>${esc(p.deskripsi)}</p>
       <p class="redup">Bukti: ${bukti.length ? bukti.map(b => `<code>${esc(b.split('/').pop())}</code>`).join(', ') : 'tidak ada berkas'}</p>
       ${p.catatan ? `<p class="redup">Catatan peninjau${p.dinilai_oleh ? ` (${esc(p.dinilai_oleh)})` : ''}: ${esc(p.catatan)}</p>` : ''}
@@ -48,15 +39,17 @@ function barisPengajuan(p, untukDosen) {
     </div>`;
 }
 
-function kartuAjukan(rumpun) {
+function kartuAjukan(rumpun, prodi) {
+  const PRODI = String(prodi || '').toUpperCase();
   return `
     <div class="kartu">
-      <h3>Ajukan RPL</h3>
+      <h3>Ajukan ${istilah('rpl', 'RPL')}</h3>
       <p class="meta">NIM tidak perlu diisi — diambil dari data akademik Anda. Satu berkas bukti per pengajuan (portofolio, sertifikat, atau surat keterangan kerja).</p>
       <form id="form-ajukan">
         <label>Rumpun yang ingin diakui
           <select name="rumpun_target" required>
-            ${rumpun.map(r => `<option value="${esc(r.kode)}">${esc(r.kode)} — ${esc(r.nama)} (${esc(r.prodi)})</option>`).join('')}
+            <option value="">— pilih rumpun ${esc(PRODI)} —</option>
+            ${rumpun.map(r => `<option value="${esc(r.kode)}">${esc(r.kode)} — ${esc(r.nama)}</option>`).join('')}
           </select></label>
         <label>Uraian pengalaman <textarea name="deskripsi" rows="4" required maxlength="2000"></textarea></label>
         <label>Berkas bukti (opsional) <input type="file" id="bukti" name="bukti"></label>
@@ -94,7 +87,7 @@ async function muatRiwayat() {
   try {
     const { rpl = [] } = await apiGet(`/api/mahasiswa/${encodeURIComponent(nimSaya)}/rpl`, { auth: true });
     wadah.innerHTML = rpl.length ? rpl.map(p => barisPengajuan(p, false)).join('')
-      : '<div class="kosong">Belum ada pengajuan RPL.</div>';
+      : '<div class="kosong">Belum ada pengajuan RPL. Pengajuan yang Anda kirim beserta putusan dosennya tampil di sini.</div>';
   } catch (err) {
     wadah.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
@@ -128,7 +121,11 @@ async function tinjau(e) {
 }
 
 async function muat() {
-  const saya = await apiGet('/api/proyekblok/saya', { auth: true });
+  const saya = await sayaSekarang;
+  if (!saya) {
+    isi.innerHTML = '<div class="pesan gagal">Sesi Anda sudah berakhir atau backend tidak terjangkau. Tekan Masuk lagi di pojok kanan atas.</div>';
+    return;
+  }
   if (saya.peran === 'dosen') {
     isi.innerHTML = `
       <div class="kartu">
@@ -150,12 +147,18 @@ async function muat() {
     await muatDaftarDosen();
     return;
   }
-  if (!saya.nim) {
-    isi.innerHTML = '<div class="kosong">Nomor ini belum tercatat di roster mahasiswa, jadi pengajuan RPL tidak bisa dicatat atas nama siapa pun. Hubungi pengelola prodi.</div>';
+  if (!saya.nim || !saya.prodi_kode) {
+    isi.innerHTML = keadaanKosong({
+      judul: 'Data akademik Anda belum lengkap',
+      keterangan: 'Pengajuan RPL dicatat atas NIM dan rumpun program studi Anda di roster. Setelah pengelola prodi melengkapinya, form pengajuan tampil di sini.',
+      siapa: 'pengelola program studi',
+      aksi: { href: './', label: 'Kembali ke Beranda' },
+    });
     return;
   }
   nimSaya = saya.nim;
-  isi.innerHTML = kartuAjukan(await rumpunSemuaProdi())
+  const { rumpun = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(saya.prodi_kode)}/rumpun`);
+  isi.innerHTML = kartuAjukan(rumpun, saya.prodi_kode)
     + '<h3>Pengajuan Anda</h3><div id="riwayat"></div>';
   document.getElementById('form-ajukan').addEventListener('submit', ajukan);
   muatRiwayat();

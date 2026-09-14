@@ -1,0 +1,44 @@
+/* Halaman kelompok mahasiswa (materi, kuis, portal/tugas, dasbor, nilai,
+   kerja, rpl). Ditautkan sesudah style.css. Audit UX 2026-09-14. */
+
+/* Materi minggu berjalan dikelompokkan per rumpun (materi.js) */
+.kelompok-rumpun + .kelompok-rumpun { margin-top: 1.4rem; }
+.judul-rumpun { font-size: 1rem; margin: 1.2rem 0 .6rem; color: var(--tinta); }
+
+/* Pemilih minggu/rumpun lain dilipat di bawah kartu minggu berjalan */
+details.minggu-lain { margin-top: .6rem; border-top: 1px solid var(--garis-halus); }
+details.minggu-lain > summary {
+  cursor: pointer; font-weight: 500; color: var(--aksen); padding: .6rem 0;
+  min-height: 44px; display: flex; align-items: center;
+}
+details.minggu-lain[open] > summary { margin-bottom: .2rem; }
+
+/* Soal kuis untuk mahasiswa: satu fieldset per soal, pilihan bisa diketuk selebar baris */
+fieldset.soal-jawab { border: 0; border-top: 1px solid var(--garis-halus); margin: 0; padding: .7rem 0 .4rem; min-width: 0; }
+fieldset.soal-jawab legend { font-weight: 600; padding: 0; margin-bottom: .35rem; float: left; width: 100%; }
+fieldset.soal-jawab legend + label { clear: left; }
+fieldset.soal-jawab label { display: flex; align-items: center; gap: .6rem; font-weight: 400; margin: .2rem 0; padding: .35rem 0; }
+fieldset.soal-jawab label input { flex: none; margin: 0; }
+#form-jawab > button { margin-top: .8rem; }
+
+/* Daftar tugas: judul dan status sebaris, membungkus di layar sempit */
+.kartu-tugas .tugas-kepala { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .75rem; }
+.kartu-tugas .tugas-kepala h3 { margin: 0; flex: 1 1 14rem; min-width: 0; overflow-wrap: anywhere; }
+.kartu-tugas .tugas-deskripsi { margin: .5rem 0 0; }
+.kartu-tugas .cta-row { margin: .7rem 0 0; }
+.ringkas-tugas { margin: 0 0 .8rem; }
+.nomor-bukti { overflow-wrap: anywhere; }
+
+@media (max-width: 620px) {
+  .kartu-tugas .cta-row a.aksi { width: 100%; text-align: center; }
+}
+
+/* Penyusun kuis (dosen): bulatan jawaban benar dibungkus label supaya
+   area ketuknya 44px di layar sentuh (kuis.js htmlPilihan) */
+.pilihan-kuis label.tanda-benar { margin: 0; display: flex; align-items: center; justify-content: center; min-width: 2.25rem; min-height: 2.25rem; flex: none; cursor: pointer; }
+@media (pointer: coarse) {
+  .pilihan-kuis label.tanda-benar { min-width: 44px; min-height: 44px; }
+}
+
+/* Baris keterangan yang memuat istilah (details tidak boleh di dalam <p>) */
+.kartu > div.meta, .halaman > #isi > div.redup { margin: 0 0 .6rem; max-width: 72ch; }

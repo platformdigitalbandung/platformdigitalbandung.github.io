@@ -1,4 +1,7 @@
 import { apiGet, apiPostJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { sayaSekarang } from './akun.js';
+import { esc, keadaanKosong, istilah } from './ui.js';
+import { pekanMahasiswa } from './hal-mahasiswa.js';
 import { buatPelacak } from './pelacak.js';
 import { pasangPDF } from './pdfmateri.js';
 
@@ -9,7 +12,6 @@ import { pasangPDF } from './pdfmateri.js';
 // dan di pembaca PDF.
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
 // Batas kirim: event dari pemutar datang terus-menerus, tapi server hanya
 // menyimpan nilai terbesar — mengirim tiap detik cuma membebani backend.
@@ -18,12 +20,15 @@ const LANGKAH_BACAAN = 10;   // kirim tiap naik >= 10 poin persen
 const LANGKAH_BERKAS = 10;   // kirim tiap naik >= 10 poin persen
 const JEDA_POLL_MS = 10000;  // cek posisi video tiap 10 detik selama diputar
 
-let konteks = { rumpun: '', minggu: 0 };
-const pelacak = new Map(); // materi_id -> { terkirim, tersimpan, berhenti }
+// materi_id -> { terkirim, tersimpan, berhenti, rumpun, minggu }. Rumpun dan
+// minggu ikut disimpan per materi karena satu tampilan bisa memuat beberapa rumpun.
+const pelacak = new Map();
 
-function pelacakUntuk(id, tersimpanAwal) {
-  if (!pelacak.has(id)) pelacak.set(id, { terkirim: tersimpanAwal, tersimpan: tersimpanAwal, berhenti: false });
-  return pelacak.get(id);
+function pelacakUntuk(m, tersimpanAwal) {
+  if (!pelacak.has(m.id)) {
+    pelacak.set(m.id, { terkirim: tersimpanAwal, tersimpan: tersimpanAwal, berhenti: false, rumpun: m.rumpun_kode, minggu: m.minggu });
+  }
+  return pelacak.get(m.id);
 }
 
 function tampilkanProgres(id) {
@@ -45,7 +50,7 @@ async function kirimProgres(id, persen, langkah, halamanTerakhir) {
   p.terkirim = persen;
   try {
     const badan = {
-      rumpun_kode: konteks.rumpun, minggu: konteks.minggu, materi_id: id, persen_selesai: persen,
+      rumpun_kode: p.rumpun, minggu: p.minggu, materi_id: id, persen_selesai: persen,
     };
     if (halamanTerakhir > 0) badan.halaman_terakhir = Math.floor(halamanTerakhir);
     const r = await apiPostJson('/api/progresmateri', badan);
@@ -181,29 +186,50 @@ function kartuMateri(m) {
     </div>`;
 }
 
-async function muatMateri(e, nim, prodi) {
-  if (e) e.preventDefault();
-  const fd = new FormData(document.getElementById('form-pilih'));
-  konteks = { rumpun: fd.get('rumpun'), minggu: Number(fd.get('minggu')) };
+// Materi satu minggu. Rumpun kosong = semua rumpun; `rumpunBerlaku` (bila
+// diketahui dari kalender) menyaring ke rumpun yang dijadwalkan minggu itu.
+async function muatMateri({ nim, prodi, rumpun = '', minggu, rumpunBerlaku = [], namaRumpun = {} }) {
   const wadah = document.getElementById('daftar-materi');
+  if (!minggu || minggu < 1) {
+    wadah.innerHTML = '<div class="pesan gagal">Isi minggu dengan angka mulai dari 1.</div>';
+    return;
+  }
   wadah.innerHTML = '<p class="redup">Memuat materi…</p>';
   // Kartu lama dibuang: pelacak halamannya ikut dihentikan supaya listener
   // visibilitychange-nya tidak menumpuk tiap saringan diganti.
   pelacakBerkas.splice(0).forEach(pel => pel.berhenti());
   pelacak.clear();
   try {
-    const q = new URLSearchParams({ prodi, rumpun: konteks.rumpun, minggu: String(konteks.minggu) });
-    const [{ materi = [] }, { progres = [] }] = await Promise.all([
+    const q = new URLSearchParams({ prodi, minggu: String(minggu) });
+    if (rumpun) q.set('rumpun', rumpun);
+    const [{ materi: semua = [] }, { progres = [] }] = await Promise.all([
       apiGet(`/api/materi?${q}`, { auth: true }),
-      apiGet(`/api/mahasiswa/${encodeURIComponent(nim)}/progres?minggu=${konteks.minggu}`, { auth: true }),
+      apiGet(`/api/mahasiswa/${encodeURIComponent(nim)}/progres?minggu=${minggu}`, { auth: true }),
     ]);
+    const materi = (semua || []).filter(m => rumpun || !rumpunBerlaku.length || rumpunBerlaku.includes(m.rumpun_kode));
     if (!materi.length) {
-      wadah.innerHTML = '<div class="kosong">Belum ada materi untuk rumpun dan minggu ini. Dosen menambahkannya lewat halaman Kelola Materi.</div>';
+      const untuk = rumpun ? `rumpun ${rumpun} minggu ${minggu}` : `minggu ${minggu}`;
+      wadah.innerHTML = keadaanKosong({
+        judul: `Belum ada materi ${untuk}`,
+        keterangan: 'Dosen pengampu belum menambahkan materinya ke katalog. Materi langsung tampil di halaman ini begitu ditambahkan.',
+        siapa: `dosen pengampu ${prodi.toUpperCase()}`,
+        aksi: [{ href: 'forum.html', label: 'Tanya di forum' }, { href: 'kalender.html', label: 'Lihat kalender' }],
+      });
       return;
     }
     const tersimpan = new Map(progres.map(p => [p.materi_id, p.persen_selesai]));
-    materi.forEach(m => pelacakUntuk(m.id, tersimpan.get(m.id) || 0));
-    wadah.innerHTML = materi.map(kartuMateri).join('');
+    materi.forEach(m => pelacakUntuk(m, tersimpan.get(m.id) || 0));
+    // Dikelompokkan per rumpun (urutan katalog dipertahankan dalam tiap rumpun).
+    const kelompok = new Map();
+    materi.forEach(m => {
+      if (!kelompok.has(m.rumpun_kode)) kelompok.set(m.rumpun_kode, []);
+      kelompok.get(m.rumpun_kode).push(m);
+    });
+    wadah.innerHTML = [...kelompok.entries()].map(([kode, daftar]) => `
+      <section class="kelompok-rumpun">
+        <h2 class="judul-rumpun">${esc(kode)}${namaRumpun[kode] ? ` — ${esc(namaRumpun[kode])}` : ''}</h2>
+        ${daftar.map(kartuMateri).join('')}
+      </section>`).join('');
     for (const m of materi) {
       if (m.jenis === 'video') {
         pasangVideo(m).catch(err => {
@@ -225,7 +251,11 @@ async function muatMateri(e, nim, prodi) {
 }
 
 async function muat() {
-  const saya = await apiGet('/api/proyekblok/saya', { auth: true });
+  const saya = await sayaSekarang;
+  if (!saya) {
+    isi.innerHTML = '<div class="pesan gagal">Sesi Anda sudah berakhir atau backend tidak terjangkau. Tekan Masuk lagi di pojok kanan atas.</div>';
+    return;
+  }
   if (saya.peran === 'dosen') {
     isi.innerHTML = `<div class="kartu"><h3>Halaman ini untuk mahasiswa</h3>
       <p class="meta">Katalog materi dikelola dosen lewat halaman Kelola Materi.</p>
@@ -233,37 +263,73 @@ async function muat() {
     return;
   }
   if (!saya.nim) {
-    isi.innerHTML = '<div class="kosong">Nomor ini belum tercatat di roster mahasiswa, jadi progres materi tidak bisa dicatat atas nama siapa pun. Hubungi pengelola prodi.</div>';
+    isi.innerHTML = keadaanKosong({
+      judul: 'Nomor ini belum tercatat di roster mahasiswa',
+      keterangan: 'Materi dan progres belajar dicatat atas nama NIM. Setelah nomor WhatsApp Anda didaftarkan di roster, materi prodi Anda tampil di sini.',
+      siapa: 'pengelola program studi',
+      aksi: { href: './', label: 'Kembali ke Beranda' },
+    });
     return;
   }
   if (!saya.prodi_kode) {
-    isi.innerHTML = '<div class="kosong">Program studi Anda belum tercatat di roster mahasiswa, jadi materi prodi Anda belum bisa ditentukan. Hubungi pengelola prodi.</div>';
+    isi.innerHTML = keadaanKosong({
+      judul: 'Program studi Anda belum tercatat di roster',
+      keterangan: 'Materi disusun per program studi, jadi belum bisa ditentukan materi mana yang untuk Anda.',
+      siapa: 'pengelola program studi',
+      aksi: { href: './', label: 'Kembali ke Beranda' },
+    });
     return;
   }
   const prodi = saya.prodi_kode;
-  const { rumpun = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(prodi)}/rumpun`);
+  const PRODI = prodi.toUpperCase();
+  const [pekan, { rumpun = [] }] = await Promise.all([
+    pekanMahasiswa(prodi),
+    apiGet(`/api/kurikulum/prodi/${encodeURIComponent(prodi)}/rumpun`),
+  ]);
 
-  // Minggu bawaan dari kalender terbit lewat dasbor; kalau belum terbit, 1.
-  let mingguAwal = 1;
-  try {
-    const beban = await apiGet(`/api/dasbor/beban-belajar/${encodeURIComponent(saya.nim)}`, { auth: true });
-    if (beban.minggu) mingguAwal = beban.minggu;
-  } catch (_) { /* kalender belum terbit */ }
+  if (!pekan.terbit) {
+    isi.innerHTML = keadaanKosong({
+      judul: `Kalender semester ${PRODI} belum diterbitkan`,
+      keterangan: 'Materi dibuka per minggu mengikuti kalender semester. Begitu kaprodi menerbitkan kalender Anda, materi minggu berjalan langsung tampil di halaman ini tanpa perlu memilih apa pun.',
+      siapa: `kaprodi ${PRODI}`,
+      aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }, { href: 'forum.html', label: 'Tanya di forum' }],
+    });
+    return;
+  }
+
+  const namaRumpun = Object.fromEntries((rumpun || []).map(r => [r.kode, r.nama]));
+  const mingguAwal = pekan.minggu || 1;
+  const judulPekan = pekan.minggu
+    ? `Minggu ${pekan.minggu}${pekan.rentang ? ` · ${esc(pekan.rentang)}` : ''}`
+    : 'Pilih minggu';
+  const keterangan = pekan.minggu
+    ? `Materi ${pekan.rumpun.length ? `rumpun ${pekan.rumpun.map(esc).join(', ')}` : 'semua rumpun'} yang dijadwalkan minggu ini. Selesaikan sebelum sesi Jumat.`
+    : 'Hari ini di luar jadwal kalender semester Anda (perkuliahan belum mulai atau sudah selesai). Pilih minggu yang ingin dibuka.';
 
   isi.innerHTML = `
-    <div class="kartu">
-      <h3>Pilih Rumpun &amp; Minggu</h3>
-      <form id="form-pilih">
-        <label>Rumpun <select name="rumpun" required>
-          ${rumpun.map(r => `<option value="${esc(r.kode)}">${esc(r.kode)} — ${esc(r.nama)}</option>`).join('')}
-        </select></label>
-        <label>Minggu <input type="number" name="minggu" min="1" max="52" required value="${esc(mingguAwal)}"></label>
-        <button>Tampilkan Materi</button>
-      </form>
+    <div class="kartu kartu-pekan">
+      <h3>${judulPekan}</h3>
+      <p class="meta">${keterangan}</p>
+      <div class="meta">Materi dikelompokkan per ${istilah('rumpun')}.</div>
+      <details class="minggu-lain"${pekan.minggu ? '' : ' open'}>
+        <summary>Lihat minggu atau rumpun lain</summary>
+        <form id="form-pilih">
+          <label>Rumpun <select name="rumpun">
+            <option value="">Semua rumpun</option>
+            ${(rumpun || []).map(r => `<option value="${esc(r.kode)}">${esc(r.kode)} — ${esc(r.nama)}</option>`).join('')}
+          </select></label>
+          <label>Minggu <input type="number" name="minggu" min="1" max="52" required value="${esc(mingguAwal)}"></label>
+          <button>Tampilkan Materi</button>
+        </form>
+      </details>
     </div>
     <div id="daftar-materi"></div>`;
-  document.getElementById('form-pilih').addEventListener('submit', e => muatMateri(e, saya.nim, prodi));
-  if (rumpun.length) await muatMateri(null, saya.nim, prodi);
+  document.getElementById('form-pilih').addEventListener('submit', e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    muatMateri({ nim: saya.nim, prodi, rumpun: fd.get('rumpun') || '', minggu: Number(fd.get('minggu')), namaRumpun });
+  });
+  await muatMateri({ nim: saya.nim, prodi, minggu: mingguAwal, rumpunBerlaku: pekan.rumpun, namaRumpun });
 }
 
 if (!isLoggedIn()) {
