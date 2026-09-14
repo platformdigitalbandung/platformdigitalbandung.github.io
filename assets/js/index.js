@@ -1,5 +1,7 @@
 import { apiGet } from './api.js';
 import { sayaSekarang, peranAktif, labelPeran } from './akun.js';
+import { esc, keadaanKosong } from './ui.js';
+import { terdaftar as sudahTerdaftar, langkahMulai, semuaSelesai, ringkasMulai, htmlDaftarMulai, jenisTercakup } from './hal-beranda.js';
 
 // Beranda LMS. Isinya bergantung pada peran aktif (pemilih peran di bilah atas,
 // akun.js): admin, kaprodi, dosen, atau mahasiswa — masing-masing punya agenda
@@ -9,8 +11,6 @@ import { sayaSekarang, peranAktif, labelPeran } from './akun.js';
 // Sebelum masuk beranda cuma menampilkan sambutan (keputusan pemilik produk
 // 2026-09-14; backend juga menolak tanpa token). Tidak ada form login di sini —
 // tombol Masuk di bilah atas (akun.js) mengarahkan ke /login/.
-
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
 const ZONA = 'Asia/Jakarta';
 const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -130,6 +130,31 @@ function tampilLayanan(peran) {
   catatan.hidden = !CATATAN_PERAN[peran];
 }
 
+// Perintah bot WhatsApp per peran (audit UX U20). Kaprodi dan admin belum punya
+// perintah laporan lewat WhatsApp, jadi panelnya disembunyikan untuk mereka.
+const PERINTAH_WA = {
+  mahasiswa: [
+    ['kalender minggu ini', 'Jadwal minggu ini'],
+    ['daftar tugas', 'Tugas yang masih terbuka'],
+    ['nilai saya', 'Rekap nilai proyek'],
+    ['tanya forum | rumpun R1 | minggu 3 | Apa maksud kuis gerbang?', 'Bertanya ke dosen: rumpun, minggu, lalu pertanyaan'],
+  ],
+  dosen: [
+    ['forum belum dijawab', 'Pertanyaan mahasiswa yang menunggu jawaban'],
+    ['daftar proyek saya', 'Proyek blok yang Anda bimbing'],
+    ['status proyek kerja', 'Proyek kerja bimbingan dan statusnya'],
+    ['daftar tugas', 'Tugas yang masih terbuka'],
+  ],
+};
+
+function tampilWhatsApp(peran) {
+  const perintah = PERINTAH_WA[peran];
+  document.getElementById('panel-wa').hidden = !perintah;
+  if (!perintah) return;
+  document.getElementById('perintah-wa').innerHTML = perintah
+    .map(([kode, ket]) => `<li><code>${esc(kode)}</code><span class="kecil">${esc(ket)}</span></li>`).join('');
+}
+
 // ===== Agenda =====
 
 // Tautan agenda datang dari backend; hanya halaman situs ini yang diikuti.
@@ -137,13 +162,9 @@ function tautanAman(t) {
   return /^[a-z0-9-]+\.html(?:[?#][\w=&%.,:+\-/]*)?$/i.test(String(t || '')) ? t : 'saya.html';
 }
 
-function urutAgenda(daftar) {
-  const waktu = b => (b.tenggat ? Date.parse(b.tenggat) || Infinity : Infinity);
-  return daftar.map((b, i) => [b, i])
-    .sort(([a, i], [b, j]) => (Number(!!b.mendesak) - Number(!!a.mendesak)) || (waktu(a) - waktu(b)) || (i - j))
-    .map(([b]) => b);
-}
-
+// Urutan butir datang dari backend dan ditampilkan apa adanya: bagian kaprodi
+// diurut menurut ketergantungan (kurikulum, pengampu, kalender, laporan),
+// bagian lain mendesak dan tenggat terdekat dulu.
 function htmlButir(b) {
   const label = [
     b.mendesak ? '<span class="lencana tinggi">Mendesak</span>' : '',
@@ -155,29 +176,74 @@ function htmlButir(b) {
   ].filter(Boolean).join(' · ');
   return `<li class="agenda-butir${b.mendesak ? ' mendesak' : ''}">
     <a href="${esc(tautanAman(b.tautan))}">
-      ${b.jumlah > 0 ? `<span class="agenda-jumlah" aria-label="${esc(b.jumlah)} butir">${esc(b.jumlah)}</span>` : '<span class="agenda-jumlah kosong-jumlah" aria-hidden="true">•</span>'}
+      ${b.jumlah > 0
+        ? `<span class="agenda-jumlah" aria-label="${esc(b.jumlah)} butir">${esc(b.jumlah)}</span>`
+        : `<span class="agenda-tanda ${b.sifat === 'akan' ? 'tanda-akan' : 'tanda-perlu'}" aria-hidden="true"></span>`}
       <span class="agenda-teks"><b>${esc(b.judul)}</b>${label}${rincian ? `<span class="agenda-rincian">${rincian}</span>` : ''}</span>
     </a></li>`;
 }
 
 function htmlDaftarAgenda(daftar) {
-  return `<ul class="daftar-agenda">${urutAgenda(daftar).map(htmlButir).join('')}</ul>`;
+  return `<ul class="daftar-agenda">${daftar.map(htmlButir).join('')}</ul>`;
 }
 
-const KOSONG_PERLU = {
-  admin: 'Tidak ada yang perlu dikerjakan. Semua prodi sudah punya kaprodi dan penyiapan sudah beres.',
-  kaprodi: 'Tidak ada yang perlu dikerjakan untuk prodi Anda saat ini.',
-  dosen: 'Tidak ada yang perlu dikerjakan. Pertanyaan, rekaman, dan pengajuan sudah tertangani.',
-  mahasiswa: 'Tidak ada yang perlu dikerjakan. Materi, kuis, dan tugas pekan ini sudah beres.',
-};
+// "Perlu dikerjakan" yang kosong hanya berbunyi "beres" kalau agenda memang
+// bisa dihitung. Tanpa kalender terbit (atau di luar minggu perkuliahan) tidak
+// ada minggu berjalan, jadi materi dan kuis per minggu belum diperiksa sama
+// sekali — itu dikatakan apa adanya (audit UX U02).
+function htmlPerluKosong(agenda, peran, bagian, saya, adaDiMulai) {
+  const minggu = Number(agenda.minggu_berjalan) || 0;
+  const kalender = bagian.find(b => b.jenis === 'kalender_belum_terbit');
+  // Butir yang sudah tampil sebagai langkah di "Mulai di sini" tidak diulang;
+  // pesannya pun tidak mengklaim semuanya beres.
+  const beres = teks => (adaDiMulai
+    ? '<p class="pesan-kosong">Tidak ada hal lain yang perlu dikerjakan selain langkah di <b>Mulai di sini</b>.</p>'
+    : `<p class="pesan-kosong agenda-beres">${esc(teks)}</p>`);
+  if (peran === 'mahasiswa') {
+    const prodi = String(saya.prodi_kode || '').toUpperCase();
+    if (kalender) {
+      return keadaanKosong({
+        judul: 'Agenda mingguan belum bisa dihitung',
+        keterangan: `Kalender semester ${prodi} belum diterbitkan, jadi materi dan kuis gerbang pekan ini belum ada. Agenda mingguan muncul di sini setelah kaprodi menerbitkan kalender prodi.`,
+        siapa: `kaprodi ${prodi}`,
+        aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }, { href: 'forum.html', label: 'Tanya di forum' }],
+      });
+    }
+    if (!minggu) {
+      return keadaanKosong({
+        judul: 'Sedang tidak ada minggu perkuliahan',
+        keterangan: 'Materi dan kuis gerbang diperiksa per minggu perkuliahan. Agendanya muncul lagi saat minggu perkuliahan berjalan.',
+        aksi: { href: 'kalender.html', label: 'Lihat kalender' },
+      });
+    }
+    return beres(`Tidak ada yang perlu dikerjakan: materi dan kuis gerbang minggu ${minggu} sudah beres.`);
+  }
+  if (peran === 'dosen') {
+    if (kalender) {
+      return keadaanKosong({
+        judul: 'Agenda mingguan belum bisa dihitung',
+        keterangan: `${kalender.judul}. Agenda mingguan (materi dan kuis per minggu) muncul setelah kaprodi menerbitkan kalender prodi. Anda sudah bisa menyiapkan materi dan kuis minggu 1.`,
+        siapa: 'kaprodi prodi tempat Anda mengajar',
+        aksi: [{ href: 'kelola-materi.html', label: 'Kelola materi' }, { href: 'kuis.html', label: 'Susun kuis' }],
+      });
+    }
+    return beres(minggu
+      ? 'Tidak ada yang perlu dikerjakan: pertanyaan forum, rekaman, pengajuan, serta materi dan kuis minggu ini dan depan sudah tertangani.'
+      : 'Tidak ada yang perlu dikerjakan saat ini: pertanyaan forum, rekaman, dan pengajuan sudah tertangani. Sedang tidak ada minggu perkuliahan berjalan.');
+  }
+  if (peran === 'admin') return beres('Tidak ada yang perlu dikerjakan: semua prodi sudah punya kaprodi dan semua dosen aktif sudah mengisi email kampus.');
+  return beres('Tidak ada yang perlu dikerjakan untuk prodi Anda saat ini: kurikulum, dosen pengampu, dan kalender sudah siap.');
+}
 
-function tampilAgenda(agenda, peran) {
+function tampilAgenda(agenda, peran, saya, tercakup) {
   const bagian = Array.isArray(agenda[peran]) ? agenda[peran] : [];
-  const perlu = bagian.filter(b => b.sifat === 'perlu');
-  const akan = bagian.filter(b => b.sifat === 'akan');
+  const tampil = bagian.filter(b => !tercakup.has(b.jenis));
+  const perlu = tampil.filter(b => b.sifat === 'perlu');
+  const akan = tampil.filter(b => b.sifat === 'akan');
+  const adaDiMulai = bagian.some(b => b.sifat === 'perlu' && tercakup.has(b.jenis));
   document.getElementById('agenda-perlu').innerHTML = perlu.length
     ? htmlDaftarAgenda(perlu)
-    : `<p class="pesan-kosong agenda-beres">${esc(KOSONG_PERLU[peran] || 'Tidak ada yang perlu dikerjakan.')}</p>`;
+    : htmlPerluKosong(agenda, peran, bagian, saya, adaDiMulai);
   const mendesak = perlu.filter(b => b.mendesak).length;
   document.getElementById('jumlah-perlu').textContent = perlu.length
     ? `${perlu.length} hal${mendesak ? ` · ${mendesak} mendesak` : ''}` : '';
@@ -186,10 +252,25 @@ function tampilAgenda(agenda, peran) {
     : '<p class="pesan-kosong">Belum ada agenda terjadwal.</p>';
 }
 
-async function muatAgenda(peran) {
+// Checklist "Mulai di sini": langkah awal peran aktif, disembunyikan bila
+// semua langkah berstatus sudah selesai (audit UX U09, §3.3).
+// Mengembalikan jenis butir agenda yang sudah diwakili checklist (kosong bila
+// checklist disembunyikan), supaya agenda tidak mengulangnya.
+function tampilMulai(peran, saya, agenda) {
+  const langkah = langkahMulai(peran, saya, agenda);
+  const panel = document.getElementById('panel-mulai');
+  if (semuaSelesai(langkah)) { panel.hidden = true; return new Set(); }
+  document.getElementById('ringkas-mulai').textContent = ringkasMulai(langkah);
+  document.getElementById('mulai').innerHTML = htmlDaftarMulai(langkah);
+  panel.hidden = false;
+  return jenisTercakup(langkah);
+}
+
+async function muatAgenda(peran, saya) {
   try {
     const agenda = await apiGet('/api/beranda/agenda', { auth: true });
-    tampilAgenda(agenda || {}, peran);
+    const tercakup = tampilMulai(peran, saya, agenda || {});
+    tampilAgenda(agenda || {}, peran, saya, tercakup);
   } catch (err) {
     const sebab = err.status === 404 ? '' : ` (${esc(err.message)})`;
     document.getElementById('agenda-perlu').innerHTML = `<p class="pesan-kosong">Agenda belum tersedia${sebab}. Menu layanan di bawah tetap bisa dipakai.</p>`;
@@ -319,8 +400,7 @@ document.getElementById('hari-ini').textContent = hariIniTeks;
 const saya = await sayaSekarang;
 // /api/proyekblok/saya menjawab peran "mahasiswa" juga untuk nomor yang tidak
 // terdaftar; prodi_kode hanya terisi untuk mahasiswa yang ada di roster.
-const terdaftar = saya && (saya.peran === 'dosen' || (saya.peran === 'mahasiswa' && saya.prodi_kode));
-if (terdaftar) {
+if (sudahTerdaftar(saya)) {
   const peran = peranAktif(saya);
   const lingkup = lingkupProdi(saya, peran);
   const label = peran === 'mahasiswa' ? `mahasiswa ${String(saya.prodi_kode || '').toUpperCase()}`.trim() : labelPeran(saya);
@@ -334,13 +414,17 @@ if (terdaftar) {
   if (peran === 'admin') document.getElementById('judul-prodi').textContent = 'Penyiapan program studi';
 
   tampilLayanan(peran);
-  muatAgenda(peran);
+  tampilWhatsApp(peran);
+  muatAgenda(peran, saya);
   muatProdi(lingkup, peran);
   if (peran !== 'admin') muatJadwal(lingkup);
 } else {
+  // Tamu dan nomor tak terdaftar diberi tahu siapa yang mendaftarkan: tidak ada
+  // pendaftaran mandiri (pdb/README.md bagian Frontend).
   if (saya) {
+    document.getElementById('judul-belum-masuk').textContent = 'Nomor belum terdaftar';
     document.getElementById('pesan-belum-masuk').textContent =
-      'Nomor WhatsApp ini belum terdaftar sebagai mahasiswa atau dosen. Hubungi pengelola program studi untuk didaftarkan.';
+      'Nomor WhatsApp ini belum terdaftar sebagai mahasiswa atau dosen, jadi belum ada jadwal dan layanan yang bisa ditampilkan.';
   }
   document.getElementById('panel-belum-masuk').hidden = false;
 }

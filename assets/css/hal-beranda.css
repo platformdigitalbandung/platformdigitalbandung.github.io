@@ -1,0 +1,80 @@
+/* Beranda (index.html) dan Beranda Saya (saya.html) — audit UX 2026-09-14.
+   Ditautkan sesudah style.css. */
+
+/* Teks hanya untuk pembaca layar. */
+.tersembunyi {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ===== Agenda: tanda butir tanpa jumlah (pengganti titik bullet) ===== */
+.agenda-tanda {
+  flex: none; width: 2rem; height: 1.45rem; display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; background: var(--aksen-muda);
+}
+.agenda-tanda::before { content: ""; display: block; box-sizing: border-box; }
+/* Perlu dikerjakan: kotak centang kosong. */
+.agenda-tanda.tanda-perlu::before { width: .7rem; height: .7rem; border: 2px solid var(--aksen); border-radius: 2px; }
+.agenda-butir.mendesak .agenda-tanda { background: var(--tinggi-muda); }
+.agenda-butir.mendesak .agenda-tanda.tanda-perlu::before { border-color: var(--tinggi); }
+/* Akan datang: jam/tanda tunggu. */
+.agenda-tanda.tanda-akan { background: var(--latar); }
+.agenda-tanda.tanda-akan::before { width: .7rem; height: .7rem; border: 2px solid var(--redup); border-radius: 50%; }
+
+/* Keadaan kosong di dalam panel agenda. */
+#agenda-perlu .kosong-langkah { margin: .8rem 1rem; }
+
+/* ===== Mulai di sini (checklist per peran) ===== */
+.daftar-mulai { list-style: none; margin: 0; padding: 0; }
+.mulai-butir {
+  display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; gap: .35rem .75rem; align-items: start;
+  padding: .65rem 1rem; border-bottom: 1px solid var(--garis-halus);
+}
+.mulai-butir:last-child { border-bottom: 0; }
+.mulai-tanda {
+  width: 1.6rem; height: 1.6rem; margin-top: .05rem; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; font-family: var(--mono); font-size: .8rem; font-weight: 500;
+  border: 2px solid var(--aksen); color: var(--aksen);
+}
+.mulai-tanda.rutin { border-style: dashed; border-color: var(--garis-kuat); color: var(--redup); }
+.mulai-tanda.selesai { background: var(--rendah); border-color: var(--rendah); }
+/* Centang digambar dengan CSS, bukan karakter. */
+.mulai-tanda.selesai::before {
+  content: ""; width: .35rem; height: .65rem; margin-top: -.15rem;
+  border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.mulai-teks { min-width: 0; overflow-wrap: anywhere; }
+.mulai-teks b { display: block; font-weight: 500; }
+.mulai-butir.selesai .mulai-teks b { color: var(--redup); }
+.mulai-status { display: block; font-size: .8rem; color: var(--redup); margin-top: .1rem; max-width: 72ch; }
+.mulai-aksi { display: flex; flex-wrap: wrap; gap: .2rem .8rem; justify-content: flex-end; font-size: .84rem; padding-top: .1rem; }
+.mulai-aksi a { white-space: nowrap; }
+@media (max-width: 620px) {
+  .mulai-butir { grid-template-columns: 2rem minmax(0, 1fr); }
+  .mulai-aksi { grid-column: 2; justify-content: flex-start; }
+}
+@media (pointer: coarse) {
+  .mulai-aksi a { display: inline-flex; align-items: center; min-height: 44px; }
+}
+
+/* ===== Tamu dan nomor belum terdaftar ===== */
+.catatan-daftar { color: var(--redup); font-size: .86rem; }
+
+/* Perintah WhatsApp: contoh utuh boleh terlipat, tidak meluap. */
+.perintah-wa code { white-space: normal; overflow-wrap: anywhere; }
+
+/* ===== Beranda Saya ===== */
+.saya-bagian { margin: 1.4rem 0 .6rem; font-size: 1rem; }
+.saya-bagian:first-child { margin-top: .4rem; }
+.saya-bagian .kecil { font-weight: 400; color: var(--redup); font-size: .8rem; margin-left: .4rem; }
+.kartu-langkah h3 { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.kartu-langkah h3 .lencana { margin-left: auto; }
+.langkah-no {
+  flex: none; width: 1.5rem; height: 1.5rem; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; border: 2px solid var(--aksen); color: var(--aksen); font-family: var(--mono); font-size: .75rem;
+}
+.kartu-langkah.selesai .langkah-no { border-color: var(--rendah); color: var(--rendah); }
+.langkah-status { font-size: .86rem; }
+.kartu-langkah .cta-row { margin-top: auto; margin-bottom: 0; }
+.saya-ringkas { margin: 0 0 .6rem; }
+#isi > .kosong-langkah { margin: .6rem 0 1rem; }

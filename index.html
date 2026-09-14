@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/hal-beranda.css">
 </head>
 <body>
   <header class="appbar">
@@ -42,7 +43,17 @@
       <div class="kolom-utama">
         <section class="panel" id="panel-belum-masuk" aria-labelledby="judul-belum-masuk" hidden>
           <div class="panel-kepala"><h2 id="judul-belum-masuk">Selamat datang</h2></div>
-          <p class="pesan-kosong" id="pesan-belum-masuk">Jadwal, layanan, dan data program studi hanya untuk mahasiswa dan dosen terdaftar. Tekan <b>Masuk</b> di pojok kanan atas untuk masuk dengan WhatsApp.</p>
+          <div class="panel-isi">
+            <p id="pesan-belum-masuk">Jadwal, layanan, dan data program studi hanya untuk mahasiswa dan dosen terdaftar. Tekan <b>Masuk</b> di pojok kanan atas untuk masuk dengan WhatsApp.</p>
+            <p class="catatan-daftar"><b>Belum terdaftar?</b> Tidak ada pendaftaran mandiri. Hubungi <b>pengelola program studi</b> — kaprodi program studi Anda — untuk mendaftarkan nomor WhatsApp Anda.</p>
+          </div>
+        </section>
+        <section class="panel" id="panel-mulai" aria-labelledby="judul-mulai" hidden>
+          <div class="panel-kepala">
+            <h2 id="judul-mulai">Mulai di sini</h2>
+            <span class="kecil redup" id="ringkas-mulai"></span>
+          </div>
+          <div id="mulai"></div>
         </section>
         <section class="panel" id="panel-perlu" aria-labelledby="judul-perlu" hidden>
           <div class="panel-kepala">
@@ -84,16 +95,11 @@
           <ul class="daftar-ringkas" id="prodi"><li class="redup">Memuat…</li></ul>
         </section>
 
-        <section class="panel" aria-labelledby="judul-bantuan">
+        <section class="panel" id="panel-wa" aria-labelledby="judul-bantuan" hidden>
           <div class="panel-kepala"><h2 id="judul-bantuan">Lewat WhatsApp</h2></div>
           <div class="panel-isi">
             <p>Sebagian layanan bisa dipakai tanpa membuka situs, dengan mengirim pesan ke bot Admin:</p>
-            <ul class="daftar-ringkas">
-              <li><code>jadwal saya</code><span class="kecil">Jadwal minggu ini</span></li>
-              <li><code>daftar tugas</code><span class="kecil">Tugas yang masih terbuka</span></li>
-              <li><code>nilai saya</code><span class="kecil">Rekap nilai proyek</span></li>
-              <li><code>tanya forum | rumpun R1 | minggu 3 | …</code><span class="kecil">Bertanya ke dosen</span></li>
-            </ul>
+            <ul class="daftar-ringkas perintah-wa" id="perintah-wa"></ul>
           </div>
         </section>
       </aside>
