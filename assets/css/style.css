@@ -340,3 +340,9 @@ button.lintas:hover { background: none; color: var(--aksen-tua); text-decoration
 .pilihan-kuis { display: flex; align-items: center; gap: .5rem; margin: .35rem 0; }
 .pilihan-kuis .teks-pilihan { flex: 1; min-width: 0; }
 .pilihan-kuis button { flex: none; padding: .25rem .6rem; }
+
+/* Peringatan ringan di dalam formulir (mis. jumlah SKS mata kuliah belum cocok) */
+.teks-peringatan { color: var(--tinggi); }
+
+/* Sel tabel berteks panjang (halaman Kurikulum) */
+td.kecil { font-size: .8rem; }
