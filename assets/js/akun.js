@@ -126,6 +126,8 @@ function simpanPeranAktif(nilai) {
   try { localStorage.setItem(KUNCI_PERAN, nilai); } catch { /* peramban menolak penyimpanan: tetap peran bawaan */ }
 }
 
+/** Menu khusus kaprodi (Dosen Pengampu Prodi) ditampilkan: peran aktif kaprodi. */
+export function adalahKaprodiAktif(saya) { return peranAktif(saya) === 'kaprodi'; }
 /** Menu super admin (Kelola Kaprodi, laporan semua prodi) ditampilkan. */
 export function adalahAdmin(saya) { return peranAktif(saya) === 'admin'; }
 /** Menu laporan tingkat prodi ditampilkan: admin, atau kaprodi yang memakai peran kaprodi. */

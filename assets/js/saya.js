@@ -1,5 +1,5 @@
 import { apiGet, isLoggedIn, logout, arahkanKeLogin } from './api.js';
-import { adalahAdmin, adalahPimpinan, prodiPimpinan } from './akun.js';
+import { adalahAdmin, adalahPimpinan, adalahKaprodiAktif, prodiPimpinan } from './akun.js';
 
 // Beranda Saya: kartu tugas sesuai peran (Task-Oriented UI) — bukan menu
 // navigasi umum. Peran datang dari backend (GET /api/proyekblok/saya), bukan
@@ -55,6 +55,7 @@ function tampil(saya) {
     ? kartu('Kurikulum Program Studi', `Isi rumpun beserta mata kuliahnya, CPL, dan ritme mingguan — prasyarat sebelum kalender, roster, dan dasbor bisa dipakai prodi itu — ${lingkup}.`, 'kurikulum.html', 'Kelola Kurikulum')
       + kartu('Pantau Proyek Kerja', `Proyek kerja aktif dan yang telat tinjauan tengah semester, beserta siapa yang belum menilai — ${lingkup}.`, 'kaprodi.html', 'Pantau Proyek Kerja')
       + kartu('Laporan Kepatuhan', `Menit asinkron, daring, dan luring per mata kuliah terhadap tuntutan SKS, beserta bukti nilai dan CPL — ${lingkup}.`, 'kepatuhan.html', 'Buka Laporan')
+      + (adalahKaprodiAktif(saya) ? kartu('Dosen Pengampu Prodi', `Centang dosen yang mengajar di prodi Anda — mereka yang bisa menyusun kuis gerbang dan materi — ${lingkup}.`, 'pengampu.html', 'Atur Pengampu') : '')
       + (adalahAdmin(saya) ? kartu('Kelola Kaprodi', 'Tetapkan atau ganti kaprodi tiap program studi, atau kosongkan jabatannya.', 'jabatan.html', 'Kelola Kaprodi') : '')
     : '';
 

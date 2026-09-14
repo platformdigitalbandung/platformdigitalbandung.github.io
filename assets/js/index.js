@@ -1,5 +1,5 @@
 import { apiGet } from './api.js';
-import { sayaSekarang, adalahPimpinan, adalahAdmin } from './akun.js';
+import { sayaSekarang, adalahPimpinan, adalahAdmin, adalahKaprodiAktif } from './akun.js';
 
 // Beranda LMS. Jadwal, layanan, dan program studi hanya untuk dosen/admin dan
 // mahasiswa di roster — sebelum itu beranda cuma menampilkan sambutan
@@ -69,6 +69,7 @@ const LAYANAN = {
     ['Akademik dan mutu', [
       ['kalender.html', 'Kalender akademik', 'Susun dan terbitkan'],
       ['kurikulum.html', 'Kurikulum', 'Rumpun, mata kuliah, CPL prodi Anda'],
+      ['pengampu.html', 'Dosen pengampu prodi', 'Centang dosen yang mengajar di prodi Anda'],
       ['akademik.html', 'Roster dan NIP', 'Data mahasiswa'],
       ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
       ['kepatuhan.html', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi'],
@@ -89,6 +90,8 @@ function htmlKelompok(judul, butir) {
 // Kurikulum ikut di sini: hanya kaprodi (prodinya) dan admin yang mengubahnya.
 const LAPORAN_PRODI = new Set(['kurikulum.html', 'kaprodi.html', 'kepatuhan.html']);
 const KHUSUS_ADMIN = new Set(['jabatan.html']);
+// Dosen pengampu diatur kaprodi untuk prodinya — admin tidak (keputusan pemilik produk 2026-09-14).
+const KHUSUS_KAPRODI = new Set(['pengampu.html']);
 
 function tampilLayanan(saya) {
   const wadah = document.getElementById('layanan');
@@ -96,8 +99,9 @@ function tampilLayanan(saya) {
   if (peran === 'dosen' || peran === 'mahasiswa') {
     const pimpinan = adalahPimpinan(saya);
     const admin = adalahAdmin(saya);
+    const kaprodi = adalahKaprodiAktif(saya);
     wadah.innerHTML = LAYANAN[peran]
-      .map(([j, b]) => [j, b.filter(([href]) => (pimpinan || !LAPORAN_PRODI.has(href)) && (admin || !KHUSUS_ADMIN.has(href)))])
+      .map(([j, b]) => [j, b.filter(([href]) => (pimpinan || !LAPORAN_PRODI.has(href)) && (admin || !KHUSUS_ADMIN.has(href)) && (kaprodi || !KHUSUS_KAPRODI.has(href)))])
       .filter(([, b]) => b.length)
       .map(([j, b]) => htmlKelompok(j, b)).join('');
     return;

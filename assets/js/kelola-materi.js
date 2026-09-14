@@ -1,13 +1,12 @@
 import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, apiPostBerkasToken, isLoggedIn, arahkanKeLogin } from './api.js';
 import { hitungHalaman } from './pdfmateri.js';
-import { adalahAdmin } from './akun.js';
 
 // Kelola Materi (dosen). Kewenangan tetap dicek backend. Prodi dan rumpun dibaca
 // dari data kurikulum, tidak diketik ulang. YouTube ID diurai server dari
 // tautan apa pun, jadi halaman ini tidak mencoba mengurainya sendiri.
 //
 // Menambah, mengubah, dan menghapus materi hanya untuk prodi tempat dosen
-// mengajar (kaprodi: prodinya; admin: semua) — keputusan pemilik produk
+// mengajar (kaprodi: prodinya; admin tidak lintas prodi) — keputusan pemilik produk
 // 2026-09-14. Katalog tetap bisa dilihat untuk semua prodi.
 //
 // Materi jenis "berkas": PDF diunggah ke repo storage GitHub privat lewat
@@ -23,8 +22,8 @@ const isi = document.getElementById('isi');
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
 let prodi = [];
-// Prodi yang materinya boleh diubah pemegang token: prodi mengajar, atau semua
-// untuk admin.
+// Prodi yang materinya boleh diubah pemegang token: prodi mengajar (termasuk
+// prodi yang dipimpin sebagai kaprodi).
 let prodiKelola = [];
 const rumpunPerProdi = new Map();
 let katalog = [];
@@ -103,7 +102,7 @@ async function pasangForm(m = {}) {
   const wadah = document.getElementById('wadah-form');
   if (!prodiKelola.length) {
     wadah.innerHTML = `<div class="kartu"><h3>Tambah Materi</h3>
-      <div class="kosong">Anda belum tercatat mengajar di prodi mana pun, jadi belum bisa menambah atau mengubah materi. Admin mengaturnya di halaman Kelola Kaprodi, bagian Prodi Mengajar Dosen. Katalog di bawah tetap bisa dilihat.</div></div>`;
+      <div class="kosong">Anda belum tercatat mengajar di prodi mana pun, jadi belum bisa menambah atau mengubah materi. Kaprodi prodi Anda mencentangnya di halaman Dosen Pengampu Prodi. Katalog di bawah tetap bisa dilihat.</div></div>`;
     return;
   }
   wadah.innerHTML = kartuForm(m);
@@ -283,7 +282,7 @@ async function muat() {
   const res = await apiGet('/api/kurikulum/prodi');
   prodi = res.prodi || [];
   const mengajar = saya.prodi_mengajar || [];
-  prodiKelola = adalahAdmin(saya) ? prodi : prodi.filter(p => mengajar.includes(p.kode));
+  prodiKelola = prodi.filter(p => mengajar.includes(p.kode));
   if (!prodi.length) {
     isi.innerHTML = '<div class="pesan gagal">Data program studi kosong; jalankan seed kurikulum dahulu.</div>';
     return;

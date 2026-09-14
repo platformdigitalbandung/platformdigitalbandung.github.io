@@ -42,34 +42,6 @@ function tabelProdi() {
   </table></div>`;
 }
 
-// Prodi tempat dosen mengajar menentukan kuis gerbang dan materi prodi mana yang
-// boleh ia kelola (PUT /api/jabatan/dosen/:nip/prodi). Kaprodi otomatis untuk prodinya.
-function tabelProdiDosen() {
-  if (!dosen.length) return '<div class="kosong">Belum ada dosen aktif yang ber-NIP.</div>';
-  return `<div class="gulir"><table class="tabel-sunting">
-    <tr><th>Dosen</th>${prodi.map(p => `<th>${esc(p.kode.toUpperCase())}</th>`).join('')}<th></th></tr>
-    ${dosen.map(d => `<tr data-nip="${escAttr(d.nip)}">
-      <td>${esc(d.nama || '(tanpa nama)')}<br><span class="redup">NIP ${esc(d.nip)}</span></td>
-      ${prodi.map(p => `<td><input type="checkbox" name="prodi" value="${escAttr(p.kode)}"${(d.prodi_kode || []).includes(p.kode) ? ' checked' : ''} aria-label="${escAttr(d.nama || d.nip)} mengajar di ${escAttr(p.nama)}"></td>`).join('')}
-      <td><button type="button" class="sekunder" data-aksi="simpan-prodi-dosen">Simpan</button></td>
-    </tr>`).join('')}
-  </table></div>`;
-}
-
-async function simpanProdiDosen(baris) {
-  const nip = baris.dataset.nip;
-  const pilihan = [...baris.querySelectorAll('input[name="prodi"]:checked')].map(c => c.value);
-  const pesan = document.getElementById('pesan-prodi-dosen');
-  try {
-    const r = await apiPutJson(`/api/jabatan/dosen/${encodeURIComponent(nip)}/prodi`, { prodi_kode: pilihan });
-    const d = dosen.find(x => x.nip === nip);
-    if (d) d.prodi_kode = r.prodi_kode || [];
-    pesan.innerHTML = `<div class="pesan sukses">${esc(namaDosen(nip))} kini mengajar di ${r.prodi_kode && r.prodi_kode.length ? esc(r.prodi_kode.join(', ').toUpperCase()) : 'tidak satu prodi pun'}.</div>`;
-  } catch (err) {
-    pesan.innerHTML = `<div class="pesan gagal">Gagal: ${esc(err.message)}</div>`;
-  }
-}
-
 function daftarAdmin() {
   const admin = dosen.filter(d => d.jabatan === 'admin');
   return admin.length
@@ -86,14 +58,8 @@ function render(pesan = '') {
       ${prodi.length ? tabelProdi() : '<div class="kosong">Belum ada program studi di data kurikulum.</div>'}
     </div>
     <div class="kartu">
-      <h3>Prodi Mengajar Dosen</h3>
-      <p class="meta">Centang prodi tempat tiap dosen mengajar, lalu tekan <b>Simpan</b> di barisnya. Dosen hanya bisa menyusun kuis gerbang dan mengelola materi untuk prodi yang dicentang; kaprodi otomatis untuk prodi yang dipimpinnya.</p>
-      <div id="pesan-prodi-dosen"></div>
-      ${prodi.length ? tabelProdiDosen() : ''}
-    </div>
-    <div class="kartu">
       <h3>Super Admin</h3>
-      <p class="meta">Admin melihat semua prodi dan semua laporan, dan menetapkan kaprodi. Jabatan ini diubah langsung di database oleh pengelola, bukan dari halaman ini.</p>
+      <p class="meta">Admin hanya menyiapkan: menetapkan kaprodi, membuat program studi baru, dan membuka laporan semua prodi. Kurikulum, dosen pengampu, kuis, dan materi dijalankan kaprodi untuk prodinya. Jabatan admin diubah langsung di database oleh pengelola, bukan dari halaman ini.</p>
       ${daftarAdmin()}
     </div>`;
 }
@@ -135,10 +101,6 @@ async function muat() {
   isi.addEventListener('click', e => {
     const tombol = e.target.closest('button[data-aksi]');
     if (!tombol) return;
-    if (tombol.dataset.aksi === 'simpan-prodi-dosen') {
-      simpanProdiDosen(tombol.closest('tr[data-nip]'));
-      return;
-    }
     const baris = tombol.closest('tr[data-prodi]');
     const kode = baris.dataset.prodi;
     if (tombol.dataset.aksi === 'kosongkan') {
