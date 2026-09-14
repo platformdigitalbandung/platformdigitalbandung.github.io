@@ -1,4 +1,4 @@
-import { apiGet } from './api.js';
+import { apiGet, isLoggedIn, arahkanKeLogin } from './api.js';
 import { API_BASE } from './config.js';
 
 const isi = document.getElementById('isi');
@@ -6,7 +6,9 @@ const status = document.getElementById('status-backend');
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
-try {
+if (!isLoggedIn()) {
+  arahkanKeLogin();
+} else try {
   await apiGet('/health');
   status.innerHTML = `<span class="status-dot ok"></span>backend tersambung (${API_BASE})`;
   const { tugas } = await apiGet('/api/tugas');

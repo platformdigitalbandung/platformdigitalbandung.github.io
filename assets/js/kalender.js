@@ -1,7 +1,7 @@
-import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, isLoggedIn } from './api.js';
+import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
 
-// Kalender akademik. Baca publik (hanya kalender yang sudah diterbitkan);
-// pembuatan draft, penyuntingan sesi, penerbitan, dan penghapusan hanya muncul
+// Kalender akademik. Baca untuk dosen dan mahasiswa terdaftar (hanya kalender
+// yang sudah diterbitkan); belum masuk diarahkan ke /login/. Pembuatan draft, penyuntingan sesi, penerbitan, dan penghapusan hanya muncul
 // kalau backend memang mengenali nomor yang sedang masuk sebagai dosen —
 // kewenangannya tetap dicek server.
 
@@ -126,7 +126,7 @@ async function muatDaftar(filter = filterAktif) {
   const q = new URLSearchParams();
   Object.entries(filter).forEach(([k, v]) => { if (v) q.set(k, v); });
   if (dosen) q.set('draft', '1');
-  const { kalender = [] } = await apiGet('/api/kalender' + (q.toString() ? `?${q}` : ''), { auth: dosen });
+  const { kalender = [] } = await apiGet('/api/kalender' + (q.toString() ? `?${q}` : ''));
   daftarKalender = kalender;
   document.getElementById('daftar').innerHTML = kalender.length
     ? kalender.map(kartuKalender).join('')
@@ -296,10 +296,10 @@ function pasangPendengarDaftar(daftar) {
   });
 }
 
-try {
-  if (isLoggedIn()) {
-    try { dosen = (await apiGet('/api/proyekblok/saya', { auth: true })).peran === 'dosen'; } catch { dosen = false; }
-  }
+if (!isLoggedIn()) {
+  arahkanKeLogin();
+} else try {
+  try { dosen = (await apiGet('/api/proyekblok/saya')).peran === 'dosen'; } catch { dosen = false; }
   const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
   let ritme = [];
   try {

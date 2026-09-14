@@ -1,11 +1,15 @@
-import { apiGet, apiPostBerkas } from './api.js';
+import { apiGet, apiPostBerkasToken, isLoggedIn, arahkanKeLogin } from './api.js';
 
 const id = new URLSearchParams(location.search).get('id');
 const isi = document.getElementById('isi');
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
-try {
+// Hanya mahasiswa di roster yang bisa mengumpulkan; nama dan NIM kiriman
+// diambil backend dari roster lewat token, bukan dari isian form.
+if (!isLoggedIn()) {
+  arahkanKeLogin();
+} else try {
   if (!id) throw new Error('ID tugas tidak ada di URL');
   const t = await apiGet(`/api/tugas/${id}`);
   isi.innerHTML = `
@@ -16,8 +20,6 @@ try {
     <div class="kartu">
       <h3>Kirim Jawaban</h3>
       <form id="form">
-        <label>Nama lengkap<input name="nama" required maxlength="120"></label>
-        <label>NIM<input name="nim" required maxlength="40"></label>
         <label>Berkas jawaban
           <input type="file" id="berkas" name="berkas" required accept=".txt,.docx,.pdf"></label>
         <button id="kirim">Unggah Jawaban</button>
@@ -31,9 +33,7 @@ try {
     const hasil = document.getElementById('hasil');
     btn.disabled = true; hasil.innerHTML = '<p class="redup">Mengunggah…</p>';
     try {
-      const fd = new FormData(e.target);
-      const r = await apiPostBerkas(`/api/tugas/${id}/kirim`,
-        { nama: fd.get('nama'), nim: fd.get('nim') }, 'berkas', 'berkas');
+      const r = await apiPostBerkasToken(`/api/tugas/${id}/kirim`, {}, 'berkas', 'berkas');
       hasil.innerHTML = `<div class="pesan sukses">Jawaban terkirim ✔ Nomor kiriman
         <b>#${r.kiriman_id}</b> (${r.n_kata} kata terbaca). Simpan nomor ini sebagai bukti.</div>`;
       e.target.reset();

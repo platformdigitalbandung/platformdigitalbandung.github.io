@@ -40,7 +40,11 @@
 
     <div class="tata">
       <div class="kolom-utama">
-        <section class="panel" aria-labelledby="judul-jadwal">
+        <section class="panel" id="panel-belum-masuk" aria-labelledby="judul-belum-masuk" hidden>
+          <div class="panel-kepala"><h2 id="judul-belum-masuk">Selamat datang</h2></div>
+          <p class="pesan-kosong" id="pesan-belum-masuk">Jadwal, layanan, dan data program studi hanya untuk mahasiswa dan dosen terdaftar. Tekan <b>Masuk</b> di pojok kanan atas untuk masuk dengan WhatsApp.</p>
+        </section>
+        <section class="panel" id="panel-jadwal" aria-labelledby="judul-jadwal" hidden>
           <div class="panel-kepala">
             <h2 id="judul-jadwal">Jadwal minggu ini</h2>
             <select class="kecil" id="pilih-kalender" aria-label="Pilih kalender" hidden></select>
@@ -48,7 +52,7 @@
           <div class="panel-isi rapat" id="jadwal"><p class="pesan-kosong">Memuat jadwal…</p></div>
         </section>
 
-        <section class="panel" aria-labelledby="judul-layanan">
+        <section class="panel" id="panel-layanan" aria-labelledby="judul-layanan" hidden>
           <div class="panel-kepala">
             <h2 id="judul-layanan">Layanan</h2>
             <a href="saya.html">Semua tugas saya</a>
@@ -58,7 +62,7 @@
       </div>
 
       <aside class="kolom-samping">
-        <section class="panel" aria-labelledby="judul-prodi">
+        <section class="panel" id="panel-prodi" aria-labelledby="judul-prodi" hidden>
           <div class="panel-kepala">
             <h2 id="judul-prodi">Program studi</h2>
             <a href="program.html">Tentang program</a>

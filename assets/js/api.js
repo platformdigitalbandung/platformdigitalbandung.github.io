@@ -33,7 +33,10 @@ function headerToken() {
   return token ? ['Authorization', 'Bearer ' + token] : [null, null];
 }
 
-export function apiGet(path, { auth = false } = {}) {
+// Token selalu ikut kalau ada: tidak ada lagi rute baca data yang publik
+// (keputusan pemilik produk 2026-09-14). Opsi `auth` dipertahankan supaya
+// pemanggil lama tetap jalan; `auth: false` hanya untuk rute yang memang publik.
+export function apiGet(path, { auth = true } = {}) {
   const [nama, nilai] = auth ? headerToken() : [null, null];
   return new Promise((resolve, reject) =>
     getJSON(API_BASE + path, menurutStatus(resolve, reject), nama, nilai));

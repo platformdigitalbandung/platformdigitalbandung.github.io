@@ -1,6 +1,5 @@
-import { getJSON } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/api.min.js';
 import { setInner } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/element.min.js';
-import { API_BASE } from './config.js';
+import { apiGet, isLoggedIn } from './api.js';
 
 // Halaman "Tentang Program": materi sosialisasi yang dulu menjadi halaman depan.
 // Narasi karier per prodi tidak berasal dari data /api/kurikulum (belum dimodelkan
@@ -26,23 +25,25 @@ function kartuProdi(p, rumpun) {
     </div>`;
 }
 
-getJSON(API_BASE + '/api/kurikulum/prodi', async (res) => {
-  // status 0 = jaringan gagal atau timeout (crootjs selalu memanggil callback).
-  if (res.status !== 200) {
-    setInner('prodi', `<p class="redup">Backend tidak terjangkau (${esc(API_BASE)}).
-      Data program studi tidak bisa dimuat saat ini.</p>`);
+// Narasi program di halaman ini publik; kartu program studi diambil dari
+// /api/kurikulum yang hanya untuk pengguna terdaftar (keputusan pemilik produk
+// 2026-09-14), jadi sebelum masuk cukup diberi keterangan.
+async function muatProdi() {
+  if (!isLoggedIn()) {
+    setInner('prodi', '<p class="redup">Data program studi tampil setelah masuk. Tekan <b>Masuk</b> di pojok kanan atas.</p>');
     return;
   }
   try {
-    const list = (res.data && res.data.prodi) || [];
+    const { prodi: list = [] } = await apiGet('/api/kurikulum/prodi');
     if (!list.length) { setInner('prodi', '<p class="redup">Data program studi belum tersedia.</p>'); return; }
-    const kartuHtml = await Promise.all(list.map(p => new Promise((resolve) => {
-      getJSON(API_BASE + '/api/kurikulum/prodi/' + p.kode + '/rumpun', (rres) => {
-        resolve(kartuProdi(p, (rres.data && rres.data.rumpun) || []));
-      });
-    })));
+    const kartuHtml = await Promise.all(list.map(async p => {
+      const { rumpun = [] } = await apiGet('/api/kurikulum/prodi/' + encodeURIComponent(p.kode) + '/rumpun').catch(() => ({}));
+      return kartuProdi(p, rumpun || []);
+    }));
     setInner('prodi', kartuHtml.join(''));
   } catch (err) {
     setInner('prodi', `<p class="redup">Gagal memuat data program studi: ${esc(err.message)}</p>`);
   }
-});
+}
+
+muatProdi();

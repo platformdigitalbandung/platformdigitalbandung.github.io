@@ -1,10 +1,11 @@
 import { apiGet } from './api.js';
 import { sayaSekarang, adalahPimpinan, adalahDirektur } from './akun.js';
 
-// Beranda LMS. Isi yang publik (jadwal dari kalender terbit, program studi)
-// tampil tanpa login; daftar layanan menyesuaikan peran kalau cookie login ada.
-// Tidak ada tombol atau form login di sini — form login hanya di /login/, dan
-// halaman layanan sendiri yang mengarahkan ke sana (pdb/README.md bagian Frontend).
+// Beranda LMS. Jadwal, layanan, dan program studi hanya untuk dosen/admin dan
+// mahasiswa di roster — sebelum itu beranda cuma menampilkan sambutan
+// (keputusan pemilik produk 2026-09-14; backend juga menolak tanpa token).
+// Tidak ada form login di sini — tombol Masuk di bilah atas (akun.js)
+// mengarahkan ke /login/ (pdb/README.md bagian Frontend).
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
@@ -99,9 +100,6 @@ function tampilLayanan(saya) {
       .map(([j, b]) => htmlKelompok(j, b)).join('');
     return;
   }
-  // Belum masuk: tampilkan keduanya, dipisah per peran.
-  wadah.innerHTML = LAYANAN.mahasiswa.map(([j, b]) => htmlKelompok(`Mahasiswa · ${j}`, b)).join('')
-    + LAYANAN.dosen.map(([j, b]) => htmlKelompok(`Dosen · ${j}`, b)).join('');
 }
 
 // Minggu yang ditampilkan: minggu yang memuat hari ini; kalau hari ini tanpa
@@ -182,8 +180,20 @@ document.getElementById('hari-ini').textContent =
   new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: ZONA });
 
 // Status akun di bilah atas diurus akun.js; beranda cukup memakai hasilnya.
-// Token kedaluwarsa atau nomor tak dikenal: beranda tampil sebagai publik.
+// Belum masuk, token kedaluwarsa, atau nomor tak terdaftar: hanya sambutan.
 const saya = await sayaSekarang;
-tampilLayanan(saya);
-muatProdi();
-muatJadwal(saya && saya.prodi_kode);
+// /api/proyekblok/saya menjawab peran "mahasiswa" juga untuk nomor yang tidak
+// terdaftar; prodi_kode hanya terisi untuk mahasiswa yang ada di roster.
+const terdaftar = saya && (saya.peran === 'dosen' || (saya.peran === 'mahasiswa' && saya.prodi_kode));
+if (terdaftar) {
+  ['panel-jadwal', 'panel-layanan', 'panel-prodi'].forEach(id => { document.getElementById(id).hidden = false; });
+  tampilLayanan(saya);
+  muatProdi();
+  muatJadwal(saya.prodi_kode);
+} else {
+  if (saya) {
+    document.getElementById('pesan-belum-masuk').textContent =
+      'Nomor WhatsApp ini belum terdaftar sebagai mahasiswa atau dosen. Hubungi pengelola program studi untuk didaftarkan.';
+  }
+  document.getElementById('panel-belum-masuk').hidden = false;
+}
