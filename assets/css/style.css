@@ -245,6 +245,27 @@ table.jadwal tr.libur td { color: var(--redup); }
 .daftar-layanan b { display: block; font-weight: 500; color: var(--aksen); }
 .daftar-layanan span { display: block; font-size: .8rem; color: var(--redup); }
 
+/* ===== Beranda: agenda per peran ===== */
+.daftar-agenda { list-style: none; margin: 0; padding: 0; }
+.agenda-butir { border-bottom: 1px solid var(--garis-halus); border-left: 3px solid transparent; }
+.agenda-butir:last-child { border-bottom: 0; }
+.agenda-butir.mendesak { border-left-color: var(--tinggi); }
+.agenda-butir a { display: flex; gap: .75rem; align-items: flex-start; padding: .65rem 1rem; color: var(--tinta); }
+.agenda-butir a:hover { background: var(--latar); text-decoration: none; }
+.agenda-jumlah {
+  flex: none; min-width: 2rem; text-align: center; font-family: var(--mono); font-size: .85rem; font-weight: 500;
+  padding: .1rem .35rem; border-radius: 4px; background: var(--aksen-muda); color: var(--aksen-tua);
+}
+.agenda-butir.mendesak .agenda-jumlah { background: var(--tinggi-muda); color: var(--tinggi); }
+.agenda-jumlah.kosong-jumlah { background: transparent; color: var(--redup); }
+.agenda-teks { min-width: 0; overflow-wrap: anywhere; }
+.agenda-teks b { font-weight: 500; color: var(--aksen); margin-right: .4rem; }
+.agenda-teks .lencana { margin-right: .3rem; vertical-align: 1px; }
+.agenda-rincian { display: block; font-size: .8rem; color: var(--redup); margin-top: .1rem; }
+.agenda-beres { color: var(--rendah); }
+.catatan-peran { margin: 0; padding: .6rem 1rem .8rem; font-size: .8rem; color: var(--redup); border-top: 1px solid var(--garis-halus); }
+.daftar-ringkas .lencana { margin-top: .2rem; }
+
 .daftar-ringkas { list-style: none; margin: 0; padding: 0; }
 .daftar-ringkas li { padding: .55rem 1rem; border-bottom: 1px solid var(--garis-halus); }
 .daftar-ringkas li:last-child { border-bottom: 0; }

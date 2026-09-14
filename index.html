@@ -33,7 +33,7 @@
   <main class="halaman">
     <div class="kepala-halaman">
       <div>
-        <h1>Beranda</h1>
+        <h1 id="judul-beranda">Beranda</h1>
         <p class="redup" id="hari-ini"></p>
       </div>
     </div>
@@ -44,6 +44,19 @@
           <div class="panel-kepala"><h2 id="judul-belum-masuk">Selamat datang</h2></div>
           <p class="pesan-kosong" id="pesan-belum-masuk">Jadwal, layanan, dan data program studi hanya untuk mahasiswa dan dosen terdaftar. Tekan <b>Masuk</b> di pojok kanan atas untuk masuk dengan WhatsApp.</p>
         </section>
+        <section class="panel" id="panel-perlu" aria-labelledby="judul-perlu" hidden>
+          <div class="panel-kepala">
+            <h2 id="judul-perlu">Perlu dikerjakan</h2>
+            <span class="kecil redup" id="jumlah-perlu"></span>
+          </div>
+          <div id="agenda-perlu"><p class="pesan-kosong">Memuat agenda…</p></div>
+        </section>
+
+        <section class="panel" id="panel-akan" aria-labelledby="judul-akan" hidden>
+          <div class="panel-kepala"><h2 id="judul-akan">Akan datang</h2></div>
+          <div id="agenda-akan"><p class="pesan-kosong">Memuat agenda…</p></div>
+        </section>
+
         <section class="panel" id="panel-jadwal" aria-labelledby="judul-jadwal" hidden>
           <div class="panel-kepala">
             <h2 id="judul-jadwal">Jadwal minggu ini</h2>
@@ -58,6 +71,7 @@
             <a href="saya.html">Semua tugas saya</a>
           </div>
           <div id="layanan"></div>
+          <p class="catatan-peran" id="catatan-peran" hidden></p>
         </section>
       </div>
 

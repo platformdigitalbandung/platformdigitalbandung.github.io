@@ -115,7 +115,8 @@ function pilihanPeran(saya) {
   ].filter(Boolean);
 }
 
-function peranAktif(saya) {
+/** Peran aktif untuk menentukan isi beranda: admin, kaprodi, dosen, atau mahasiswa. */
+export function peranAktif(saya) {
   const pilihan = pilihanPeran(saya).map(([nilai]) => nilai);
   if (!pilihan.length) return saya ? saya.peran : '';
   let simpan = '';
@@ -139,7 +140,8 @@ export function prodiPimpinan(saya) {
   return (saya && saya.kaprodi_prodi) || [];
 }
 
-function labelPeran(saya) {
+/** Label peran aktif untuk ditampilkan, mis. "kaprodi PAI". */
+export function labelPeran(saya) {
   if (!saya) return '';
   const aktif = pilihanPeran(saya).find(([nilai]) => nilai === peranAktif(saya));
   return aktif ? aktif[1] : saya.peran;
