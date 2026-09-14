@@ -8,32 +8,50 @@
   <link rel="icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-  <header class="top">
-    <div class="wrap">
-      <p class="kop"><a href="./">Platform Digital Bandung</a></p>
-      <h1><a href="portal.html">Modul Tugas</a></h1>
-      <p>Pengumpulan tugas &amp; pemeriksaan kemiripan antar-kiriman</p>
+  <header class="appbar">
+    <div class="appbar-dalam">
+      <a class="merek" href="./">
+        <img class="merek-logo" src="assets/img/logo.png" alt="Logo Akademi Digital Bandung" width="38" height="38">
+        <span class="merek-teks"><b>Platform Digital Bandung</b><small>Akademi Digital Bandung</small></span>
+      </a>
+      <nav class="navutama" aria-label="Navigasi utama">
+        <a href="./">Beranda</a>
+        <a href="kalender.html">Kalender</a>
+        <a href="materi.html">Materi</a>
+        <a href="portal.html" class="aktif">Tugas</a>
+        <a href="forum.html">Forum</a>
+        <a href="rapor.html">Nilai</a>
+      </nav>
+      <div class="akun"><a class="tautan-tombol" href="saya.html">Beranda Saya</a></div>
     </div>
   </header>
 
-  <div class="wrap">
-    <nav class="tabs">
-      <a href="./">Beranda</a>
-      <a href="portal.html" class="aktif">Daftar Tugas</a>
-      <a href="saya.html">Beranda Saya</a>
-    </nav>
+  <main class="halaman">
+    <div class="kepala-halaman">
+      <div>
+        <p class="remah"><a href="./">Beranda</a> / Modul Tugas</p>
+        <h1>Modul Tugas</h1>
+        <p>Pengumpulan tugas &amp; pemeriksaan kemiripan antar-kiriman</p>
+      </div>
+    </div>
+
 
     <div id="isi"><p class="redup">Memuat daftar tugas…</p></div>
-  </div>
+  </main>
 
-  <footer>
-    <p><span id="status-backend"><span class="status-dot gagal"></span>memeriksa backend…</span></p>
-    <p>Skor kemiripan adalah alat bantu, bukan vonis plagiat; keputusan pada dosen.</p>
-    <p class="redup">Lewat WhatsApp: kirim "daftar tugas" ke Iteung untuk melihat daftar ini tanpa membuka situs.</p>
+  <footer class="kaki">
+    <div class="kaki-dalam">
+      <div class="kaki-catatan">
+        <p><span id="status-backend"><span class="status-dot gagal"></span>memeriksa backend…</span></p>
+        <p>Skor kemiripan adalah alat bantu, bukan vonis plagiat; keputusan pada dosen.</p>
+        <p class="redup">Lewat WhatsApp: kirim "daftar tugas" ke Iteung untuk melihat daftar ini tanpa membuka situs.</p>
+      </div>
+      <p class="kaki-baris"><span>Akademi Digital Bandung</span><span><a href="program.html">Tentang program</a></span></p>
+    </div>
   </footer>
 
   <script type="module" src="assets/js/portal.js"></script>
