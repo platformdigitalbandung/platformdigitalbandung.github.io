@@ -142,8 +142,8 @@ async function muatRekap() {
 async function muat() {
   const saya = await apiGet('/api/proyekblok/saya', { auth: true });
   dosen = saya.peran === 'dosen';
-  // Rekap keterlambatan adalah laporan tingkat prodi: kaprodi (prodinya) dan
-  // direktur. Dosen biasa tetap menerbitkan rekaman sesinya.
+  // Rekap keterlambatan adalah laporan tingkat prodi: kaprodi (prodinya).
+  // Dosen biasa tetap menerbitkan rekaman sesinya.
   pimpinan = adalahPimpinan(saya);
   const { kalender = [] } = await apiGet('/api/kalender');
   if (!kalender.length) {

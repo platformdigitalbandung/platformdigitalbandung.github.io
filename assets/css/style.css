@@ -67,6 +67,8 @@ code { font-family: var(--mono); font-size: .82rem; background: var(--latar); pa
   background: var(--aksen-muda); color: var(--aksen-tua);
   padding: .15rem .5rem; border-radius: 3px; font-size: .75rem; font-weight: 500;
 }
+.akun select.pilih-peran { border: 1px solid transparent; margin: 0; width: auto; font-family: inherit; cursor: pointer; }
+.akun select.pilih-peran:hover, .akun select.pilih-peran:focus { border-color: var(--aksen); }
 .tautan-tombol, button.tautan-tombol {
   display: inline-block; margin: 0;
   border: 1px solid var(--garis); background: var(--permukaan); color: var(--tinta);

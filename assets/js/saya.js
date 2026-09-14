@@ -1,5 +1,5 @@
 import { apiGet, isLoggedIn, logout, arahkanKeLogin } from './api.js';
-import { adalahDirektur, adalahPimpinan } from './akun.js';
+import { adalahPimpinan, prodiPimpinan } from './akun.js';
 
 // Beranda Saya: kartu tugas sesuai peran (Task-Oriented UI) — bukan menu
 // navigasi umum. Peran datang dari backend (GET /api/proyekblok/saya), bukan
@@ -48,13 +48,12 @@ function tampil(saya) {
       + kartu('Nilai Proyek Saya','Lihat rekap nilai proyek blok Anda beserta rincian per mata kuliah.', 'nilai.html', 'Lihat Nilai Saya')
       + kartu('Proyek Kerja/Magang', 'Ajukan konversi pekerjaan di perusahaan jadi proyek, lalu ikuti status dan tinjauannya.', 'kerja.html', 'Ajukan / Lihat Proyek Kerja');
 
-  // Laporan tingkat prodi hanya untuk kaprodi (prodinya) dan direktur (semua
-  // prodi) — keputusan pemilik produk 2026-09-14. Backend tetap menolak 403.
-  const lingkup = adalahDirektur(saya) ? 'semua prodi' : (saya.kaprodi_prodi || []).join(', ').toUpperCase();
+  // Laporan tingkat prodi hanya untuk kaprodi, untuk prodinya — keputusan
+  // pemilik produk 2026-09-14. Backend tetap menolak 403.
+  const lingkup = prodiPimpinan(saya).join(', ').toUpperCase();
   const kartuPimpinan = adalahPimpinan(saya)
     ? kartu('Pantau Proyek Kerja', `Proyek kerja aktif dan yang telat tinjauan tengah semester, beserta siapa yang belum menilai — ${lingkup}.`, 'kaprodi.html', 'Pantau Proyek Kerja')
       + kartu('Laporan Kepatuhan', `Menit asinkron, daring, dan luring per mata kuliah terhadap tuntutan SKS, beserta bukti nilai dan CPL — ${lingkup}.`, 'kepatuhan.html', 'Buka Laporan')
-      + (adalahDirektur(saya) ? kartu('Kelola Kaprodi', 'Tambah atau ganti kaprodi tiap program studi, atau kosongkan jabatannya.', 'jabatan.html', 'Kelola Kaprodi') : '')
     : '';
 
   const catatanNIP = dosen && !saya.nip

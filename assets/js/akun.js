@@ -67,6 +67,7 @@ function render(hasil) {
     const { isi, saya } = hasil;
     const nama = isi.alias || isi.id || 'Pengguna';
     const peran = labelPeran(saya);
+    const kaprodi = adalahKaprodi(saya);
     const nomorInduk = saya && saya.nip ? `NIP ${saya.nip}` : (saya && saya.nim ? `NIM ${saya.nim}` : '');
     const judul = [`Masuk sebagai ${nama}`, isi.id ? `nomor ${isi.id}` : '', nomorInduk, isi.exp ? `berlaku sampai ${waktu(isi.exp)}` : '',
       hasil.status === 'tak-terjangkau' ? 'backend tidak terjangkau, peran belum bisa dipastikan' : ''].filter(Boolean).join(' · ');
@@ -74,10 +75,12 @@ function render(hasil) {
       <a class="status-akun masuk" href="saya.html" title="${esc(judul)}">
         <span class="titik aktif"></span><span class="nama-akun">${esc(nama)}</span>
       </a>
-      ${peran ? `<span class="peran">${esc(peran)}</span>` : ''}
+      ${kaprodi ? pemilihPeran(saya) : (peran ? `<span class="peran">${esc(peran)}</span>` : '')}
       ${nomorInduk ? `<span class="nomor-induk">${esc(nomorInduk)}</span>` : ''}
       ${keluar}`;
   }
+  const pilihPeran = wadah.querySelector('[data-pilih-peran]');
+  if (pilihPeran) pilihPeran.addEventListener('change', () => { simpanPeranAktif(pilihPeran.value); location.reload(); });
   const tombolKeluar = wadah.querySelector('[data-keluar]');
   if (tombolKeluar) tombolKeluar.addEventListener('click', () => { logout(); location.href = './'; });
   const tombolMasuk = wadah.querySelector('[data-masuk]');
@@ -88,23 +91,41 @@ function render(hasil) {
   if (tombolMasukLagi) tombolMasukLagi.addEventListener('click', () => { logout(); arahkanKeLogin(); });
 }
 
-// Jabatan pimpinan dari GET /api/proyekblok/saya. Direktur melihat laporan
-// tingkat prodi untuk semua prodi; kaprodi hanya prodinya (kaprodi_prodi).
-// Kewenangan tetap diputuskan backend — ini hanya untuk menyembunyikan menu
-// yang pasti ditolak.
-export function adalahDirektur(saya) { return Boolean(saya && (saya.jabatan || []).includes('direktur')); }
-export function adalahPimpinan(saya) { return Boolean(saya && (saya.jabatan || []).length); }
-/** Kode prodi yang boleh dilaporkan: null berarti semua prodi (direktur). */
-export function prodiPimpinan(saya) {
-  if (adalahDirektur(saya)) return null;
-  return (saya && saya.kaprodi_prodi) || [];
+// Peran platform: mahasiswa, dosen, kaprodi (keputusan pemilik produk
+// 2026-09-14; jabatan direktur dihapus). Jabatan kaprodi dan prodinya datang
+// dari GET /api/proyekblok/saya.
+//
+// Kaprodi bisa beralih ke tampilan "dosen" lewat pemilih peran di bilah atas.
+// Pilihan itu hanya menyembunyikan menu laporan prodi di peramban ini —
+// kewenangan tetap diputuskan backend, jadi tidak perlu keluar-masuk lagi.
+const KUNCI_PERAN = 'pdb_peran_aktif';
+
+function peranAktif() {
+  try { return localStorage.getItem(KUNCI_PERAN) || 'kaprodi'; } catch { return 'kaprodi'; }
 }
+function simpanPeranAktif(nilai) {
+  try { localStorage.setItem(KUNCI_PERAN, nilai); } catch { /* peramban menolak penyimpanan: tetap peran bawaan */ }
+}
+
+/** Kaprodi menurut database, apa pun peran yang sedang dipilih. */
+function adalahKaprodi(saya) { return Boolean(saya && (saya.jabatan || []).includes('kaprodi')); }
+/** Menu laporan tingkat prodi ditampilkan: kaprodi yang sedang memakai peran kaprodi. */
+export function adalahPimpinan(saya) { return adalahKaprodi(saya) && peranAktif() !== 'dosen'; }
+/** Kode prodi yang boleh dilaporkan kaprodi. */
+export function prodiPimpinan(saya) { return (saya && saya.kaprodi_prodi) || []; }
+
+function labelKaprodi(saya) { return `kaprodi ${(saya.kaprodi_prodi || []).join('/').toUpperCase()}`.trim(); }
 
 function labelPeran(saya) {
   if (!saya) return '';
-  if (adalahDirektur(saya)) return 'direktur';
-  if ((saya.jabatan || []).includes('kaprodi')) return `kaprodi ${(saya.kaprodi_prodi || []).join('/').toUpperCase()}`.trim();
-  return saya.peran;
+  return adalahPimpinan(saya) ? labelKaprodi(saya) : saya.peran;
+}
+
+function pemilihPeran(saya) {
+  const aktif = adalahPimpinan(saya) ? 'kaprodi' : 'dosen';
+  const opsi = [['kaprodi', labelKaprodi(saya)], ['dosen', 'dosen']]
+    .map(([nilai, label]) => `<option value="${nilai}"${nilai === aktif ? ' selected' : ''}>${esc(label)}</option>`).join('');
+  return `<select class="peran pilih-peran" data-pilih-peran aria-label="Pilih peran" title="Pilih peran: kaprodi menampilkan laporan prodi, dosen menyembunyikannya">${opsi}</select>`;
 }
 
 // Diekspor supaya halaman yang juga butuh peran (mis. beranda) tidak memanggil
