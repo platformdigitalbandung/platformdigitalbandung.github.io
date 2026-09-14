@@ -1,11 +1,13 @@
 import { apiGet, apiPostJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { adalahAdmin } from './akun.js';
 
 // Kuis Gerbang. Mahasiswa mengerjakan kuis rumpun/minggu prodinya; NIM dan
 // prodinya diambil server dari roster lewat token, bukan dikirim dari sini.
 // Kunci jawaban tidak pernah sampai ke peramban mahasiswa — backend
 // membuangnya sebelum membalas.
 //
-// Dosen menyusun kuis (satu per prodi + rumpun + minggu) dan melihat status
+// Dosen menyusun kuis (satu per prodi + rumpun + minggu) untuk prodi tempat ia
+// mengajar — kaprodi untuk prodinya, admin semua prodi — dan melihat status
 // kuis mahasiswa lewat isian NIM. Jalur dosen memang memuat kunci jawaban.
 
 const isi = document.getElementById('isi');
@@ -355,13 +357,19 @@ async function pasangPenyusun() {
 async function muat() {
   const saya = await apiGet('/api/proyekblok/saya', { auth: true });
   if (saya.peran === 'dosen') {
-    ({ prodi: daftarProdi = [] } = await apiGet('/api/kurikulum/prodi'));
-    isi.innerHTML = kartuKelola() + kartuDosen(new URLSearchParams(location.search).get('nim'));
+    const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
+    const mengajar = saya.prodi_mengajar || [];
+    daftarProdi = adalahAdmin(saya) ? prodi : prodi.filter(p => mengajar.includes(p.kode));
+    const kelola = daftarProdi.length
+      ? kartuKelola()
+      : `<div class="kartu"><h3>Kelola Kuis Gerbang</h3>
+          <div class="kosong">Anda belum tercatat mengajar di prodi mana pun, jadi belum bisa menyusun kuis gerbang. Admin mengaturnya di halaman Kelola Kaprodi, bagian Prodi Mengajar Dosen.</div></div>`;
+    isi.innerHTML = kelola + kartuDosen(new URLSearchParams(location.search).get('nim'));
     document.getElementById('form-nim').addEventListener('submit', e => {
       e.preventDefault();
       muatRiwayat(new FormData(e.target).get('nim').trim());
     });
-    await pasangPenyusun();
+    if (daftarProdi.length) await pasangPenyusun();
     return;
   }
   if (!saya.nim) {
