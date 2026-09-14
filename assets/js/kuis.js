@@ -249,8 +249,8 @@ async function simpanKuis(e) {
   hasil.innerHTML = '<p class="redup">Menyimpan…</p>';
   try {
     const k = await apiPostJson('/api/kuisgerbang', data);
-    hasil.innerHTML = `<div class="pesan sukses">Kuis ${esc(k.prodi_kode.toUpperCase())} rumpun ${esc(k.rumpun_kode)} minggu ${esc(k.minggu)} tersimpan (${k.soal.length} soal).</div>`;
     await muatDaftarKuis();
+    hasil.innerHTML = `<div class="pesan sukses">Kuis ${esc(k.prodi_kode.toUpperCase())} rumpun ${esc(k.rumpun_kode)} minggu ${esc(k.minggu)} tersimpan (${k.soal.length} soal).</div>`;
   } catch (err) {
     hasil.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
@@ -305,8 +305,8 @@ async function hapusKuis(id, konfirmasi = false) {
   hasil.innerHTML = '<p class="redup">Menghapus…</p>';
   try {
     await apiDeleteJson(`/api/kuisgerbang/${encodeURIComponent(id)}${konfirmasi ? '?konfirmasi=hapus' : ''}`);
-    hasil.innerHTML = '<div class="pesan sukses">Kuis dihapus.</div>';
     await muatDaftarKuis();
+    hasil.innerHTML = '<div class="pesan sukses">Kuis dihapus.</div>';
   } catch (err) {
     if (err.status === 422 && !konfirmasi) {
       hasil.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>
