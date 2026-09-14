@@ -1,4 +1,4 @@
-import { getCookie } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/cookie.min.js';
+import { getCookie } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/cookie.min.js';
 import { apiGet, logout, arahkanKeLogin } from './api.js';
 
 // Status akun di pojok kanan bilah atas, dipakai semua halaman: sedang masuk

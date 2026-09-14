@@ -1,5 +1,5 @@
-import { getJSON } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/api.min.js';
-import { setInner } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/element.min.js';
+import { getJSON } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/api.min.js';
+import { setInner } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/element.min.js';
 import { API_BASE } from './config.js';
 
 // Halaman "Tentang Program": materi sosialisasi yang dulu menjadi halaman depan.
