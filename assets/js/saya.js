@@ -54,6 +54,7 @@ function tampil(saya) {
   const kartuPimpinan = adalahPimpinan(saya)
     ? kartu('Pantau Proyek Kerja', `Proyek kerja aktif dan yang telat tinjauan tengah semester, beserta siapa yang belum menilai — ${lingkup}.`, 'kaprodi.html', 'Pantau Proyek Kerja')
       + kartu('Laporan Kepatuhan', `Menit asinkron, daring, dan luring per mata kuliah terhadap tuntutan SKS, beserta bukti nilai dan CPL — ${lingkup}.`, 'kepatuhan.html', 'Buka Laporan')
+      + (adalahDirektur(saya) ? kartu('Kelola Kaprodi', 'Tambah atau ganti kaprodi tiap program studi, atau kosongkan jabatannya.', 'jabatan.html', 'Kelola Kaprodi') : '')
     : '';
 
   const catatanNIP = dosen && !saya.nip
