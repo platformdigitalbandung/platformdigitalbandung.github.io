@@ -255,6 +255,17 @@ function tampilJadwal(kal) {
 // prodiLingkup: kode prodi yang relevan untuk peran aktif; null berarti semua.
 async function muatJadwal(prodiLingkup) {
   const wadah = document.getElementById('jadwal');
+  // Dosen yang belum dicentang pengampu prodi mana pun tidak diberi jadwal semua
+  // prodi (keputusan pemilik produk 2026-09-15): jadwal tampil setelah dicentang.
+  if (prodiLingkup && !prodiLingkup.length && peranAktif(saya) === 'dosen') {
+    wadah.innerHTML = keadaanKosong({
+      judul: 'Jadwal tampil setelah Anda dicentang sebagai pengampu',
+      keterangan: 'Jadwal mingguan hanya menampilkan kalender prodi tempat Anda mengajar. Minta kaprodi prodi tersebut mencentang nama Anda di halaman Dosen Pengampu Prodi.',
+      siapa: 'kaprodi prodi tempat Anda mengajar',
+      aksi: { href: 'saya.html#pengampu', label: 'Cara dicentang pengampu' },
+    });
+    return;
+  }
   try {
     const { kalender: semua = [] } = await apiGet('/api/kalender');
     const kalender = prodiLingkup ? semua.filter(k => prodiLingkup.includes(k.prodi_kode)) : semua;
@@ -345,7 +356,7 @@ if (sudahTerdaftar(saya)) {
   tampilWhatsApp(peran);
   muatAgenda(peran, saya);
   muatProdi(lingkup, peran);
-  if (peran !== 'admin') muatJadwal(lingkup);
+  if (peran !== 'admin') muatJadwal(peran === 'dosen' ? (saya.prodi_mengajar || []) : lingkup);
 } else {
   // Tamu dan nomor tak terdaftar diberi tahu siapa yang mendaftarkan: tidak ada
   // pendaftaran mandiri (pdb/README.md bagian Frontend).
