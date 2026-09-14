@@ -68,7 +68,7 @@ const LAYANAN = {
     ]],
     ['Akademik dan mutu', [
       ['kalender.html', 'Kalender akademik', 'Susun dan terbitkan'],
-      ['kurikulum.html', 'Kurikulum', 'Rumpun, mata kuliah, CPL'],
+      ['kurikulum.html', 'Kurikulum', 'Rumpun, mata kuliah, CPL prodi Anda'],
       ['akademik.html', 'Roster dan NIP', 'Data mahasiswa'],
       ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
       ['kepatuhan.html', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi'],
@@ -86,7 +86,8 @@ function htmlKelompok(judul, butir) {
 // Laporan tingkat prodi hanya untuk kaprodi dan admin, Kelola Kaprodi hanya
 // untuk admin (backend menolak 403) — keduanya mengikuti peran aktif yang
 // dipilih di bilah atas (akun.js).
-const LAPORAN_PRODI = new Set(['kaprodi.html', 'kepatuhan.html']);
+// Kurikulum ikut di sini: hanya kaprodi (prodinya) dan admin yang mengubahnya.
+const LAPORAN_PRODI = new Set(['kurikulum.html', 'kaprodi.html', 'kepatuhan.html']);
 const KHUSUS_ADMIN = new Set(['jabatan.html']);
 
 function tampilLayanan(saya) {

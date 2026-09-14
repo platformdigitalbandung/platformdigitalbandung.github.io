@@ -1,7 +1,10 @@
 import { apiGet, apiPostJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { adalahAdmin, adalahPimpinan, prodiPimpinan } from './akun.js';
 
-// Pengisian kurikulum program studi. Khusus dosen/kaprodi — kewenangannya
-// dicek backend (401/403). Sebelum halaman ini ada, satu-satunya cara
+// Pengisian kurikulum program studi. Hanya kaprodi (untuk prodinya) dan admin
+// (semua prodi, termasuk prodi baru) — keputusan pemilik produk 2026-09-14;
+// kewenangannya dicek backend (401/403), halaman ini hanya tidak menawarkan
+// yang pasti ditolak. Pengguna lain melihat daftar prodi saja. Sebelum halaman ini ada, satu-satunya cara
 // memasukkan prodi baru adalah menambah data hardcode di Go lalu deploy.
 //
 // Mata kuliah sengaja tidak punya formulir sendiri: ia diturunkan dari daftar
@@ -17,9 +20,12 @@ const HARI = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 
 let prodi = [];
 let ritme = [];
+let admin = false;
+// Prodi yang boleh diubah: semua untuk admin, prodi yang dipimpin untuk kaprodi.
+let prodiDikelola = [];
 
 function opsiProdi() {
-  return prodi.map(p => `<option value="${escAttr(p.kode)}">${esc(p.nama)} (${esc(p.kode)})</option>`).join('');
+  return prodiDikelola.map(p => `<option value="${escAttr(p.kode)}">${esc(p.nama)} (${esc(p.kode)})</option>`).join('');
 }
 
 function tabelProdi() {
@@ -35,15 +41,21 @@ function tabelProdi() {
   </table></div>`;
 }
 
+function isianKodeProdi() {
+  if (admin) return '<label>Kode <input name="kode" required placeholder="mis. pai" pattern="[a-z][a-z0-9-]{1,19}"></label>';
+  return `<label>Kode <select name="kode" required>${opsiProdi()}</select></label>`;
+}
+
 function kartuProdi() {
   return `
     <div class="kartu">
       <h3>1. Program Studi</h3>
       <p class="meta">Kode dipakai sebagai kunci di rumpun, CPL, mata kuliah, roster mahasiswa, dan kalender — huruf kecil, tanpa spasi, dan sebaiknya tidak diubah lagi setelah ada datanya.</p>
       ${tabelProdi()}
-      <h4>Tambah / perbarui prodi</h4>
+      <h4>${admin ? 'Tambah / perbarui prodi' : 'Perbarui prodi Anda'}</h4>
+      ${admin ? '' : '<p class="redup">Program studi baru dibuat admin. Isian di bawah terisi data prodi yang Anda pimpin.</p>'}
       <form id="form-prodi">
-        <label>Kode <input name="kode" required placeholder="mis. pai" pattern="[a-z][a-z0-9-]{1,19}"></label>
+        ${isianKodeProdi()}
         <label>Nama <input name="nama" required placeholder="Pendidikan Agama Islam"></label>
         <label>Jenjang <input name="jenjang" required placeholder="S1" value="S1"></label>
         <label>Total SKS <input name="sks_total" type="number" min="1" required value="144"></label>
@@ -124,6 +136,7 @@ function kartuRitme() {
       <h3>4. Ritme Mingguan</h3>
       <p class="meta">Pola satu minggu yang diulang jadi kalender semester. Isi ini hanya kalau prodi memakai pola yang berbeda dari yang sudah ada — kalender memilih ritme lewat namanya.</p>
       ${ritme.length ? `<p class="redup">Sudah ada: ${ritme.map(r => `${esc(r.nama)} (${esc(r.total_menit_per_minggu)} menit/minggu)`).join(' · ')}</p>` : ''}
+      ${admin ? '' : '<p class="redup">Ritme dipakai bersama semua prodi, jadi ritme yang sudah ada hanya bisa diubah admin — simpan pola prodi Anda dengan nama ritme baru.</p>'}
       <form id="form-ritme">
         <label>Nama ritme <input name="nama" required placeholder="Ritme PAI — Semester 1-6"></label>
         <label>Kapasitas SKS per semester <input name="kapasitas" type="number" min="0" step="0.1" value="0"></label>
@@ -213,19 +226,40 @@ function pasang() {
   });
 }
 
+// Kaprodi memilih prodinya di isian Kode; isian lain diisi data prodi itu
+// supaya menyimpan tidak diam-diam menimpa nama/SKS dengan nilai bawaan form.
+function isiDataProdi(form) {
+  const p = prodi.find(x => x.kode === form.elements.kode.value);
+  if (!p) return;
+  form.elements.nama.value = p.nama || '';
+  form.elements.jenjang.value = p.jenjang || '';
+  form.elements.sks_total.value = p.sks_total || '';
+  form.elements.semester.value = p.semester || '';
+  form.elements.semester_proyek_kerja_min.value = p.semester_proyek_kerja_min || 0;
+}
+
 async function muat() {
   const saya = await apiGet('/api/proyekblok/saya', { auth: true });
-  if (saya.peran !== 'dosen') {
-    isi.innerHTML = '<div class="kosong">Halaman ini untuk dosen/kaprodi. Kalau Anda kaprodi tapi melihat pesan ini, nomor WhatsApp Anda belum terdaftar sebagai dosen.</div>';
+  ({ prodi = [] } = await apiGet('/api/kurikulum/prodi'));
+  if (!adalahPimpinan(saya)) {
+    isi.innerHTML = `<div class="kartu"><h3>Program Studi</h3>${tabelProdi()}</div>
+      <div class="kosong">Kurikulum hanya bisa diubah kaprodi prodi itu dan admin. Kalau Anda kaprodi atau admin yang sedang memakai peran dosen, pilih peran kaprodi atau admin di pojok kanan atas.</div>`;
     return;
   }
-  ({ prodi = [] } = await apiGet('/api/kurikulum/prodi'));
+  admin = adalahAdmin(saya);
+  const boleh = prodiPimpinan(saya);
+  prodiDikelola = boleh ? prodi.filter(p => boleh.includes(p.kode)) : prodi;
   try {
     ({ ritme = [] } = await apiGet('/api/kurikulum/ritme'));
   } catch {
     ritme = [];
   }
-  isi.innerHTML = kartuProdi() + (prodi.length ? kartuRumpun() + kartuCPL() : '') + kartuRitme();
+  isi.innerHTML = kartuProdi() + (prodiDikelola.length ? kartuRumpun() + kartuCPL() : '') + kartuRitme();
+  const formProdi = document.getElementById('form-prodi');
+  if (!admin) {
+    isiDataProdi(formProdi);
+    formProdi.elements.kode.addEventListener('change', () => isiDataProdi(formProdi));
+  }
   pasang();
 }
 

@@ -36,7 +36,6 @@ function tampil(saya) {
       + kartu('Rapor & Rekap Nilai', 'Buka rapor mahasiswa per NIM atau rekap nilai huruf dan IP satu angkatan per semester, siap dicetak.', 'rapor.html', 'Buka Rapor')
       + kartu('Kelola Materi','Tambah video YouTube dan bacaan asinkron per minggu rumpun — progres mahasiswa hanya tercatat untuk materi di katalog ini.', 'kelola-materi.html', 'Kelola Materi')
       + kartu('Hasil Autograder','Hasil tes otomatis atas kode yang dikirim mahasiswa lewat Pull Request, beserta pengaturan pembagian bobotnya.', 'autograder.html', 'Lihat Hasil Autograder')
-      + kartu('Kurikulum Program Studi','Daftarkan prodi, rumpun beserta mata kuliahnya, CPL, dan ritme mingguan — prasyarat sebelum kalender, roster, dan dasbor bisa dipakai prodi itu.', 'kurikulum.html', 'Kelola Kurikulum')
     : kartu('Dasbor Belajar', 'Beban belajar minggu ini dan capaian pembelajaran (CPL) yang sudah terbukti dari nilai dan RPL Anda.', 'dasbor.html', 'Buka Dasbor')
       + kartu('Rekaman Sesi Sinkron', 'Tidak bisa ikut sesi daring Kamis? Tonton rekamannya sebelum sesi Jumat.', 'rekaman.html', 'Buka Rekaman')
       + kartu('Forum Tanya Dosen','Tersendat di materi asinkron Senin–Rabu? Ajukan pertanyaan; dosen menargetkan jawaban 1×24 jam.', 'forum.html', 'Buka Forum')
@@ -53,7 +52,8 @@ function tampil(saya) {
   const boleh = prodiPimpinan(saya);
   const lingkup = boleh ? boleh.join(', ').toUpperCase() : 'semua prodi';
   const kartuPimpinan = adalahPimpinan(saya)
-    ? kartu('Pantau Proyek Kerja', `Proyek kerja aktif dan yang telat tinjauan tengah semester, beserta siapa yang belum menilai — ${lingkup}.`, 'kaprodi.html', 'Pantau Proyek Kerja')
+    ? kartu('Kurikulum Program Studi', `Isi rumpun beserta mata kuliahnya, CPL, dan ritme mingguan — prasyarat sebelum kalender, roster, dan dasbor bisa dipakai prodi itu — ${lingkup}.`, 'kurikulum.html', 'Kelola Kurikulum')
+      + kartu('Pantau Proyek Kerja', `Proyek kerja aktif dan yang telat tinjauan tengah semester, beserta siapa yang belum menilai — ${lingkup}.`, 'kaprodi.html', 'Pantau Proyek Kerja')
       + kartu('Laporan Kepatuhan', `Menit asinkron, daring, dan luring per mata kuliah terhadap tuntutan SKS, beserta bukti nilai dan CPL — ${lingkup}.`, 'kepatuhan.html', 'Buka Laporan')
       + (adalahAdmin(saya) ? kartu('Kelola Kaprodi', 'Tetapkan atau ganti kaprodi tiap program studi, atau kosongkan jabatannya.', 'jabatan.html', 'Kelola Kaprodi') : '')
     : '';
