@@ -1,9 +1,12 @@
 import { apiGet, apiPostJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { buatPelacak } from './pelacak.js';
+import { pasangPDF } from './pdfmateri.js';
 
 // Materi Pekan Ini (mahasiswa). Progres dikirim ke POST /api/progresmateri;
 // server yang memutuskan: NIM dari roster lewat token, materi harus milik
 // prodi/rumpun/minggu mahasiswa, dan persen yang tersimpan tidak pernah turun.
-// Halaman ini hanya melaporkan apa yang terjadi di pemutar dan di wadah bacaan.
+// Halaman ini hanya melaporkan apa yang terjadi di pemutar, di wadah bacaan,
+// dan di pembaca PDF.
 
 const isi = document.getElementById('isi');
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
@@ -12,6 +15,7 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s ?? 
 // menyimpan nilai terbesar — mengirim tiap detik cuma membebani backend.
 const LANGKAH_VIDEO = 5;     // kirim tiap naik >= 5 poin persen
 const LANGKAH_BACAAN = 10;   // kirim tiap naik >= 10 poin persen
+const LANGKAH_BERKAS = 10;   // kirim tiap naik >= 10 poin persen
 const JEDA_POLL_MS = 10000;  // cek posisi video tiap 10 detik selama diputar
 
 let konteks = { rumpun: '', minggu: 0 };
@@ -30,7 +34,9 @@ function tampilkanProgres(id) {
   if (teks && p) teks.textContent = `${Math.round(p.tersimpan)}% tercatat`;
 }
 
-async function kirimProgres(id, persen, langkah) {
+// halamanTerakhir hanya diisi materi berkas; video dan bacaan memanggil tanpa
+// argumen itu, jadi badan permintaannya tetap sama persis seperti sebelumnya.
+async function kirimProgres(id, persen, langkah, halamanTerakhir) {
   const p = pelacak.get(id);
   if (!p || p.berhenti) return;
   persen = Math.max(0, Math.min(100, persen));
@@ -38,9 +44,11 @@ async function kirimProgres(id, persen, langkah) {
   if (persen < p.terkirim + langkah && !(persen >= 100 && p.terkirim < 100)) return;
   p.terkirim = persen;
   try {
-    const r = await apiPostJson('/api/progresmateri', {
+    const badan = {
       rumpun_kode: konteks.rumpun, minggu: konteks.minggu, materi_id: id, persen_selesai: persen,
-    });
+    };
+    if (halamanTerakhir > 0) badan.halaman_terakhir = Math.floor(halamanTerakhir);
+    const r = await apiPostJson('/api/progresmateri', badan);
     p.tersimpan = r.persen_selesai; // nilai yang TERSIMPAN (terbesar), bukan yang dikirim
     tampilkanProgres(id);
   } catch (err) {
@@ -119,15 +127,54 @@ function pasangBacaan(m) {
   kirimProgres(m.id, ukur(), LANGKAH_BACAAN);
 }
 
+// --- Materi berkas (PDF) ---
+// Berkasnya ada di repo storage GitHub yang PRIVAT, jadi peramban tidak bisa
+// mengambilnya langsung: backend yang membacanya dan mengirimkan isinya sebagai
+// base64 di dalam JSON, lewat apiGet (semua REST wajib lewat crootjs).
+// Penyebut progresnya jumlah halaman yang ditetapkan dosen saat mengunggah,
+// dan halaman baru dihitung selesai setelah benar-benar dilihat beberapa detik
+// dengan tab terbuka (lihat pelacak.js).
+const pelacakBerkas = [];
+
+async function pasangBerkas(m) {
+  const wadah = document.querySelector(`.pdf[data-id="${m.id}"]`);
+  if (!wadah) return;
+  // Keadaan "Memuat berkas…" sudah dipasang kartunya; berkas besar bisa perlu
+  // beberapa detik, dan pasangPDF yang menggantinya begitu halaman 1 terender.
+  // getJSON crootjs memutus permintaan setelah 15 detik: PDF sangat besar di
+  // jaringan lambat akan jatuh ke pesan galat di bawah, bukan menggantung.
+  const d = await apiGet(`/api/materi/${encodeURIComponent(m.id)}/berkas`, { auth: true });
+  const total = Number(d.halaman) || 0;
+  const pel = buatPelacak({
+    total,
+    onMaju: ({ persen, unitTerakhir }) => kirimProgres(m.id, persen, LANGKAH_BERKAS, unitTerakhir),
+  });
+  pelacakBerkas.push(pel);
+  await pasangPDF(wadah, { base64: d.isi_base64, halaman: total, onHalaman: (n) => pel.lihat(n) });
+}
+
+function badanMateri(m) {
+  if (m.jenis === 'video') return `<div class="video"><div id="yt-${esc(m.id)}"></div></div>`;
+  if (m.jenis === 'berkas') return `<div class="pdf" data-id="${esc(m.id)}"><p class="redup">Memuat berkas…</p></div>`;
+  return `<div class="bacaan" data-id="${esc(m.id)}">${(m.isi || '').split(/\n\s*\n/).map(par => `<p>${esc(par.trim())}</p>`).join('')}</div>`;
+}
+
+function labelJenis(m) {
+  if (m.jenis === 'video') return 'Video';
+  if (m.jenis === 'berkas') {
+    const rincian = [m.nama_berkas, m.halaman ? `${m.halaman} halaman` : ''].filter(Boolean).map(esc).join(' · ');
+    return `Berkas PDF${rincian ? ` · ${rincian}` : ''}`;
+  }
+  return 'Bacaan';
+}
+
 function kartuMateri(m) {
   const tersimpan = pelacak.get(m.id)?.tersimpan || 0;
-  const badan = m.jenis === 'video'
-    ? `<div class="video"><div id="yt-${esc(m.id)}"></div></div>`
-    : `<div class="bacaan" data-id="${esc(m.id)}">${(m.isi || '').split(/\n\s*\n/).map(par => `<p>${esc(par.trim())}</p>`).join('')}</div>`;
+  const badan = badanMateri(m);
   return `
     <div class="kartu">
       <h3>${esc(m.judul)}</h3>
-      <p class="meta">${m.jenis === 'video' ? 'Video' : 'Bacaan'}${m.deskripsi ? ` · ${esc(m.deskripsi)}` : ''}</p>
+      <p class="meta">${labelJenis(m)}${m.deskripsi ? ` · ${esc(m.deskripsi)}` : ''}</p>
       ${badan}
       <progress class="progres" max="100" value="${tersimpan}" data-id="${esc(m.id)}"></progress>
       <p class="redup teks-progres" data-id="${esc(m.id)}">${Math.round(tersimpan)}% tercatat</p>
@@ -140,6 +187,9 @@ async function muatMateri(e, nim, prodi) {
   konteks = { rumpun: fd.get('rumpun'), minggu: Number(fd.get('minggu')) };
   const wadah = document.getElementById('daftar-materi');
   wadah.innerHTML = '<p class="redup">Memuat materi…</p>';
+  // Kartu lama dibuang: pelacak halamannya ikut dihentikan supaya listener
+  // visibilitychange-nya tidak menumpuk tiap saringan diganti.
+  pelacakBerkas.splice(0).forEach(pel => pel.berhenti());
   pelacak.clear();
   try {
     const q = new URLSearchParams({ prodi, rumpun: konteks.rumpun, minggu: String(konteks.minggu) });
@@ -159,6 +209,11 @@ async function muatMateri(e, nim, prodi) {
         pasangVideo(m).catch(err => {
           const t = document.querySelector(`.teks-progres[data-id="${m.id}"]`);
           if (t) t.textContent = err.message;
+        });
+      } else if (m.jenis === 'berkas') {
+        pasangBerkas(m).catch(err => {
+          const w = document.querySelector(`.pdf[data-id="${m.id}"]`);
+          if (w) w.innerHTML = `<div class="pesan gagal">Berkas tidak bisa ditampilkan: ${esc(err.message)}</div>`;
         });
       } else {
         pasangBacaan(m);

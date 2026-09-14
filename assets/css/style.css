@@ -9,6 +9,11 @@
   --font-angka: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 * { box-sizing: border-box; }
+/* Atribut `hidden` diandalkan beberapa halaman (bidang form Kelola Materi,
+   tombol Cetak di Kepatuhan). Aturan author `label { display: block }` di bawah
+   mengalahkan `[hidden] { display: none }` bawaan peramban — author selalu menang
+   atas user-agent — jadi aturannya ditegaskan di sini. */
+[hidden] { display: none !important; }
 body {
   margin: 0; background: var(--kertas); color: var(--tinta);
   font-family: var(--font-teks); line-height: 1.6; font-size: 15px;
@@ -140,6 +145,16 @@ footer a:hover { color: var(--biru); }
 }
 .bacaan p { margin: 0 0 .8rem; }
 progress.progres { width: 100%; height: .5rem; }
+/* Kanvas PDF: bitmapnya dirender pdf.js selebar wadah dikali kerapatan layar,
+   lebar tampilnya diatur di sini supaya tidak ada atribut style di markup. */
+.pdf-kanvas { display: block; width: 100%; height: auto; border: 1px solid var(--garis); background: var(--permukaan); }
+.pdf-nav { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin-top: .6rem; }
+.pdf-nav button { margin-top: 0; }
+/* Nama berkas yang ditampilkan sudah disanitasi server (spasi jadi "_"), jadi
+   satu nama panjang adalah satu kata tanpa titik putus dan bisa melebar melewati
+   layar 360px. break-word hanya memutus kata yang memang tidak muat, dan tidak
+   mengubah lebar minimum tabel seperti `anywhere`. */
+.pesan, .kartu .meta { overflow-wrap: break-word; }
 
 @media (min-width: 720px) { header.top h1 { font-size: 1.9rem; } }
 

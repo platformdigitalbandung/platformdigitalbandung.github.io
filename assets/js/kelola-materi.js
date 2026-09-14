@@ -1,8 +1,19 @@
-import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, apiPostBerkasToken, isLoggedIn, arahkanKeLogin } from './api.js';
+import { hitungHalaman } from './pdfmateri.js';
 
 // Kelola Materi (dosen). Kewenangan tetap dicek backend. Prodi dan rumpun dibaca
 // dari data kurikulum, tidak diketik ulang. YouTube ID diurai server dari
 // tautan apa pun, jadi halaman ini tidak mencoba mengurainya sendiri.
+//
+// Materi jenis "berkas": PDF diunggah ke repo storage GitHub privat lewat
+// backend. Jumlah halamannya dihitung di sini dengan pdf.js lalu ikut dikirim,
+// karena penyebut progres mahasiswa ditetapkan dosen saat mengunggah — bukan
+// oleh peramban mahasiswa yang membacanya nanti.
+
+// Batas yang sama dengan yang dijaga backend; diperiksa di sini juga supaya
+// dosen tidak menunggu unggahan 30 MiB cuma untuk ditolak di ujung.
+const UKURAN_MAKS = 20 * 1024 * 1024; // 20 MiB
+const UKURAN_MAKS_LABEL = '20 MiB';
 
 const isi = document.getElementById('isi');
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
@@ -45,7 +56,8 @@ function kartuSaring() {
 }
 
 function kartuForm(m = {}) {
-  const video = (m.jenis || 'video') === 'video';
+  const jenis = m.jenis || 'video';
+  const sembunyi = (j) => (jenis === j ? '' : ' hidden');
   return `
     <div class="kartu">
       <h3>${m.id ? 'Ubah' : 'Tambah'} Materi</h3>
@@ -56,13 +68,20 @@ function kartuForm(m = {}) {
         <label>Urutan dalam minggu <input type="number" name="urutan" min="0" value="${esc(m.urutan ?? 0)}"></label>
         <label>Judul <input name="judul" required maxlength="200" value="${esc(m.judul || '')}"></label>
         <label>Jenis <select name="jenis" id="form-jenis">
-          <option value="video"${video ? ' selected' : ''}>video</option>
-          <option value="bacaan"${video ? '' : ' selected'}>bacaan</option>
+          <option value="video"${jenis === 'video' ? ' selected' : ''}>video</option>
+          <option value="bacaan"${jenis === 'bacaan' ? ' selected' : ''}>bacaan</option>
+          <option value="berkas"${jenis === 'berkas' ? ' selected' : ''}>berkas (PDF)</option>
         </select></label>
-        <label id="bidang-video"${video ? '' : ' hidden'}>Tautan atau ID YouTube
+        <label id="bidang-video"${sembunyi('video')}>Tautan atau ID YouTube
           <input name="youtube_id" maxlength="300" value="${esc(m.youtube_id || '')}" placeholder="https://youtu.be/…"></label>
-        <label id="bidang-bacaan"${video ? ' hidden' : ''}>Isi bacaan (teks lengkap; pisahkan paragraf dengan baris kosong)
+        <label id="bidang-bacaan"${sembunyi('bacaan')}>Isi bacaan (teks lengkap; pisahkan paragraf dengan baris kosong)
           <textarea name="isi" rows="10" maxlength="100000">${esc(m.isi || '')}</textarea></label>
+        <div id="bidang-berkas"${sembunyi('berkas')}>
+          <label>Berkas materi — PDF saja, maksimal ${UKURAN_MAKS_LABEL}
+            <input type="file" id="berkas-materi" name="berkas" accept="application/pdf"></label>
+          <p class="redup">Slide PowerPoint atau dokumen Word ekspor dulu ke PDF: hanya PDF yang bisa ditampilkan per halaman di dalam platform, dan hanya halaman yang benar-benar dibuka mahasiswa yang bisa dilacak. Jumlah halamannya dihitung otomatis dari berkasnya.</p>
+          ${m.nama_berkas ? `<p class="meta">Berkas sekarang: <b>${esc(m.nama_berkas)}</b>${m.halaman ? ` · ${esc(m.halaman)} halaman` : ''}. Pilih berkas baru hanya kalau ingin menggantinya.</p>` : ''}
+        </div>
         <label>Deskripsi singkat <input name="deskripsi" maxlength="1000" value="${esc(m.deskripsi || '')}"></label>
         <button>${m.id ? 'Simpan Perubahan' : 'Tambah Materi'}</button>
         ${m.id ? '<button type="button" class="sekunder" id="batal-ubah">Batal</button>' : ''}
@@ -79,37 +98,114 @@ async function pasangForm(m = {}) {
   await isiPilihanRumpun(selProdi, selRumpun, m.rumpun_kode, false);
   selProdi.addEventListener('change', () => isiPilihanRumpun(selProdi, selRumpun, '', false));
   document.getElementById('form-jenis').addEventListener('change', e => {
-    const video = e.target.value === 'video';
-    document.getElementById('bidang-video').hidden = !video;
-    document.getElementById('bidang-bacaan').hidden = video;
+    const jenis = e.target.value;
+    document.getElementById('bidang-video').hidden = jenis !== 'video';
+    document.getElementById('bidang-bacaan').hidden = jenis !== 'bacaan';
+    document.getElementById('bidang-berkas').hidden = jenis !== 'berkas';
   });
   document.getElementById('form-materi').addEventListener('submit', simpan);
   const batal = document.getElementById('batal-ubah');
   if (batal) batal.addEventListener('click', () => pasangForm());
 }
 
+// Alasan berkasnya tidak ikut satu permintaan dengan datanya: path simpanannya
+// memakai id materi, jadi materinya harus ada dulu. Simpan data -> dapat id ->
+// unggah berkas ke /api/materi/<id>/berkas.
+function periksaBerkas(berkas) {
+  if (berkas.size > UKURAN_MAKS) {
+    return `Berkas ${Math.round(berkas.size / (1024 * 1024))} MiB melebihi batas ${UKURAN_MAKS_LABEL}.`;
+  }
+  const namaPDF = /\.pdf$/i.test(berkas.name);
+  if (berkas.type !== 'application/pdf' && !namaPDF) return 'Hanya berkas PDF yang bisa diunggah.';
+  return '';
+}
+
 async function simpan(e) {
   e.preventDefault();
   const fd = new FormData(e.target);
   const id = e.target.dataset.id;
+  const jenis = fd.get('jenis');
+  const hasil = document.getElementById('hasil-materi');
+  const masukan = document.getElementById('berkas-materi');
+  const berkas = jenis === 'berkas' && masukan && masukan.files.length ? masukan.files[0] : null;
+  const punyaBerkas = Boolean(id && katalog.find(x => x.id === id && x.nama_berkas));
+
+  if (jenis === 'berkas' && !berkas && !punyaBerkas) {
+    hasil.innerHTML = '<div class="pesan gagal">Pilih berkas PDF-nya dulu — materi jenis berkas tidak bisa dibaca mahasiswa tanpa berkas.</div>';
+    return;
+  }
+  if (berkas) {
+    const galat = periksaBerkas(berkas);
+    if (galat) { hasil.innerHTML = `<div class="pesan gagal">${esc(galat)}</div>`; return; }
+  }
+
   const body = {
     prodi_kode: fd.get('prodi_kode'), rumpun_kode: fd.get('rumpun_kode'),
     minggu: Number(fd.get('minggu')), urutan: Number(fd.get('urutan')) || 0,
-    judul: fd.get('judul'), jenis: fd.get('jenis'),
+    judul: fd.get('judul'), jenis,
     youtube_id: fd.get('youtube_id') || '', isi: fd.get('isi') || '', deskripsi: fd.get('deskripsi') || '',
   };
-  const hasil = document.getElementById('hasil-materi');
   hasil.innerHTML = '<p class="redup">Menyimpan…</p>';
+  let m;
   try {
-    const m = id
+    m = id
       ? await apiPutJson(`/api/materi/${encodeURIComponent(id)}`, body)
       : await apiPostJson('/api/materi', body);
+  } catch (err) {
+    hasil.innerHTML = `<div class="pesan gagal">Gagal menyimpan: ${esc(err.message)}</div>`;
+    return;
+  }
+
+  if (!berkas) {
     hasil.innerHTML = `<div class="pesan sukses">Materi <b>${esc(m.judul)}</b> tersimpan (minggu ${esc(m.minggu)}, ${esc(m.jenis)}${m.youtube_id ? `, YouTube ID <code>${esc(m.youtube_id)}</code>` : ''}).</div>`;
     if (!id) e.target.reset();
     tampilDaftar();
-  } catch (err) {
-    hasil.innerHTML = `<div class="pesan gagal">Gagal menyimpan: ${esc(err.message)}</div>`;
+    return;
   }
+
+  // Materinya sudah tercatat; kalau unggahannya gagal itu harus terlihat, bukan
+  // disembunyikan — materinya ada di katalog tapi belum bisa dibaca mahasiswa.
+  const tertunda = `Materi <b>${esc(m.judul)}</b> tersimpan, tetapi berkasnya belum terunggah`;
+  let halaman = 0;
+  hasil.innerHTML = '<p class="redup">Menghitung halaman…</p>';
+  try {
+    halaman = await hitungHalaman(await berkas.arrayBuffer());
+  } catch (err) {
+    hasil.innerHTML = `<div class="pesan gagal">${tertunda}: berkasnya tidak bisa dibaca sebagai PDF (${esc(err.message)}). Pastikan berkasnya PDF yang utuh, lalu tekan Ubah pada materi ini dan pilih berkasnya lagi.</div>`;
+    tampilDaftar();
+    return;
+  }
+  if (!halaman) {
+    hasil.innerHTML = `<div class="pesan gagal">${tertunda}: jumlah halamannya tidak terbaca. Tekan Ubah pada materi ini dan pilih berkasnya lagi.</div>`;
+    tampilDaftar();
+    return;
+  }
+
+  hasil.innerHTML = `<p class="redup">Mengunggah berkas (${halaman} halaman)…</p>`;
+  // Catatan: postFileJSON crootjs memutus permintaan setelah 15 detik, jadi PDF
+  // besar di jaringan lambat bisa gagal dengan pesan "backend tidak terjangkau".
+  // Batas itu ada di lib-nya; kalau sering mengganggu, laporkan ke tim crootjs
+  // supaya timeout-nya bisa diatur — jangan di-workaround di sini.
+  try {
+    const mb = await apiPostBerkasToken(`/api/materi/${encodeURIComponent(m.id)}/berkas`,
+      { halaman: String(halaman) }, 'berkas-materi', 'berkas');
+    hasil.innerHTML = `<div class="pesan sukses">Materi <b>${esc(mb.judul || m.judul)}</b> tersimpan (minggu ${esc(mb.minggu ?? m.minggu)}, berkas <code>${esc(mb.nama_berkas || berkas.name)}</code>, ${esc(mb.halaman || halaman)} halaman).</div>`;
+    if (!id) e.target.reset();
+    tampilDaftar();
+  } catch (err) {
+    hasil.innerHTML = `<div class="pesan gagal">${tertunda}: ${esc(err.message)}. Tekan Ubah pada materi ini dan pilih berkasnya lagi.</div>`;
+    tampilDaftar();
+  }
+}
+
+// Materi berkas yang unggahannya gagal tetap ada di katalog tapi tidak bisa
+// dibaca mahasiswa — itu harus kelihatan di daftar, bukan cuma di pesan sesaat.
+function selBerkas(m) {
+  if (m.nama_berkas) {
+    return `<br><span class="redup">${esc(m.nama_berkas)}${m.halaman ? ` · ${esc(m.halaman)} halaman` : ''}</span>`;
+  }
+  if (m.jenis === 'berkas') return '<br><span class="redup">berkas belum diunggah</span>';
+  return '';
 }
 
 async function tampilDaftar(e) {
@@ -125,7 +221,7 @@ async function tampilDaftar(e) {
         <tr><th class="num">Mgg</th><th class="num">Urut</th><th>Judul</th><th>Jenis</th><th>Rumpun</th><th></th></tr>
         ${katalog.map(m => `<tr>
           <td class="num">${esc(m.minggu)}</td><td class="num">${esc(m.urutan)}</td>
-          <td>${esc(m.judul)}</td><td>${esc(m.jenis)}</td><td>${esc(m.rumpun_kode)}</td>
+          <td>${esc(m.judul)}</td><td>${esc(m.jenis)}${selBerkas(m)}</td><td>${esc(m.rumpun_kode)}</td>
           <td><button class="sekunder ubah" data-id="${esc(m.id)}">Ubah</button>
               <button class="sekunder hapus" data-id="${esc(m.id)}">Hapus</button></td></tr>`).join('')}
       </table></div><div id="hasil-hapus"></div>`
