@@ -131,7 +131,7 @@ async function muatDaftar(form) {
   } catch (err) {
     wadah.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
-  // Ringkasan SLA adalah laporan tingkat prodi: hanya kaprodi (prodinya).
+  // Ringkasan SLA adalah laporan tingkat prodi: hanya kaprodi (prodinya) dan admin.
   // Kaprodi yang menyaring prodi lain tetap melihat SLA prodinya.
   if (adalahPimpinan(saya)) {
     const sla = document.getElementById('ringkasan-sla');

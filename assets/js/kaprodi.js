@@ -73,8 +73,8 @@ async function muatRingkas(e) {
 async function muat() {
   const saya = await apiGet('/api/proyekblok/saya', { auth: true });
   if (!adalahPimpinan(saya)) {
-    isi.innerHTML = `<div class="kartu"><h3>Khusus kaprodi</h3>
-      <p class="meta">Pantauan proyek kerja tingkat prodi hanya bisa dibuka kaprodi, untuk prodinya. Kaprodi yang sedang memakai peran dosen: pilih peran kaprodi di pojok kanan atas.</p>
+    isi.innerHTML = `<div class="kartu"><h3>Khusus kaprodi dan admin</h3>
+      <p class="meta">Pantauan proyek kerja tingkat prodi hanya bisa dibuka kaprodi (untuk prodinya) dan admin. Yang sedang memakai peran dosen: pilih peran kaprodi atau admin di pojok kanan atas.</p>
       <a class="aksi" href="saya.html">Kembali ke Beranda Saya</a></div>`;
     return;
   }

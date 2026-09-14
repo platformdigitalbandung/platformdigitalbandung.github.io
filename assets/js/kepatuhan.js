@@ -159,7 +159,7 @@ async function tampilRekap(kode) {
 async function muat() {
   const saya = await apiGet('/api/proyekblok/saya', { auth: true });
   if (!adalahPimpinan(saya)) {
-    isi.innerHTML = '<div class="kosong">Laporan kepatuhan hanya untuk kaprodi, untuk prodinya sendiri. Kaprodi yang sedang memakai peran dosen: pilih peran kaprodi di pojok kanan atas.</div>';
+    isi.innerHTML = '<div class="kosong">Laporan kepatuhan hanya untuk kaprodi (prodinya sendiri) dan admin. Yang sedang memakai peran dosen: pilih peran kaprodi atau admin di pojok kanan atas.</div>';
     return;
   }
   const boleh = prodiPimpinan(saya);

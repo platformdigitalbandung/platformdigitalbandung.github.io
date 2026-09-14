@@ -1,5 +1,5 @@
 import { apiGet } from './api.js';
-import { sayaSekarang, adalahPimpinan } from './akun.js';
+import { sayaSekarang, adalahPimpinan, adalahAdmin } from './akun.js';
 
 // Beranda LMS. Jadwal, layanan, dan program studi hanya untuk dosen/admin dan
 // mahasiswa di roster — sebelum itu beranda cuma menampilkan sambutan
@@ -72,6 +72,7 @@ const LAYANAN = {
       ['akademik.html', 'Roster dan NIP', 'Data mahasiswa'],
       ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
       ['kepatuhan.html', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi'],
+      ['jabatan.html', 'Kelola kaprodi', 'Tetapkan atau ganti kaprodi tiap prodi'],
     ]],
   ],
 };
@@ -82,17 +83,20 @@ function htmlKelompok(judul, butir) {
   </ul></div>`;
 }
 
-// Laporan tingkat prodi hanya untuk kaprodi (backend menolak 403), dan hanya
-// tampil selagi kaprodi memakai peran kaprodi (pemilih peran di akun.js).
+// Laporan tingkat prodi hanya untuk kaprodi dan admin, Kelola Kaprodi hanya
+// untuk admin (backend menolak 403) — keduanya mengikuti peran aktif yang
+// dipilih di bilah atas (akun.js).
 const LAPORAN_PRODI = new Set(['kaprodi.html', 'kepatuhan.html']);
+const KHUSUS_ADMIN = new Set(['jabatan.html']);
 
 function tampilLayanan(saya) {
   const wadah = document.getElementById('layanan');
   const peran = saya && saya.peran;
   if (peran === 'dosen' || peran === 'mahasiswa') {
     const pimpinan = adalahPimpinan(saya);
+    const admin = adalahAdmin(saya);
     wadah.innerHTML = LAYANAN[peran]
-      .map(([j, b]) => [j, b.filter(([href]) => pimpinan || !LAPORAN_PRODI.has(href))])
+      .map(([j, b]) => [j, b.filter(([href]) => (pimpinan || !LAPORAN_PRODI.has(href)) && (admin || !KHUSUS_ADMIN.has(href)))])
       .filter(([, b]) => b.length)
       .map(([j, b]) => htmlKelompok(j, b)).join('');
     return;

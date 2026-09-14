@@ -118,7 +118,7 @@ async function tampilRekap(prodi, angkatan, semester) {
 }
 
 // Rekap nilai satu angkatan adalah laporan tingkat prodi: hanya untuk kaprodi
-// (prodinya). Dosen biasa tetap bisa membuka rapor per NIM.
+// (prodinya) dan admin. Dosen biasa tetap bisa membuka rapor per NIM.
 function formDosen(prodi, nimAwal, bolehRekap) {
   return `
     <div class="kartu tidak-cetak">
