@@ -136,7 +136,7 @@ function kartuRitme() {
       <h3>4. Ritme Mingguan</h3>
       <p class="meta">Pola satu minggu yang diulang jadi kalender semester. Isi ini hanya kalau prodi memakai pola yang berbeda dari yang sudah ada — kalender memilih ritme lewat namanya.</p>
       ${ritme.length ? `<p class="redup">Sudah ada: ${ritme.map(r => `${esc(r.nama)} (${esc(r.total_menit_per_minggu)} menit/minggu)`).join(' · ')}</p>` : ''}
-      ${admin ? '' : '<p class="redup">Ritme dipakai bersama semua prodi, jadi ritme yang sudah ada hanya bisa diubah admin — simpan pola prodi Anda dengan nama ritme baru.</p>'}
+      ${admin ? '' : '<p class="redup">Ritme dipakai kalender lewat namanya. Ritme yang sudah ada boleh Anda ubah selama tidak dipakai kalender prodi lain; kalau dipakai, simpan pola prodi Anda dengan nama ritme baru.</p>'}
       <form id="form-ritme">
         <label>Nama ritme <input name="nama" required placeholder="Ritme PAI — Semester 1-6"></label>
         <label>Kapasitas SKS per semester <input name="kapasitas" type="number" min="0" step="0.1" value="0"></label>
@@ -148,6 +148,20 @@ function kartuRitme() {
         <button>Simpan Ritme</button>
       </form>
       <div id="pesan-ritme"></div>
+    </div>`;
+}
+
+function kartuSeed() {
+  return `
+    <div class="kartu">
+      <h3>5. Data Bawaan (Seed)</h3>
+      <p class="meta">Menulis ulang data prodi, rumpun, dan CPL bawaan platform untuk satu prodi, lalu menurunkan mata kuliahnya. Data bawaan saat ini hanya ada untuk TRPL dan Bisnis Digital; prodi lain diisi lewat kartu di atas.</p>
+      <form id="form-seed">
+        <label>Prodi <select name="prodi" required>${opsiProdi()}</select></label>
+        <label><input type="checkbox" name="paham" required> Saya paham rumpun dan CPL berkode sama yang sudah diketik akan ditimpa data bawaan</label>
+        <button>Muat Data Bawaan</button>
+      </form>
+      <div id="pesan-seed"></div>
     </div>`;
 }
 
@@ -206,6 +220,14 @@ function pasang() {
     }));
   });
 
+  pasangForm('form-seed', async e => {
+    e.preventDefault();
+    const prodiSeed = new FormData(e.target).get('prodi');
+    const hasil = await kirim(e.target, 'pesan-seed', () => `/api/kurikulum/seed?prodi=${encodeURIComponent(prodiSeed)}`, () => ({}),
+      h => esc(h.ringkasan || ''));
+    if (hasil) await muat();
+  });
+
   pasangForm('form-ritme', async e => {
     e.preventDefault();
     const baris = [...document.querySelectorAll('#sesi-ritme tr')].slice(1);
@@ -254,7 +276,7 @@ async function muat() {
   } catch {
     ritme = [];
   }
-  isi.innerHTML = kartuProdi() + (prodiDikelola.length ? kartuRumpun() + kartuCPL() : '') + kartuRitme();
+  isi.innerHTML = kartuProdi() + (prodiDikelola.length ? kartuRumpun() + kartuCPL() : '') + kartuRitme() + (prodiDikelola.length ? kartuSeed() : '');
   const formProdi = document.getElementById('form-prodi');
   if (!admin) {
     isiDataProdi(formProdi);
