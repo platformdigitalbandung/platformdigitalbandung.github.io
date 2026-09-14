@@ -1,0 +1,41 @@
+/* Halaman kelompok dosen (dosen, kelola-materi, proyek, ujian, akademik, forum,
+   rekaman, autograder, rapor). Ditautkan sesudah style.css. Audit UX 2026-09-14. */
+
+/* Rantai prasyarat kerja dosen: kartuPrasyarat() di assets/js/hal-dosen.js */
+.kartu-prasyarat { border-left: 3px solid var(--sedang); }
+.rantai-prasyarat { margin: .2rem 0 .9rem; padding-left: 1.4rem; }
+.rantai-prasyarat li { margin: .3rem 0; }
+.rantai-prasyarat .prasyarat-selesai > span:first-child { color: var(--redup); text-decoration: line-through; }
+.rantai-prasyarat .prasyarat-menunggu { color: var(--redup); }
+
+/* Pilih anggota proyek blok dari roster (proyek.js) */
+.kelompok-anggota { border: 1px solid var(--garis); border-radius: 4px; padding: .6rem .85rem .3rem; margin: .9rem 0 .3rem; }
+.kelompok-anggota legend { font-weight: 600; font-size: .86rem; padding: 0 .3rem; }
+.pilih-anggota { max-height: 22rem; overflow-y: auto; margin: .3rem 0; }
+.pilih-anggota label { display: flex; align-items: center; gap: .15rem; margin: .25rem 0; font-weight: 400; }
+.pilih-anggota label .redup { margin-left: .35rem; }
+
+/* Formulir terbit rekaman di sel tabel: tetap satu kolom yang rapi di desktop */
+.form-terbit { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+.form-terbit input { flex: 1 1 9rem; min-width: 0; }
+@media (max-width: 620px) {
+  .form-terbit { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .form-terbit input, .form-terbit button { min-height: 44px; font-size: .9rem; }
+  .form-terbit button { justify-self: start; }
+  /* Lencana status di kartu tabel tidak melebar selebar sel */
+  table.tabel-kartu td > .lencana { justify-self: start; }
+}
+
+/* Tombol aksi dalam satu sel tabel: berderet, membungkus bila sempit */
+.aksi-sel { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+.aksi-sel a.aksi { display: inline-flex; align-items: center; }
+@media (max-width: 620px) {
+  table.tabel-kartu td.num::before { font-family: var(--teks); }
+}
+
+/* Penjelasan skor autograder untuk mahasiswa, dilipat di bawah hasil */
+details.cara-skor { margin-top: 1rem; }
+details.cara-skor > summary { cursor: pointer; font-weight: 600; padding: .6rem 0; min-height: 44px; }
+
+/* Label dan istilah yang bisa diketuk di atas formulir */
+.catatan-istilah { color: var(--redup); font-size: .84rem; margin: .2rem 0 .6rem; }

@@ -1,12 +1,18 @@
-import { apiGet, apiPostJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
-import { adalahPimpinan } from './akun.js';
+import { apiGet, apiPostJson, apiDeleteJson } from './api.js';
+import { adalahPimpinan, prodiPimpinan } from './akun.js';
+import { esc, istilah, keadaanKosong, labelTabel, prodiBawaan } from './ui.js';
+import { sayaHalaman, sedangMengajar } from './hal-dosen.js';
 
 // Rekaman Sesi Sinkron. Semua pemegang token bisa melihat rekaman per kalender
 // terbit; dosen menerbitkan/menghapus rekaman dan melihat rekap keterlambatan.
 // Kewenangannya dicek backend (403).
+//
+// Mahasiswa hanya melihat kalender prodinya; dosen/kaprodi mulai dari kalender
+// prodinya dan hanya mereka yang melihat formulir terbit (peran aktif admin
+// hanya membaca rekap). Tabel sesi menjadi kartu di HP supaya tombol Terbitkan
+// tidak tersembunyi di area gulir.
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 
 // Tanggal sesi disimpan sebagai tengah malam UTC dari tanggal kalendernya, jadi
@@ -32,6 +38,7 @@ function lencana(status) {
   return `<span class="lencana ${kelas}">${esc(label)}</span>`;
 }
 
+let saya = null;
 let dosen = false;
 let pimpinan = false;
 let kalenderAktif = '';
@@ -39,9 +46,9 @@ let kalenderAktif = '';
 function selRekaman(s) {
   const r = s.rekaman;
   if (r) {
-    return `<a href="https://www.youtube.com/watch?v=${encodeURIComponent(r.youtube_id)}" target="_blank" rel="noopener">${esc(r.judul || 'Tonton rekaman')}</a>
+    return `<div><a href="https://www.youtube.com/watch?v=${encodeURIComponent(r.youtube_id)}" target="_blank" rel="noopener">${esc(r.judul || 'Tonton rekaman')}</a>
       <br><span class="redup">terbit ${waktuWIB(r.diterbitkan_pada)}</span>
-      ${dosen ? `<br><button type="button" class="sekunder hapus-rekaman" data-id="${escAttr(r.id)}">Hapus</button>` : ''}`;
+      ${dosen ? `<br><button type="button" class="sekunder hapus-rekaman" data-id="${escAttr(r.id)}">Hapus</button>` : ''}</div>`;
   }
   if (dosen && s.status !== 'belum-berlangsung') {
     return `<form class="form-terbit" data-sesi="${escAttr(s.sesi_index)}">
@@ -56,14 +63,14 @@ function tabelSesi(d) {
   if (!d.sesi.length) return '<div class="kosong">Kalender ini tidak punya sesi daring sinkron.</div>';
   // Dosen punya form terbit di dalam sel: tabel-sunting membuat inputnya ringkas.
   return `<div class="gulir"><table${dosen ? ' class="tabel-sunting"' : ''}>
-    <tr><th class="num">Minggu</th><th>Sesi</th><th>Status</th><th>Tenggat terbit</th><th>Rekaman</th></tr>
+    <thead><tr><th class="num">Minggu</th><th>Sesi</th><th>Status</th><th>Tenggat terbit</th><th>Rekaman</th></tr></thead><tbody>
     ${d.sesi.map(s => `<tr>
       <td class="num">${esc(s.minggu)}</td>
       <td>${esc(tanggalSesi(s.tanggal))}</td>
       <td>${lencana(s.status)}</td>
       <td>${waktuWIB(s.tenggat)}</td>
       <td>${selRekaman(s)}</td></tr>`).join('')}
-  </table></div>`;
+  </tbody></table></div>`;
 }
 
 async function muatKalender(id) {
@@ -74,8 +81,11 @@ async function muatKalender(id) {
     const d = await apiGet(`/api/rekaman/kalender/${encodeURIComponent(id)}`, { auth: true });
     wadah.innerHTML = `<div class="kartu">
       <h3>${esc(d.prodi_kode.toUpperCase())} · angkatan ${esc(d.angkatan)} · semester ${esc(d.semester)}</h3>
+      <p class="catatan-istilah">${istilah('daring sinkron', 'Sesi daring sinkron')}: rekamannya diterbitkan dosen paling lambat pada tenggat terbit.</p>
       ${tabelSesi(d)}
       <div id="hasil-rekaman"></div></div>`;
+    const tabel = wadah.querySelector('table');
+    if (tabel) labelTabel(tabel);
     history.replaceState(null, '', `?kalender=${encodeURIComponent(id)}`);
   } catch (err) {
     wadah.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
@@ -118,20 +128,37 @@ async function hapus(id) {
   }
 }
 
+// Rekap tingkat prodi: admin semua prodi (tanpa query); kaprodi per prodi yang
+// dipimpin, dikirim eksplisit karena backend memberi pemegang jabatan admin
+// semua prodi walau peran aktifnya kaprodi.
+async function ambilRekap() {
+  const boleh = prodiPimpinan(saya);
+  if (!boleh) return (await apiGet('/api/rekaman/rekap', { auth: true })).kalender || [];
+  const hasil = await Promise.all(boleh.map(k => apiGet(`/api/rekaman/rekap?prodi=${encodeURIComponent(k)}`, { auth: true })));
+  return hasil.flatMap(r => r.kalender || []);
+}
+
 async function muatRekap() {
   const wadah = document.getElementById('rekap-rekaman');
+  const boleh = prodiPimpinan(saya);
+  const lingkup = boleh ? boleh.map(k => k.toUpperCase()).join(', ') : 'semua prodi';
   try {
-    const { kalender = [] } = await apiGet('/api/rekaman/rekap', { auth: true });
+    const kalender = await ambilRekap();
     const perlu = kalender.flatMap(k => k.perlu_perhatian.map(s => ({ ...s, k })));
     wadah.innerHTML = `<div class="kartu">
-      <h3>Rekap Keterlambatan Rekaman</h3>
+      <h3>Rekap Keterlambatan Rekaman · ${esc(lingkup)}</h3>
       <p class="meta">Jatuh tempo = sesi yang tenggatnya sudah lewat atau rekamannya sudah terbit.</p>
       ${kalender.length ? `<div class="gulir"><table>
-        <tr><th>Kalender</th><th class="num">Jatuh tempo</th><th class="num">Tepat</th><th class="num">Terlambat</th><th class="num">Belum ada</th><th class="num">Menunggu</th></tr>
+        <thead><tr><th>Kalender</th><th class="num">Jatuh tempo</th><th class="num">Tepat</th><th class="num">Terlambat</th><th class="num">Belum ada</th><th class="num">Menunggu</th></tr></thead>
         ${kalender.map(k => `<tr><td>${esc(k.prodi_kode.toUpperCase())} ${esc(k.angkatan)} sem ${esc(k.semester)}</td>
           <td class="num">${esc(k.jatuh_tempo)}</td><td class="num">${esc(k.terbit_tepat)}</td><td class="num">${esc(k.terbit_terlambat)}</td>
           <td class="num">${esc(k.belum_ada)}</td><td class="num">${esc(k.menunggu)}</td></tr>`).join('')}
-      </table></div>` : '<div class="kosong">Belum ada kalender terbit.</div>'}
+      </table></div>` : keadaanKosong({
+        judul: `Belum ada kalender terbit untuk ${lingkup}`,
+        keterangan: 'Rekap rekaman dihitung dari sesi daring sinkron di kalender semester yang sudah diterbitkan.',
+        siapa: boleh ? `kaprodi ${lingkup} (menerbitkan kalender)` : 'kaprodi tiap prodi (menerbitkan kalender)',
+        aksi: { href: 'kalender.html', label: 'Buka Kalender' },
+      })}
       ${perlu.length ? `<h4>Perlu perhatian</h4><ul>${perlu.map(s => `<li>${esc(s.k.prodi_kode.toUpperCase())} ${esc(s.k.angkatan)} sem ${esc(s.k.semester)} · minggu ${esc(s.minggu)} (${esc(tanggalSesi(s.tanggal))}) — ${lencana(s.status)}</li>`).join('')}</ul>` : ''}
     </div>`;
   } catch (err) {
@@ -139,24 +166,71 @@ async function muatRekap() {
   }
 }
 
+function labelKalender(k) {
+  return `${esc(k.prodi_kode.toUpperCase())} · angkatan ${esc(k.angkatan)} · semester ${esc(k.semester)}`;
+}
+
 async function muat() {
-  const saya = await apiGet('/api/proyekblok/saya', { auth: true });
-  dosen = saya.peran === 'dosen';
+  const mahasiswa = saya.peran !== 'dosen';
+  // Formulir terbit hanya untuk peran aktif dosen/kaprodi; admin membaca rekap.
+  dosen = sedangMengajar(saya);
   // Rekap keterlambatan adalah laporan tingkat prodi: kaprodi (prodinya) dan admin.
-  // Dosen biasa tetap menerbitkan rekaman sesinya.
   pimpinan = adalahPimpinan(saya);
-  const { kalender = [] } = await apiGet('/api/kalender');
+  const prodiSaya = prodiBawaan(saya);
+  let { kalender = [] } = await apiGet('/api/kalender');
+
+  if (mahasiswa) {
+    // Mahasiswa hanya melihat kalender prodinya, bukan kalender prodi lain.
+    if (!saya.prodi_kode) {
+      isi.innerHTML = keadaanKosong({
+        judul: 'Nomor ini belum tercatat di roster mahasiswa',
+        keterangan: 'Rekaman ditampilkan per kalender prodi Anda, jadi prodi Anda perlu tercatat di roster dulu.',
+        siapa: 'dosen atau kaprodi prodi Anda (halaman Roster Mahasiswa)',
+        aksi: { href: 'saya.html', label: 'Kembali ke Beranda Saya' },
+      });
+      return;
+    }
+    kalender = kalender.filter(k => k.prodi_kode === saya.prodi_kode);
+    if (!kalender.length) {
+      const P = saya.prodi_kode.toUpperCase();
+      isi.innerHTML = keadaanKosong({
+        judul: `Kalender semester ${P} belum diterbitkan`,
+        keterangan: `Rekaman kelas daring muncul di sini per sesi setelah kaprodi ${P} menerbitkan kalender dan dosen mengunggah rekamannya.`,
+        siapa: `kaprodi ${P}`,
+        aksi: [{ href: 'materi.html', label: 'Buka Materi' }, { href: 'forum.html', label: 'Tanya di Forum' }],
+      });
+      return;
+    }
+  }
+
   if (!kalender.length) {
-    isi.innerHTML = '<div class="kosong">Belum ada kalender semester yang diterbitkan.</div>';
+    isi.innerHTML = (pimpinan ? '<div id="rekap-rekaman"><p class="redup">Memuat rekap…</p></div>' : '') + keadaanKosong({
+      judul: 'Belum ada kalender semester yang diterbitkan',
+      keterangan: 'Rekaman diterbitkan per sesi daring sinkron di kalender semester.',
+      siapa: 'kaprodi tiap prodi (menerbitkan kalender)',
+      aksi: { href: 'kalender.html', label: 'Buka Kalender' },
+    });
+    if (pimpinan) muatRekap();
     return;
   }
+
+  const milik = prodiSaya ? kalender.filter(k => k.prodi_kode === prodiSaya) : kalender;
+  const lain = prodiSaya ? kalender.filter(k => k.prodi_kode !== prodiSaya) : [];
+  const opsi = (daftar) => daftar.map(k => `<option value="${escAttr(k.id)}">${labelKalender(k)}</option>`).join('');
+  const pilihan = mahasiswa || !prodiSaya
+    ? opsi(kalender)
+    : `${milik.length ? `<optgroup label="Prodi ${esc(prodiSaya.toUpperCase())}">${opsi(milik)}</optgroup>` : ''}${lain.length ? `<optgroup label="Prodi lain">${opsi(lain)}</optgroup>` : ''}`;
+  const prodiTanpaKalender = !mahasiswa && prodiSaya && !milik.length;
+
   isi.innerHTML = `
     ${pimpinan ? '<div id="rekap-rekaman"><p class="redup">Memuat rekap…</p></div>' : ''}
     <div class="kartu">
-      <h3>Pilih Kalender</h3>
+      <h3>${mahasiswa ? `Rekaman Kelas ${esc(saya.prodi_kode.toUpperCase())}` : 'Pilih Kalender'}</h3>
+      ${mahasiswa ? '<p class="meta">Hanya kalender prodi Anda yang ditampilkan.</p>' : ''}
+      ${prodiTanpaKalender ? `<div class="pesan info">Kalender ${esc(prodiSaya.toUpperCase())} belum diterbitkan kaprodinya, jadi belum ada sesi untuk diberi rekaman. Pilih kalender prodi lain di bawah hanya bila Anda juga mengajar di sana.</div>` : ''}
       <form id="form-kalender">
         <label>Kalender terbit
-          <select name="kalender">${kalender.map(k => `<option value="${escAttr(k.id)}">${esc(k.prodi_kode.toUpperCase())} · angkatan ${esc(k.angkatan)} · semester ${esc(k.semester)}</option>`).join('')}</select></label>
+          <select name="kalender">${pilihan}</select></label>
         <button>Tampilkan Sesi</button>
       </form>
     </div>
@@ -165,7 +239,8 @@ async function muat() {
   const form = document.getElementById('form-kalender');
   const pilih = form.querySelector('select');
   const awal = new URLSearchParams(location.search).get('kalender');
-  if (awal && [...pilih.options].some(o => o.value === awal)) pilih.value = awal;
+  const dariTautan = Boolean(awal && [...pilih.options].some(o => o.value === awal));
+  if (dariTautan) pilih.value = awal;
   form.addEventListener('submit', e => { e.preventDefault(); muatKalender(pilih.value); });
 
   const daftar = document.getElementById('daftar-rekaman');
@@ -180,15 +255,24 @@ async function muat() {
   });
 
   if (pimpinan) muatRekap();
-  await muatKalender(pilih.value);
+  // Kalender prodi lain tidak dibuka otomatis (dengan tombol Terbitkan-nya)
+  // kecuali diminta lewat tautan.
+  if (dariTautan || !prodiTanpaKalender) await muatKalender(pilih.value);
 }
 
-if (!isLoggedIn()) {
-  arahkanKeLogin();
-} else {
+async function mulai() {
+  const s = await sayaHalaman(isi);
+  if (s === undefined) return;
+  if (!s) {
+    isi.innerHTML = keadaanKosong({ judul: 'Sesi login Anda sudah berakhir', keterangan: 'Tekan Masuk lagi di pojok kanan atas untuk membuka rekaman.' });
+    return;
+  }
+  saya = s;
   try {
     await muat();
   } catch (err) {
     isi.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
 }
+
+mulai();

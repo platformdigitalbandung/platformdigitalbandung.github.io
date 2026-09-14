@@ -1,20 +1,8 @@
-import { apiGet, apiPostJson, isLoggedIn, logout, arahkanKeLogin } from './api.js';
+import { apiGet, apiPostJson } from './api.js';
+import { esc } from './ui.js';
+import { sayaHalaman, halamanMengajar } from './hal-dosen.js';
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
-
-// Form login hanya ada di repo login (/login/) — halaman ini tidak punya form
-// login sendiri, cukup mengarahkan ke sana (lihat pdb/README.md bagian Frontend).
-function tampilBukanDosen(pesan) {
-  isi.innerHTML = `
-    <div class="pesan gagal">${esc(pesan)}</div>
-    <div class="kartu">
-      <h3>Halaman Dosen</h3>
-      <p class="meta">Nomor WhatsApp yang sedang masuk belum dikenali sebagai dosen Portal Tugas.</p>
-      <button id="ganti-akun">Ganti nomor lewat halaman login</button>
-    </div>`;
-  document.getElementById('ganti-akun').onclick = () => { logout(); arahkanKeLogin(); };
-}
 
 async function tampilPanel() {
   const { tugas } = await apiGet('/api/tugas');
@@ -36,29 +24,28 @@ async function tampilPanel() {
             `<option value="${t.id}">#${t.id} — ${esc(t.judul)} (${t.n_kiriman} kiriman)</option>`).join('')}
           </select></label>
         <button id="muat">Tampilkan Laporan</button>`
-        : '<p class="redup">Belum ada tugas.</p>'}
+        : '<p class="redup">Belum ada tugas. Buat tugas di atas; laporannya muncul di sini setelah mahasiswa mengumpulkan.</p>'}
       <div id="laporan"></div>
-    </div>
-    <p><button class="sekunder" id="keluar">Keluar</button></p>`;
+    </div>`;
 
-  document.getElementById('keluar').onclick = () => { logout(); location.href = './'; };
-
-  document.getElementById('buat').onsubmit = async (e) => {
+  document.getElementById('buat').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const h = document.getElementById('hasil-buat');
     try {
       const r = await apiPostJson('/api/tugas', {
         judul: fd.get('judul'), deskripsi: fd.get('deskripsi') || '' });
-      const link = `${location.origin}${location.pathname.replace('dosen.html', '')}tugas.html?id=${r.id}`;
-      h.innerHTML = `<div class="pesan sukses">Tugas <b>#${r.id}</b> dibuat.
-        Bagikan tautan ini ke mahasiswa:<br><a href="${link}">${link}</a></div>`;
-      tampilPanel();
+      const link = `${location.origin}${location.pathname.replace('dosen.html', '')}tugas.html?id=${encodeURIComponent(r.id)}`;
+      // Panel dirender ulang supaya tugas baru masuk daftar laporan; pesannya
+      // ditulis sesudahnya, kalau tidak ikut terhapus.
+      await tampilPanel();
+      document.getElementById('hasil-buat').innerHTML = `<div class="pesan sukses">Tugas <b>${esc(r.judul || '')}</b> dibuat.
+        Bagikan tautan ini ke mahasiswa:<br><a href="${esc(link)}">${esc(link)}</a></div>`;
     } catch (err) { h.innerHTML = `<div class="pesan gagal">Gagal: ${esc(err.message)}</div>`; }
-  };
+  });
 
   const muat = document.getElementById('muat');
-  if (muat) muat.onclick = async () => {
+  if (muat) muat.addEventListener('click', async () => {
     const tid = document.getElementById('pilih').value;
     const lap = document.getElementById('laporan');
     lap.innerHTML = '<p class="redup">Memuat laporan…</p>';
@@ -77,12 +64,12 @@ async function tampilPanel() {
           <td class="num">${p.score}</td><td>${lencana(p.band)}</td></tr>`).join('');
       lap.innerHTML = `
         <h4>Per kiriman</h4>
-        <div class="gulir"><table><tr><th>Kiriman</th><th>Mahasiswa</th><th class="num">Skor maks</th>
-          <th>Paling mirip dengan</th><th>Band</th></tr>${baris || '<tr><td colspan="5">Belum ada kiriman</td></tr>'}</table></div>
+        <div class="gulir"><table><thead><tr><th>Kiriman</th><th>Mahasiswa</th><th class="num">Skor maks</th>
+          <th>Paling mirip dengan</th><th>Band</th></tr></thead><tbody>${baris || '<tr><td colspan="5">Belum ada kiriman</td></tr>'}</tbody></table></div>
         <h4>Pasangan paling mirip (top 20)</h4>
-        <div class="gulir"><table><tr><th>A</th><th>B</th><th class="num">Skor</th><th>Band</th></tr>${pas || '<tr><td colspan="4">–</td></tr>'}</table></div>`;
+        <div class="gulir"><table><thead><tr><th>A</th><th>B</th><th class="num">Skor</th><th>Band</th></tr></thead><tbody>${pas || '<tr><td colspan="4">–</td></tr>'}</tbody></table></div>`;
     } catch (err) { lap.innerHTML = `<div class="pesan gagal">Gagal memuat laporan: ${esc(err.message)}</div>`; }
-  };
+  });
 
   bukaLaporanDariTautan(tugas);
 }
@@ -105,9 +92,19 @@ function bukaLaporanDariTautan(tugas) {
   lap.closest('.kartu').scrollIntoView({ block: 'start' });
 }
 
-if (!isLoggedIn()) {
-  arahkanKeLogin();
-} else {
-  try { await apiGet('/api/dosen/ping', { auth: true }); tampilPanel(); }
-  catch (err) { tampilBukanDosen(err.message); }
+// Satu pola penolakan untuk semua halaman kerja dosen (audit UX U15): kartu
+// peran dari ui.js, tanpa mengeluarkan pengguna. Kewenangan membuat tugas dan
+// membuka laporan tetap diperiksa backend (VerifyDosen).
+async function mulai() {
+  const saya = await sayaHalaman(isi);
+  if (saya === undefined) return;
+  if (!halamanMengajar(saya, isi, {
+    judul: 'Buat Tugas & Laporan Kemiripan',
+    pesan: 'Membuat tugas dan memeriksa kemiripan kiriman dikerjakan di peran dosen.',
+    untukMahasiswa: { href: 'portal.html', label: 'Buka Tugas', pesan: 'Tugas yang harus Anda kumpulkan ada di halaman Tugas.' },
+  })) return;
+  try { await tampilPanel(); }
+  catch (err) { isi.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`; }
 }
+
+mulai();

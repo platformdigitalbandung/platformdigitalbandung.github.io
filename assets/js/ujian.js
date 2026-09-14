@@ -1,10 +1,11 @@
-import { apiGet, apiPostJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { apiGet, apiPostJson } from './api.js';
+import { esc, istilah, keadaanKosong, pilihProdiBawaan } from './ui.js';
+import { sayaHalaman, halamanMengajar } from './hal-dosen.js';
 
 // Pengawas Ujian (dosen). Kewenangan tetap dicek backend: jadwalkan untuk dosen,
 // catat kehadiran hanya untuk pengawas sesi itu atau admin.
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
 // Kampus di Bandung. Backend menolak tanggal tanpa zona waktu (RFC3339), dan
 // <input type="datetime-local"> tidak membawa zona — jadi zonanya ditulis
@@ -17,34 +18,40 @@ function waktuLokal(iso) {
   return isNaN(t) ? esc(iso) : t.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' });
 }
 
-let rumpun = [];
+let saya = null;
+let prodi = [];
+const JENIS = { 'tengah-blok': 'Ujian tengah blok', 'akhir-blok': 'Ujian akhir blok' };
 
-async function rumpunSemuaProdi() {
-  const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
-  const hasil = [];
-  for (const p of prodi) {
-    const { rumpun: rs = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(p.kode)}/rumpun`);
-    rs.forEach(r => hasil.push({ kode: r.kode, nama: r.nama, prodi: p.kode }));
-  }
-  return hasil;
+// Rumpun dimuat per prodi yang dipilih (bawaan: prodi mengajar/prodi yang
+// dipimpin), bukan seluruh prodi sekaligus dengan TRPL di urutan pertama.
+async function isiRumpun() {
+  const kode = document.getElementById('jadwal-prodi').value;
+  const sel = document.getElementById('jadwal-rumpun');
+  sel.innerHTML = '<option value="">memuat…</option>';
+  const { rumpun = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(kode)}/rumpun`);
+  sel.innerHTML = rumpun.map(r => `<option value="${esc(r.kode)}">${esc(r.kode)} — ${esc(r.nama)}</option>`).join('')
+    || '<option value="">(rumpun prodi ini belum diisi kaprodi di halaman Kurikulum)</option>';
 }
 
 function kartuJadwalkan() {
   return `
     <div class="kartu">
       <h3>Jadwalkan Sesi Ujian</h3>
-      <p class="meta">Kosongkan pengawas untuk menjadikan Anda sendiri pengawasnya (butuh email kampus Anda terisi).</p>
+      <p class="catatan-istilah">${istilah('blok', 'Blok')}: ujian berpengawas diadakan di tengah dan di akhir tiap blok.</p>
+      ${saya.email
+        ? '<p class="meta">Kosongkan pengawas untuk menjadikan Anda sendiri pengawasnya.</p>'
+        : '<div class="pesan info">Email kampus Anda belum diisi, jadi Anda belum bisa menjadi pengawas dan pengawas wajib diisi di bawah. <a href="akademik.html">Isi email kampus Anda</a> untuk mengawasi sendiri.</div>'}
       <form id="form-jadwal">
-        <label>Rumpun <select name="rumpun_kode" required>
-          ${rumpun.map(r => `<option value="${esc(r.kode)}">${esc(r.kode)} — ${esc(r.nama)} (${esc(r.prodi)})</option>`).join('')}
+        <label>Program studi <select id="jadwal-prodi">
+          ${prodi.map(p => `<option value="${esc(p.kode)}">${esc(p.nama)}</option>`).join('')}
         </select></label>
+        <label>Rumpun <select name="rumpun_kode" id="jadwal-rumpun" required></select></label>
         <label>Jenis <select name="jenis">
-          <option value="tengah-blok">tengah blok</option>
-          <option value="akhir-blok">akhir blok</option>
+          ${Object.entries(JENIS).map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}
         </select></label>
         <label>Tanggal &amp; jam (WIB) <input type="datetime-local" name="tanggal_jam" required></label>
         <label>Lokasi <input name="lokasi" required maxlength="120" placeholder="Lab Komputer 2"></label>
-        <label>Email kampus pengawas (opsional) <input type="email" name="pengawas" maxlength="120" placeholder="nama@digitalbdg.ac.id"></label>
+        <label>Email kampus pengawas${saya.email ? ' (opsional)' : ''} <input type="email" name="pengawas" maxlength="120" placeholder="nama@digitalbdg.ac.id"${saya.email ? '' : ' required'}></label>
         <button>Jadwalkan</button>
       </form>
       <div id="hasil-jadwal"></div>
@@ -54,7 +61,7 @@ function kartuJadwalkan() {
 function kartuSesi(s) {
   return `
     <div class="kartu">
-      <h3>${esc(s.rumpun_kode)} · ${esc(s.jenis)}</h3>
+      <h3>${esc(s.rumpun_kode)} · ${esc(JENIS[s.jenis] || s.jenis)}</h3>
       <p class="meta">${waktuLokal(s.tanggal_jam)} WIB · ${esc(s.lokasi)} · pengawas ${esc(s.pengawas)}</p>
       <form class="form-hadir" data-id="${esc(s.id)}">
         <label>NIM hadir <input name="nim" required maxlength="30"></label>
@@ -70,7 +77,7 @@ async function muatRekap(id) {
   try {
     const { kehadiran = [] } = await apiGet(`/api/sesiujian/${encodeURIComponent(id)}/kehadiran`, { auth: true });
     wadah.innerHTML = kehadiran.length ? `<div class="gulir"><table>
-        <tr><th>NIM</th><th>Jam masuk</th><th>Dicatat oleh</th></tr>
+        <thead><tr><th>NIM</th><th>Jam masuk</th><th>Dicatat oleh</th></tr></thead>
         ${kehadiran.map(k => `<tr><td>${esc(k.nim)}</td><td>${waktuLokal(k.jam_masuk)}</td><td>${esc(k.dicatat_oleh)}</td></tr>`).join('')}
       </table></div><p class="redup">${kehadiran.length} mahasiswa tercatat hadir.</p>`
       : '<p class="redup">Belum ada kehadiran yang dicatat.</p>';
@@ -105,7 +112,7 @@ async function jadwalkan(e) {
       tanggal_jam: `${fd.get('tanggal_jam')}:00${ZONA_KAMPUS}`,
       lokasi: fd.get('lokasi'), pengawas: (fd.get('pengawas') || '').trim().toLowerCase(),
     });
-    hasil.innerHTML = `<div class="pesan sukses">Sesi ${esc(s.rumpun_kode)} ${esc(s.jenis)} dijadwalkan ${waktuLokal(s.tanggal_jam)} WIB, pengawas ${esc(s.pengawas)}.</div>`;
+    hasil.innerHTML = `<div class="pesan sukses">Sesi ${esc(s.rumpun_kode)} ${esc(JENIS[s.jenis] || s.jenis)} dijadwalkan ${waktuLokal(s.tanggal_jam)} WIB, pengawas ${esc(s.pengawas)}.</div>`;
     muatSesi();
   } catch (err) {
     hasil.innerHTML = `<div class="pesan gagal">Gagal menjadwalkan: ${esc(err.message)}</div>`;
@@ -120,7 +127,13 @@ async function muatSesi() {
     const q = saring === 'saya' ? '?pengawas=saya' : '';
     const { sesi = [] } = await apiGet(`/api/sesiujian${q}`, { auth: true });
     wadah.innerHTML = sesi.length ? sesi.map(kartuSesi).join('')
-      : `<div class="kosong">${saring === 'saya' ? 'Tidak ada sesi yang Anda awasi.' : 'Belum ada sesi ujian terjadwal.'}</div>`;
+      : keadaanKosong({
+        judul: saring === 'saya' ? 'Tidak ada sesi yang Anda awasi' : 'Belum ada sesi ujian terjadwal',
+        keterangan: saring === 'saya'
+          ? 'Sesi muncul di sini bila email kampus Anda dicatat sebagai pengawasnya. Pilih "semua sesi" untuk melihat jadwal dosen lain.'
+          : 'Jadwalkan sesi lewat formulir Jadwalkan Sesi Ujian di bawah.',
+        aksi: { href: '#form-jadwal', label: 'Ke formulir jadwal' },
+      });
     wadah.querySelectorAll('.form-hadir').forEach(f => f.addEventListener('submit', catatHadir));
     sesi.forEach(s => muatRekap(s.id));
   } catch (err) {
@@ -130,38 +143,52 @@ async function muatSesi() {
 }
 
 async function muat() {
-  const saya = await apiGet('/api/proyekblok/saya', { auth: true });
-  if (saya.peran !== 'dosen') {
-    isi.innerHTML = `<div class="kartu"><h3>Halaman ini untuk dosen</h3>
-      <p class="meta">Penjadwalan ujian dan pencatatan kehadiran dilakukan dosen pengawas.</p>
-      <a class="aksi" href="saya.html">Kembali ke Beranda Saya</a></div>`;
-    return;
-  }
-  rumpun = await rumpunSemuaProdi();
+  ({ prodi = [] } = await apiGet('/api/kurikulum/prodi'));
+  // Tanpa email kampus, "yang saya awasi" pasti ditolak 422 — mulai dari semua sesi.
+  const awal = saya.email ? 'saya' : 'semua';
   isi.innerHTML = `
     <div class="kartu">
       <h3>Sesi Ujian</h3>
       <form id="form-saring">
         <label>Tampilkan <select name="saringan">
-          <option value="saya">yang saya awasi</option>
-          <option value="semua">semua sesi</option>
+          <option value="saya"${awal === 'saya' ? ' selected' : ''}>yang saya awasi</option>
+          <option value="semua"${awal === 'semua' ? ' selected' : ''}>semua sesi</option>
         </select></label>
         <button class="sekunder">Muat</button>
       </form>
     </div>
     <div id="sesi"></div>
-    ${kartuJadwalkan()}`;
+    ${prodi.length ? kartuJadwalkan() : keadaanKosong({
+      judul: 'Data program studi belum ada',
+      keterangan: 'Sesi ujian dijadwalkan per rumpun, jadi data kurikulum harus ada lebih dulu.',
+      siapa: 'admin (membuat prodi) dan kaprodi (mengisi kurikulum)',
+      aksi: { href: 'kurikulum.html', label: 'Buka Kurikulum' },
+    })}`;
   document.getElementById('form-saring').addEventListener('submit', e => { e.preventDefault(); muatSesi(); });
-  document.getElementById('form-jadwal').addEventListener('submit', jadwalkan);
+  if (prodi.length) {
+    const selProdi = document.getElementById('jadwal-prodi');
+    pilihProdiBawaan(selProdi, saya);
+    selProdi.addEventListener('change', isiRumpun);
+    document.getElementById('form-jadwal').addEventListener('submit', jadwalkan);
+    await isiRumpun();
+  }
   await muatSesi();
 }
 
-if (!isLoggedIn()) {
-  arahkanKeLogin();
-} else {
+async function mulai() {
+  const s = await sayaHalaman(isi);
+  if (s === undefined) return;
+  if (!halamanMengajar(s, isi, {
+    judul: 'Pengawas Ujian',
+    pesan: 'Penjadwalan ujian dan pencatatan kehadiran dikerjakan dosen pengawas di peran dosen atau kaprodi.',
+    untukMahasiswa: { href: 'saya.html', label: 'Beranda Saya', pesan: 'Kehadiran ujian Anda dicatat dosen pengawas saat ujian berlangsung.' },
+  })) return;
+  saya = s;
   try {
     await muat();
   } catch (err) {
     isi.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
 }
+
+mulai();

@@ -1,5 +1,7 @@
-import { apiGet, apiPostJson, isLoggedIn, arahkanKeLogin } from './api.js';
-import { adalahPimpinan, prodiPimpinan } from './akun.js';
+import { apiGet, apiPostJson } from './api.js';
+import { adalahAdmin, adalahPimpinan, prodiPimpinan } from './akun.js';
+import { esc, istilah, keadaanKosong, pilihProdiBawaan } from './ui.js';
+import { sayaHalaman } from './hal-dosen.js';
 
 // Forum Tanya Dosen. Peran datang dari backend (GET /api/proyekblok/saya):
 // mahasiswa bertanya untuk prodinya sendiri (prodi dan NIM diambil backend dari
@@ -7,7 +9,6 @@ import { adalahPimpinan, prodiPimpinan } from './akun.js';
 // Kewenangan membalas/menutup tetap dicek backend.
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 function paragraf(s) { return esc(s).replace(/\n/g, '<br>'); }
 
@@ -21,6 +22,10 @@ const LENCANA_STATUS = { terbuka: 'sedang', dijawab: 'rendah', ditutup: '' };
 
 let saya = null;
 let rumpunProdi = [];
+// Staf = dosen (termasuk pemegang jabatan kaprodi/admin). Peran aktif admin
+// hanya membaca: tanpa formulir balas/tutup.
+function staf() { return saya.peran === 'dosen'; }
+function bolehMenjawab() { return staf() && !adalahAdmin(saya); }
 
 function lencanaUtas(u) {
   return `<span class="lencana ${LENCANA_STATUS[u.status] ?? ''}">${esc(u.status)}</span>`
@@ -49,7 +54,12 @@ function opsiRumpun(terpilih = '') {
 
 function formTanya() {
   if (!saya.prodi_kode) {
-    return '<div class="kosong">Nomor ini belum tercatat di roster mahasiswa, jadi belum bisa bertanya. Hubungi pengelola prodi untuk didaftarkan.</div>';
+    return keadaanKosong({
+      judul: 'Nomor ini belum tercatat di roster mahasiswa',
+      keterangan: 'Pertanyaan dikirim atas nama NIM dan prodi Anda di roster, jadi nomor WhatsApp Anda perlu didaftarkan dulu.',
+      siapa: 'dosen atau kaprodi prodi Anda (halaman Roster Mahasiswa)',
+      aksi: { href: 'saya.html', label: 'Kembali ke Beranda Saya' },
+    });
   }
   return `
     <div class="kartu">
@@ -67,8 +77,9 @@ function formTanya() {
 }
 
 function formSaring(prodiList) {
-  const pilihProdi = saya.peran === 'dosen'
-    ? `<label>Prodi <select name="prodi">${prodiList.map(p => `<option value="${escAttr(p.kode)}">${esc(p.nama)}</option>`).join('')}</select></label>`
+  // Admin melihat semua prodi (bawaan "Semua prodi"); dosen/kaprodi mulai dari prodinya.
+  const pilihProdi = staf()
+    ? `<label>Prodi <select name="prodi">${adalahAdmin(saya) ? '<option value="">Semua prodi</option>' : ''}${prodiList.map(p => `<option value="${escAttr(p.kode)}">${esc(p.nama)}</option>`).join('')}</select></label>`
     : '';
   return `
     <div class="kartu">
@@ -91,17 +102,18 @@ function formSaring(prodiList) {
     <div id="daftar"><p class="redup">Memuat pertanyaan…</p></div>`;
 }
 
-function kartuSLA(r) {
+function kartuSLA(r, catatanSla = '') {
   const lewat = r.terbuka_lewat_tenggat || [];
   return `
     <div class="kartu">
-      <h3>SLA Respons Dosen${r.prodi_kode ? ` · ${esc(r.prodi_kode.toUpperCase())}` : ''}</h3>
+      <h3>${istilah('sla', 'SLA')} Respons Dosen · ${r.prodi_kode ? esc(r.prodi_kode.toUpperCase()) : 'semua prodi'}</h3>
       <div class="stat-row">
         <div class="stat"><span class="angka">${esc(lewat.length)}</span><span class="label">terbuka lewat tenggat</span></div>
         <div class="stat"><span class="angka">${esc(r.menunggu_dalam_sla)}</span><span class="label">menunggu, masih dalam SLA</span></div>
         <div class="stat"><span class="angka">${esc(r.dijawab_tepat)} / ${esc(r.dijawab_tepat + r.dijawab_terlambat)}</span><span class="label">dijawab tepat waktu</span></div>
       </div>
-      <p class="meta">Target ${esc(r.sla_jam)} jam, dihitung hanya ${(r.hari_berlaku || []).map(esc).join(', ')}.</p>
+      <p class="meta">Target ${esc(r.sla_jam)} jam, dihitung hanya di hari belajar mandiri (${(r.hari_berlaku || []).map(esc).join(', ')}), saat mahasiswa mempelajari materi asinkron.</p>
+      ${catatanSla ? `<p class="meta">${esc(catatanSla)}</p>` : ''}
       ${lewat.length ? `<ul>${lewat.map(u => `<li><a href="?id=${encodeURIComponent(u.id)}">${esc(u.judul)}</a> <span class="redup">— ${esc(u.rumpun_kode)} minggu ${esc(u.minggu)}, tenggat ${waktu(u.tenggat_sla)}</span></li>`).join('')}</ul>` : ''}
     </div>`;
 }
@@ -115,7 +127,7 @@ async function muatRumpun(prodi) {
 async function muatDaftar(form) {
   const fd = new FormData(form);
   const q = new URLSearchParams();
-  const prodi = saya.peran === 'dosen' ? fd.get('prodi') : saya.prodi_kode;
+  const prodi = staf() ? fd.get('prodi') : saya.prodi_kode;
   if (prodi) q.set('prodi', prodi);
   for (const k of ['rumpun', 'minggu', 'status']) {
     const v = (fd.get(k) || '').trim();
@@ -127,18 +139,26 @@ async function muatDaftar(form) {
     const { forum = [] } = await apiGet(`/api/forum?${q}`, { auth: true });
     wadah.innerHTML = forum.length
       ? forum.map(kartuUtas).join('')
-      : '<div class="kosong">Belum ada pertanyaan yang cocok dengan saringan ini.</div>';
+      : keadaanKosong({
+        judul: 'Belum ada pertanyaan yang cocok dengan saringan ini',
+        keterangan: staf()
+          ? 'Pertanyaan baru dari mahasiswa muncul di sini, lengkap dengan target jawabannya.'
+          : 'Ajukan pertanyaan lewat formulir di atas; dosen pengampu menjawabnya di sini.',
+      });
   } catch (err) {
     wadah.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
-  // Ringkasan SLA adalah laporan tingkat prodi: hanya kaprodi (prodinya) dan admin.
-  // Kaprodi yang menyaring prodi lain tetap melihat SLA prodinya.
+  // Ringkasan SLA adalah laporan tingkat prodi: hanya kaprodi (prodinya) dan admin
+  // (semua prodi, atau prodi yang disaring). Kaprodi yang menyaring prodi lain
+  // tetap melihat SLA prodinya — prodinya dikirim eksplisit, karena backend
+  // memberi pemegang jabatan admin semua prodi walau peran aktifnya kaprodi.
   if (adalahPimpinan(saya)) {
     const sla = document.getElementById('ringkasan-sla');
     const boleh = prodiPimpinan(saya);
-    const prodiSla = !boleh || boleh.includes(prodi) ? prodi : '';
+    const prodiSla = !boleh || boleh.includes(prodi) ? prodi : (boleh[0] || '');
+    const catatanSla = boleh && prodiSla !== prodi ? `Ringkasan ini untuk prodi yang Anda pimpin (${prodiSla.toUpperCase()}), bukan prodi yang sedang disaring.` : '';
     try {
-      sla.innerHTML = kartuSLA(await apiGet(`/api/forum/sla${prodiSla ? `?prodi=${encodeURIComponent(prodiSla)}` : ''}`, { auth: true }));
+      sla.innerHTML = kartuSLA(await apiGet(`/api/forum/sla${prodiSla ? `?prodi=${encodeURIComponent(prodiSla)}` : ''}`, { auth: true }), catatanSla);
     } catch (err) {
       sla.innerHTML = `<div class="pesan gagal">Ringkasan SLA: ${esc(err.message)}</div>`;
     }
@@ -177,7 +197,7 @@ function kartuBalasan(b) {
 }
 
 function bolehTutup(u) {
-  return u.status !== 'ditutup' && (saya.peran === 'dosen' || (saya.nim && saya.nim === u.nim));
+  return u.status !== 'ditutup' && (bolehMenjawab() || (saya.nim && saya.nim === u.nim));
 }
 
 function tampilDetail(d) {
@@ -196,10 +216,11 @@ function tampilDetail(d) {
     </div>
     <h3>${esc(d.balasan.length)} Balasan</h3>
     ${d.balasan.length ? d.balasan.map(kartuBalasan).join('') : '<div class="kosong">Belum ada balasan.</div>'}
-    ${u.status === 'ditutup' ? '<div class="kosong">Pertanyaan ini sudah ditutup dan tidak menerima balasan lagi.</div>' : `
+    ${u.status === 'ditutup' ? '<div class="kosong">Pertanyaan ini sudah ditutup dan tidak menerima balasan lagi.</div>'
+      : (staf() && !bolehMenjawab()) ? '<div class="kosong">Anda sedang memakai peran admin, yang hanya membaca forum. Untuk membalas sebagai dosen, ganti peran di pojok kanan atas.</div>' : `
     <div class="kartu">
       <h3>Tulis Balasan</h3>
-      ${saya.peran === 'dosen' ? '<p class="meta">Balasan dosen pertama menghentikan jam SLA pertanyaan ini.</p>' : ''}
+      ${staf() ? '<p class="meta">Balasan dosen pertama menghentikan jam SLA pertanyaan ini.</p>' : ''}
       <form id="form-balas">
         <label>Balasan <textarea name="isi" rows="5" maxlength="4000" required></textarea></label>
         <button>Kirim Balasan</button>
@@ -246,18 +267,21 @@ async function bukaDetail(id) {
 
 async function tampilDaftar() {
   let prodiList = [];
-  if (saya.peran === 'dosen') {
+  if (staf()) {
     ({ prodi: prodiList = [] } = await apiGet('/api/kurikulum/prodi'));
-    await muatRumpun(prodiList[0]?.kode);
   } else {
     await muatRumpun(saya.prodi_kode);
   }
-  isi.innerHTML = (saya.peran === 'dosen' ? '' : formTanya()) + formSaring(prodiList);
+  isi.innerHTML = (staf() ? '' : formTanya()) + formSaring(prodiList);
 
   const formSaringEl = document.getElementById('form-saring');
   formSaringEl.addEventListener('submit', e => { e.preventDefault(); muatDaftar(formSaringEl); });
-  if (saya.peran === 'dosen') {
-    formSaringEl.querySelector('select[name="prodi"]').addEventListener('change', async e => {
+  if (staf()) {
+    const selProdi = formSaringEl.querySelector('select[name="prodi"]');
+    pilihProdiBawaan(selProdi, saya);
+    await muatRumpun(selProdi.value);
+    formSaringEl.querySelector('select[name="rumpun"]').innerHTML = `<option value="">Semua rumpun</option>${opsiRumpun()}`;
+    selProdi.addEventListener('change', async e => {
       await muatRumpun(e.target.value);
       formSaringEl.querySelector('select[name="rumpun"]').innerHTML = `<option value="">Semua rumpun</option>${opsiRumpun()}`;
       muatDaftar(formSaringEl);
@@ -268,11 +292,15 @@ async function tampilDaftar() {
   await muatDaftar(formSaringEl);
 }
 
-if (!isLoggedIn()) {
-  arahkanKeLogin();
-} else {
+async function mulai() {
+  const s = await sayaHalaman(isi);
+  if (s === undefined) return;
+  if (!s) {
+    isi.innerHTML = keadaanKosong({ judul: 'Sesi login Anda sudah berakhir', keterangan: 'Tekan Masuk lagi di pojok kanan atas untuk membuka forum.' });
+    return;
+  }
+  saya = s;
   try {
-    saya = await apiGet('/api/proyekblok/saya', { auth: true });
     const id = new URLSearchParams(location.search).get('id');
     if (id) await bukaDetail(id);
     else await tampilDaftar();
@@ -280,3 +308,5 @@ if (!isLoggedIn()) {
     isi.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
 }
+
+mulai();

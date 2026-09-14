@@ -1,5 +1,7 @@
-import { apiGet, isLoggedIn, arahkanKeLogin } from './api.js';
+import { apiGet } from './api.js';
 import { adalahPimpinan, prodiPimpinan } from './akun.js';
+import { esc, istilah, keadaanKosong, pilihProdiBawaan, prodiBawaan } from './ui.js';
+import { sayaHalaman } from './hal-dosen.js';
 
 // Rapor per semester dan rekap nilai. Mahasiswa melihat rapornya sendiri (NIM
 // dari /api/proyekblok/saya); dosen membuka rapor mahasiswa mana pun lewat NIM
@@ -8,7 +10,6 @@ import { adalahPimpinan, prodiPimpinan } from './akun.js';
 // server, keputusan pemilik produk 2026-09-13.
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 function dua(n) { return typeof n === 'number' ? n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–'; }
 function angka(n) { return typeof n === 'number' ? n.toLocaleString('id-ID', { maximumFractionDigits: 2 }) : '–'; }
@@ -61,8 +62,13 @@ function htmlRapor(r) {
       </div>
       ${tabelSkala(r.skala)}
     </div>
-    ${r.semester.length ? r.semester.map(kartuSemester).join('') : '<div class="kosong">Belum ada nilai yang tercatat.</div>'}
-    ${(r.rumpun_diakui_rpl || []).length ? `<div class="kartu"><h3>Diakui lewat RPL</h3><p>${r.rumpun_diakui_rpl.map(esc).join(', ')}</p><p class="redup">Tanpa nilai angka; tidak masuk IP maupun IPK.</p></div>` : ''}
+    ${r.semester.length ? r.semester.map(kartuSemester).join('') : keadaanKosong({
+      judul: 'Belum ada nilai yang tercatat',
+      keterangan: 'Nilai mata kuliah masuk rapor setelah dosen pembimbing proyek blok menginputnya.',
+      siapa: 'dosen pembimbing proyek blok',
+      aksi: { href: 'nilai.html', label: 'Lihat Nilai Proyek' },
+    })}
+    ${(r.rumpun_diakui_rpl || []).length ? `<div class="kartu"><h3>Diakui lewat ${istilah('rpl', 'RPL')}</h3><p>${r.rumpun_diakui_rpl.map(esc).join(', ')}</p><p class="redup">Tanpa nilai angka; tidak masuk IP maupun IPK.</p></div>` : ''}
     ${tak.length ? `<div class="kartu"><h3>Nilai Tidak Terpetakan</h3>
       <div class="gulir"><table><tr><th>Kode</th><th class="num">Nilai</th><th>Huruf</th></tr>
       ${tak.map(n => `<tr><td>${esc(n.kode_mk)}</td><td class="num">${angka(n.nilai_akhir)}</td><td>${lencanaHuruf(n.huruf)}</td></tr>`).join('')}</table></div></div>` : ''}
@@ -119,12 +125,16 @@ async function tampilRekap(prodi, angkatan, semester) {
 
 // Rekap nilai satu angkatan adalah laporan tingkat prodi: hanya untuk kaprodi
 // (prodinya) dan admin. Dosen biasa tetap bisa membuka rapor per NIM.
+let sayaAktif = null;
+
 function formDosen(prodi, nimAwal, bolehRekap) {
   return `
     <div class="kartu tidak-cetak">
       <h3>Rapor Mahasiswa</h3>
       <form id="form-nim">
-        <label>NIM <input name="nim" required maxlength="30" value="${escAttr(nimAwal || '')}"></label>
+        <label>NIM <input name="nim" required maxlength="30" list="daftar-nim" autocomplete="off" placeholder="Ketik NIM atau nama" value="${escAttr(nimAwal || '')}"></label>
+        <datalist id="daftar-nim"></datalist>
+        <p class="meta" id="keterangan-nim">Daftar pilihan diambil dari roster${prodiBawaan(sayaAktif) ? ` ${esc(prodiBawaan(sayaAktif).toUpperCase())}` : ''}.</p>
         <button>Tampilkan Rapor</button>
       </form>
     </div>
@@ -137,36 +147,60 @@ function formDosen(prodi, nimAwal, bolehRekap) {
         <label>Semester <select name="semester">${[1, 2, 3, 4, 5, 6, 7, 8].map(s => `<option value="${s}">${s}</option>`).join('')}</select></label>
         <button>Tampilkan Rekap</button>
       </form>
-    </div>` : ''}
+    </div>` : '<p class="meta tidak-cetak">Rekap nilai satu angkatan adalah laporan prodi untuk kaprodi dan admin.</p>'}
     <div id="hasil"></div>`;
 }
 
-async function muat() {
-  const saya = await apiGet('/api/proyekblok/saya', { auth: true });
+// Pilihan NIM dari roster prodi bawaan (admin: semua prodi) — bantuan isian
+// saja; NIM tetap boleh diketik langsung. Gagal memuat tidak menghalangi.
+async function isiDaftarNim() {
+  const daftar = document.getElementById('daftar-nim');
+  try {
+    const prodi = prodiBawaan(sayaAktif);
+    const { mahasiswa = [] } = await apiGet(`/api/mahasiswa${prodi ? `?prodi=${encodeURIComponent(prodi)}` : ''}`, { auth: true });
+    daftar.innerHTML = mahasiswa.map(m => `<option value="${escAttr(m.nim)}">${esc(m.nama)} · ${esc(String(m.prodi_kode || '').toUpperCase())} ${esc(m.angkatan)}</option>`).join('');
+  } catch {
+    document.getElementById('keterangan-nim').textContent = 'Daftar roster tidak bisa dimuat; ketik NIM langsung.';
+  }
+}
+
+async function muat(saya) {
+  sayaAktif = saya;
   const nimQuery = new URLSearchParams(location.search).get('nim');
 
   if (saya.peran === 'dosen') {
     const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
+    // Kaprodi: hanya prodi yang dipimpin; admin: semua prodi.
     const boleh = prodiPimpinan(saya);
     isi.innerHTML = formDosen(boleh ? prodi.filter(p => boleh.includes(p.kode)) : prodi, nimQuery, adalahPimpinan(saya));
+    isiDaftarNim();
     document.getElementById('form-nim').addEventListener('submit', e => {
       e.preventDefault();
       const nim = new FormData(e.target).get('nim').trim();
       history.replaceState(null, '', `?nim=${encodeURIComponent(nim)}`);
       tampilRapor(nim);
     });
-    document.getElementById('form-rekap')?.addEventListener('submit', e => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      history.replaceState(null, '', 'rapor.html');
-      tampilRekap(fd.get('prodi'), fd.get('angkatan').trim(), fd.get('semester'));
-    });
+    const formRekap = document.getElementById('form-rekap');
+    if (formRekap) {
+      pilihProdiBawaan(formRekap.querySelector('select[name="prodi"]'), saya);
+      formRekap.addEventListener('submit', e => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        history.replaceState(null, '', 'rapor.html');
+        tampilRekap(fd.get('prodi'), fd.get('angkatan').trim(), fd.get('semester'));
+      });
+    }
     if (nimQuery) await tampilRapor(nimQuery);
     return;
   }
 
   if (!saya.nim) {
-    isi.innerHTML = '<div class="kosong">Nomor ini belum tercatat di roster mahasiswa. Rapor baru bisa disusun setelah pengelola prodi mendaftarkan NIM dan nomor WhatsApp Anda.</div>';
+    isi.innerHTML = keadaanKosong({
+      judul: 'Nomor ini belum tercatat di roster mahasiswa',
+      keterangan: 'Rapor disusun dari NIM Anda di roster, jadi NIM dan nomor WhatsApp Anda perlu didaftarkan dulu.',
+      siapa: 'dosen atau kaprodi prodi Anda (halaman Roster Mahasiswa)',
+      aksi: { href: 'saya.html', label: 'Kembali ke Beranda Saya' },
+    });
     return;
   }
   // Mahasiswa selalu melihat rapornya sendiri; ?nim= diabaikan.
@@ -174,12 +208,18 @@ async function muat() {
   await tampilRapor(saya.nim);
 }
 
-if (!isLoggedIn()) {
-  arahkanKeLogin();
-} else {
+async function mulai() {
+  const saya = await sayaHalaman(isi);
+  if (saya === undefined) return;
+  if (!saya) {
+    isi.innerHTML = keadaanKosong({ judul: 'Sesi login Anda sudah berakhir', keterangan: 'Tekan Masuk lagi di pojok kanan atas untuk membuka rapor.' });
+    return;
+  }
   try {
-    await muat();
+    await muat(saya);
   } catch (err) {
     isi.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
 }
+
+mulai();

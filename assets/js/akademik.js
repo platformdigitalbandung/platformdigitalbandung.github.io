@@ -1,4 +1,7 @@
-import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { apiGet, apiPostJson, apiPutJson, apiDeleteJson } from './api.js';
+import { esc, halamanUntuk, keadaanKosong, labelTabel, prodiBawaan } from './ui.js';
+import { peranAktif } from './akun.js';
+import { sayaHalaman, halamanMengajar, PERAN_MENGAJAR } from './hal-dosen.js';
 
 // Roster Mahasiswa & Email Dosen (dosen). Kewenangan tetap dicek backend — halaman
 // ini hanya menyiapkan formulir. Peran dan email kampus datang dari
@@ -6,13 +9,13 @@ import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, isLoggedIn, arahkanKeLo
 // bukan ditebak di browser.
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
 const STATUS = ['aktif', 'cuti', 'lulus', 'keluar'];
 let saya = null;
 let prodi = [];
 
-function opsiProdi(terpilih) {
+// Pilihan awal = prodi bawaan peran aktif (prodi mengajar / prodi yang dipimpin), bukan TRPL.
+function opsiProdi(terpilih = prodiBawaan(saya)) {
   return prodi.map(p => `<option value="${esc(p.kode)}"${p.kode === terpilih ? ' selected' : ''}>${esc(p.nama)}</option>`).join('');
 }
 
@@ -30,7 +33,7 @@ function kartuEmail() {
     <div class="kartu">
       <h3>Email Kampus Anda</h3>
       <p class="meta">Email kampus menentukan proyek mana yang boleh Anda nilai, pengajuan mana yang boleh Anda putuskan, dan sesi ujian yang Anda awasi. Anda hanya bisa mengisi email kampus nomor Anda sendiri, dan wajib berakhiran ${DOMAIN_KAMPUS}.</p>
-      ${saya.email ? `<p>Email kampus tercatat: <b>${esc(saya.email)}</b></p>` : '<div class="pesan gagal">Email kampus belum diisi — pembuatan & penilaian proyek blok serta putusan proyek kerja belum bisa dilakukan.</div>'}
+      ${saya.email ? `<p>Email kampus tercatat: <b>${esc(saya.email)}</b></p>` : '<div class="pesan gagal">Email kampus belum diisi — Anda belum bisa dicentang sebagai dosen pengampu, dipilih sebagai kaprodi, membuat dan menilai proyek blok, atau memutus proyek kerja.</div>'}
       <form id="form-email">
         <label>Email kampus <input type="email" name="email" required maxlength="120" value="${esc(saya.email || '')}" placeholder="nama${DOMAIN_KAMPUS}"></label>
         <button>${saya.email ? 'Perbarui Email' : 'Simpan Email'}</button>
@@ -123,7 +126,9 @@ async function simpanEmail(e) {
   try {
     const d = await apiPutJson('/api/dosen/email', { email });
     saya.email = d.email || email;
-    hasil.innerHTML = `<div class="pesan sukses">Email kampus ${esc(d.nama)} tersimpan: <b>${esc(saya.email)}</b>.</div>`;
+    const berikut = (saya.prodi_mengajar || []).length ? ''
+      : ' Langkah berikutnya: kaprodi prodi tempat Anda mengajar mencentang nama Anda di halaman Dosen Pengampu Prodi, supaya Anda bisa mengelola materi dan kuis prodi itu.';
+    hasil.innerHTML = `<div class="pesan sukses">Email kampus ${esc(d.nama)} tersimpan: <b>${esc(saya.email)}</b>.${esc(berikut)}</div>`;
   } catch (err) {
     hasil.innerHTML = `<div class="pesan gagal">Gagal menyimpan email kampus: ${esc(err.message)}</div>`;
   }
@@ -168,7 +173,7 @@ async function prosesTempel(e) {
   const gagal = baris.length - berhasil;
   hasil.innerHTML = `
     <div class="pesan ${gagal ? 'gagal' : 'sukses'}">${berhasil} dari ${baris.length} baris tersimpan${gagal ? `, ${gagal} gagal — perbaiki baris yang ditandai lalu tempel ulang baris itu saja` : ''}.</div>
-    <div class="gulir"><table><tr><th>#</th><th>NIM</th><th>Nama</th><th>Hasil</th></tr>${hasilBaris.join('')}</table></div>`;
+    <div class="gulir"><table><thead><tr><th>Baris</th><th>NIM</th><th>Nama</th><th>Hasil</th></tr></thead><tbody>${hasilBaris.join('')}</tbody></table></div>`;
 }
 
 let roster = [];
@@ -183,15 +188,21 @@ async function tampilDaftar(e) {
     const res = await apiGet(`/api/mahasiswa?${q}`, { auth: true });
     roster = res.mahasiswa || [];
     daftar.innerHTML = roster.length ? `<div class="gulir"><table>
-        <tr><th>NIM</th><th>Nama</th><th>Prodi</th><th>Angkatan</th><th class="num">Smt</th><th>Status</th><th>Nomor</th><th>GitHub</th><th></th></tr>
+        <thead><tr><th>NIM</th><th>Nama</th><th>Prodi</th><th>Angkatan</th><th class="num">Semester</th><th>Status</th><th>Nomor</th><th>GitHub</th><th></th></tr></thead><tbody>
         ${roster.map(m => `<tr>
           <td>${esc(m.nim)}</td><td>${esc(m.nama)}</td><td>${esc(m.prodi_kode)}</td><td>${esc(m.angkatan)}</td>
           <td class="num">${esc(m.semester)}</td><td>${esc(m.status)}</td><td>${esc(m.phonenumber || '–')}</td><td>${esc(m.github_username || '–')}</td>
-          <td><a class="aksi sekunder" href="dasbor.html?nim=${encodeURIComponent(m.nim)}">Dasbor</a>
+          <td><div class="aksi-sel"><a class="aksi sekunder" href="dasbor.html?nim=${encodeURIComponent(m.nim)}">Dasbor</a>
               <button class="sekunder ubah" data-nim="${esc(m.nim)}">Ubah</button>
-              <button class="sekunder hapus" data-nim="${esc(m.nim)}">Hapus</button></td></tr>`).join('')}
-      </table></div><div id="hasil-hapus"></div>`
-      : '<div class="kosong">Tidak ada mahasiswa untuk saringan ini.</div>';
+              <button class="sekunder hapus" data-nim="${esc(m.nim)}">Hapus</button></div></td></tr>`).join('')}
+      </tbody></table></div><div id="hasil-hapus"></div>`
+      : keadaanKosong({
+        judul: 'Tidak ada mahasiswa untuk saringan ini',
+        keterangan: 'Tambahkan lewat formulir Tambah Satu Mahasiswa atau Tempel Banyak Mahasiswa di atas.',
+        aksi: { href: '#wadah-satu', label: 'Ke formulir tambah' },
+      });
+    const tabel = daftar.querySelector('table');
+    if (tabel) labelTabel(tabel);
     daftar.querySelectorAll('.ubah').forEach(b => b.addEventListener('click', () => ubah(b.dataset.nim)));
     daftar.querySelectorAll('.hapus').forEach(b => b.addEventListener('click', () => hapus(b.dataset.nim)));
   } catch (err) {
@@ -231,17 +242,15 @@ async function hapus(nim, konfirmasi = false) {
 }
 
 async function muat() {
-  saya = await apiGet('/api/proyekblok/saya', { auth: true });
-  if (saya.peran !== 'dosen') {
-    isi.innerHTML = `<div class="kartu"><h3>Halaman ini untuk dosen</h3>
-      <p class="meta">Roster mahasiswa hanya bisa dikelola dosen, karena memuat nomor WhatsApp dan surel mahasiswa.</p>
-      <a class="aksi" href="saya.html">Kembali ke Beranda Saya</a></div>`;
-    return;
-  }
   const res = await apiGet('/api/kurikulum/prodi');
   prodi = res.prodi || [];
   if (!prodi.length) {
-    isi.innerHTML = kartuEmail() + '<div class="pesan gagal">Data program studi kosong; jalankan seed kurikulum dahulu sebelum mengisi roster.</div>';
+    isi.innerHTML = kartuEmail() + keadaanKosong({
+      judul: 'Data program studi belum ada',
+      keterangan: 'Roster disusun per prodi, jadi data kurikulum harus ada sebelum mahasiswa didaftarkan.',
+      siapa: 'admin (membuat prodi) dan kaprodi (mengisi kurikulum)',
+      aksi: { href: 'kurikulum.html', label: 'Buka Kurikulum' },
+    });
     document.getElementById('form-email').addEventListener('submit', simpanEmail);
     return;
   }
@@ -253,12 +262,32 @@ async function muat() {
   document.getElementById('form-saring').addEventListener('submit', tampilDaftar);
 }
 
-if (!isLoggedIn()) {
-  arahkanKeLogin();
-} else {
+async function mulai() {
+  const s = await sayaHalaman(isi);
+  if (s === undefined) return;
+  // Admin tetap dosen: email kampusnya sendiri boleh diisi di sini (syarat
+  // dipilih sebagai kaprodi), tetapi form roster hanya di peran dosen/kaprodi.
+  if (s && s.peran === 'dosen' && peranAktif(s) === 'admin') {
+    saya = s;
+    isi.innerHTML = kartuEmail() + '<div id="roster-peran"></div>';
+    document.getElementById('form-email').addEventListener('submit', simpanEmail);
+    halamanUntuk(s, PERAN_MENGAJAR, {
+      judul: 'Roster mahasiswa', wadah: document.getElementById('roster-peran'),
+      pesan: 'Mendaftarkan dan mengubah roster mahasiswa dikerjakan di peran dosen atau kaprodi.',
+    });
+    return;
+  }
+  if (!halamanMengajar(s, isi, {
+    judul: 'Roster Mahasiswa & Email Dosen',
+    pesan: 'Roster memuat nomor WhatsApp dan surel mahasiswa, jadi hanya dikelola dosen.',
+    untukMahasiswa: { href: 'saya.html', label: 'Beranda Saya', pesan: 'Data roster Anda dikelola dosen. Bila ada yang keliru, sampaikan ke dosen atau kaprodi prodi Anda.' },
+  })) return;
+  saya = s;
   try {
     await muat();
   } catch (err) {
     isi.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
 }
+
+mulai();

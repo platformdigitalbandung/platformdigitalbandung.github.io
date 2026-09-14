@@ -1,5 +1,7 @@
-import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, apiPostBerkasToken, isLoggedIn, arahkanKeLogin } from './api.js';
+import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, apiPostBerkasToken } from './api.js';
 import { hitungHalaman } from './pdfmateri.js';
+import { esc, istilah, keadaanKosong, labelTabel, pilihProdiBawaan } from './ui.js';
+import { sayaHalaman, halamanMengajar, kartuPrasyarat } from './hal-dosen.js';
 
 // Kelola Materi (dosen). Kewenangan tetap dicek backend. Prodi dan rumpun dibaca
 // dari data kurikulum, tidak diketik ulang. YouTube ID diurai server dari
@@ -19,8 +21,8 @@ const UKURAN_MAKS = 20 * 1024 * 1024; // 20 MiB
 const UKURAN_MAKS_LABEL = '20 MiB';
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
+let saya = null;
 let prodi = [];
 // Prodi yang materinya boleh diubah pemegang token: prodi mengajar (termasuk
 // prodi yang dipimpin sebagai kaprodi).
@@ -53,6 +55,7 @@ function kartuSaring() {
   return `
     <div class="kartu">
       <h3>Katalog</h3>
+      <p class="catatan-istilah">${istilah('rumpun', 'Rumpun')} dan minggu menentukan letak materi. Katalog semua prodi bisa dilihat; mengubahnya hanya untuk prodi tempat Anda mengajar.</p>
       <form id="form-saring">
         <label>Program studi <select name="prodi" id="saring-prodi">${opsiProdi()}</select></label>
         <label>Rumpun <select name="rumpun" id="saring-rumpun"></select></label>
@@ -101,13 +104,17 @@ function kartuForm(m = {}) {
 async function pasangForm(m = {}) {
   const wadah = document.getElementById('wadah-form');
   if (!prodiKelola.length) {
-    wadah.innerHTML = `<div class="kartu"><h3>Tambah Materi</h3>
-      <div class="kosong">Anda belum tercatat mengajar di prodi mana pun, jadi belum bisa menambah atau mengubah materi. Kaprodi prodi Anda mencentangnya di halaman Dosen Pengampu Prodi. Katalog di bawah tetap bisa dilihat.</div></div>`;
+    // Rantai prasyarat: email kampus → dicentang kaprodi sebagai pengampu.
+    wadah.innerHTML = kartuPrasyarat(saya, {
+      judul: 'Tambah Materi', untuk: 'Menambah dan mengubah materi', pengampu: true,
+      catatan: 'Sambil menunggu, katalog di bawah tetap bisa dilihat.',
+    });
     return;
   }
   wadah.innerHTML = kartuForm(m);
   const selProdi = document.getElementById('form-prodi');
   const selRumpun = document.getElementById('form-rumpun');
+  if (!m.id) pilihProdiBawaan(selProdi, saya);
   await isiPilihanRumpun(selProdi, selRumpun, m.rumpun_kode, false);
   selProdi.addEventListener('change', () => isiPilihanRumpun(selProdi, selRumpun, '', false));
   document.getElementById('form-jenis').addEventListener('change', e => {
@@ -230,15 +237,25 @@ async function tampilDaftar(e) {
     const q = new URLSearchParams({ prodi: fd.get('prodi') || '', rumpun: fd.get('rumpun') || '', minggu: fd.get('minggu') || '0' });
     const res = await apiGet(`/api/materi?${q}`, { auth: true });
     katalog = res.materi || [];
+    const prodiSaring = fd.get('prodi') || '';
     daftar.innerHTML = katalog.length ? `<div class="gulir"><table>
-        <tr><th class="num">Mgg</th><th class="num">Urut</th><th>Judul</th><th>Jenis</th><th>Rumpun</th><th></th></tr>
+        <thead><tr><th class="num">Minggu</th><th class="num">Urutan</th><th>Judul</th><th>Jenis</th><th>Rumpun</th><th></th></tr></thead><tbody>
         ${katalog.map(m => `<tr>
           <td class="num">${esc(m.minggu)}</td><td class="num">${esc(m.urutan)}</td>
-          <td>${esc(m.judul)}</td><td>${esc(m.jenis)}${selBerkas(m)}</td><td>${esc(m.rumpun_kode)}</td>
-          <td>${bolehKelola(m.prodi_kode) ? `<button class="sekunder ubah" data-id="${esc(m.id)}">Ubah</button>
-              <button class="sekunder hapus" data-id="${esc(m.id)}">Hapus</button>` : '<span class="redup kecil">hanya dosen pengampu prodi ini</span>'}</td></tr>`).join('')}
-      </table></div><div id="hasil-hapus"></div>`
-      : '<div class="kosong">Belum ada materi untuk saringan ini.</div>';
+          <td>${esc(m.judul)}</td><td><div>${esc(m.jenis)}${selBerkas(m)}</div></td><td>${esc(m.rumpun_kode)}</td>
+          <td>${bolehKelola(m.prodi_kode) ? `<div class="aksi-sel"><button class="sekunder ubah" data-id="${esc(m.id)}">Ubah</button>
+              <button class="sekunder hapus" data-id="${esc(m.id)}">Hapus</button></div>` : '<span class="redup kecil">hanya dosen pengampu prodi ini</span>'}</td></tr>`).join('')}
+      </tbody></table></div><div id="hasil-hapus"></div>`
+      : keadaanKosong({
+        judul: 'Belum ada materi untuk saringan ini',
+        keterangan: bolehKelola(prodiSaring)
+          ? 'Tambahkan materi minggu pertama lewat formulir Tambah Materi di atas.'
+          : 'Materi prodi ini diisi dosen pengampunya.',
+        siapa: bolehKelola(prodiSaring) ? 'Anda, sebagai dosen pengampu prodi ini' : `dosen pengampu ${prodiSaring.toUpperCase()}`,
+        aksi: bolehKelola(prodiSaring) ? { href: '#wadah-form', label: 'Ke formulir Tambah Materi' } : null,
+      });
+    const tabel = daftar.querySelector('table');
+    if (tabel) labelTabel(tabel);
     daftar.querySelectorAll('.ubah').forEach(b => b.addEventListener('click', () => {
       const m = katalog.find(x => x.id === b.dataset.id);
       if (m) { pasangForm(m); document.getElementById('wadah-form').scrollIntoView({ behavior: 'smooth' }); }
@@ -272,37 +289,43 @@ async function hapus(id, konfirmasi = false) {
 }
 
 async function muat() {
-  const saya = await apiGet('/api/proyekblok/saya', { auth: true });
-  if (saya.peran !== 'dosen') {
-    isi.innerHTML = `<div class="kartu"><h3>Halaman ini untuk dosen</h3>
-      <p class="meta">Materi pekan ini untuk mahasiswa ada di halaman Materi.</p>
-      <a class="aksi" href="materi.html">Buka Materi</a></div>`;
-    return;
-  }
   const res = await apiGet('/api/kurikulum/prodi');
   prodi = res.prodi || [];
   const mengajar = saya.prodi_mengajar || [];
   prodiKelola = prodi.filter(p => mengajar.includes(p.kode));
   if (!prodi.length) {
-    isi.innerHTML = '<div class="pesan gagal">Data program studi kosong; jalankan seed kurikulum dahulu.</div>';
+    isi.innerHTML = keadaanKosong({
+      judul: 'Data program studi belum ada',
+      keterangan: 'Materi disusun per prodi dan rumpun, jadi data kurikulum harus ada lebih dulu.',
+      siapa: 'admin (membuat prodi) dan kaprodi (mengisi kurikulum)',
+      aksi: { href: 'kurikulum.html', label: 'Buka Kurikulum' },
+    });
     return;
   }
   isi.innerHTML = '<div id="wadah-form"></div>' + kartuSaring();
   await pasangForm();
   const sp = document.getElementById('saring-prodi');
   const sr = document.getElementById('saring-rumpun');
+  pilihProdiBawaan(sp, saya);
   await isiPilihanRumpun(sp, sr, '', true);
   sp.addEventListener('change', () => isiPilihanRumpun(sp, sr, '', true));
   document.getElementById('form-saring').addEventListener('submit', tampilDaftar);
   await tampilDaftar();
 }
 
-if (!isLoggedIn()) {
-  arahkanKeLogin();
-} else {
+async function mulai() {
+  saya = await sayaHalaman(isi);
+  if (saya === undefined) return;
+  if (!halamanMengajar(saya, isi, {
+    judul: 'Kelola Materi',
+    pesan: 'Menyusun katalog materi dikerjakan dosen pengampu dan kaprodi prodinya.',
+    untukMahasiswa: { href: 'materi.html', label: 'Buka Materi', pesan: 'Materi pekan ini untuk Anda ada di halaman Materi.' },
+  })) return;
   try {
     await muat();
   } catch (err) {
     isi.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
 }
+
+mulai();
