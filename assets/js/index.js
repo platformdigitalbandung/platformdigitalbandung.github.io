@@ -1,47 +1,191 @@
-import { getJSON } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/api.min.js';
-import { setInner } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.10/element.min.js';
-import { API_BASE } from './config.js';
+import { apiGet, isLoggedIn, logout } from './api.js';
 
-// Narasi karier per prodi tidak berasal dari data /api/kurikulum (belum dimodelkan
-// sebagai struct) — diambil dari presentasi-sosialisasi.html apa adanya.
-const KARIER = {
-  trpl: 'Software Engineer · Systems Analyst · Software Quality &amp; Security Engineer · IT Project Manager',
-  bisdig: 'Digital Marketer · E-Commerce &amp; FinTech Specialist · Digital Business Analyst · Project Manager',
-};
+// Beranda LMS. Isi yang publik (jadwal dari kalender terbit, program studi)
+// tampil tanpa login; daftar layanan menyesuaikan peran kalau cookie login ada.
+// Tidak ada tombol atau form login di sini — form login hanya di /login/, dan
+// halaman layanan sendiri yang mengarahkan ke sana (pdb/README.md bagian Frontend).
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
-function kartuProdi(p, rumpun) {
-  const totalSKS = rumpun.reduce((sum, r) => sum + (r.sks || 0), 0);
-  const daftar = rumpun.slice(0, 6).map(r => `<li>${esc(r.kode)} — ${esc(r.nama)}</li>`).join('');
-  const lebih = rumpun.length > 6 ? `<li class="redup">+${rumpun.length - 6} rumpun lainnya</li>` : '';
-  return `
-    <div class="kartu">
-      <h3>${esc(p.nama)}</h3>
-      <p class="meta">${p.sks_total} SKS · ${p.semester} semester · ${esc(p.jenjang)}</p>
-      <p class="meta">${rumpun.length} rumpun berbasis proyek${totalSKS ? ` · ${totalSKS} SKS ritme/tempat-kerja` : ''}</p>
-      <ul class="rumpun-list">${daftar}${lebih}</ul>
-      <p class="meta">Jadi apa setelah lulus: ${KARIER[p.kode] || '—'}</p>
-    </div>`;
+const ZONA = 'Asia/Jakarta';
+const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+// Tanggal sesi disimpan sebagai tengah malam UTC dari tanggal kalendernya, jadi
+// 10 karakter pertama ISO-nya adalah tanggal yang dimaksud.
+function tanggalSesi(iso) { return String(iso || '').slice(0, 10); }
+function hariIniYMD() { return new Date().toLocaleDateString('en-CA', { timeZone: ZONA }); }
+function tampilTanggal(ymd) {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return `${d} ${BULAN[m - 1]} ${y}`;
+}
+function selisihHari(a, b) { return Math.round((Date.parse(a) - Date.parse(b)) / 86400000); }
+
+const KEGIATAN = {
+  asinkron: ['Belajar mandiri', 'asinkron'],
+  daring_sinkron: ['Kelas daring bersama dosen', 'daring'],
+  opsional_luring_daring: ['Praktikum dan kerja proyek', 'luring/daring'],
+  bebas: ['Tanpa agenda akademik', ''],
+};
+
+const LAYANAN = {
+  mahasiswa: [
+    ['Pembelajaran', [
+      ['materi.html', 'Materi pekan ini', 'Video dan bacaan asinkron'],
+      ['kuis.html', 'Kuis gerbang', 'Syarat sebelum sesi Jumat'],
+      ['forum.html', 'Forum tanya dosen', 'Target jawaban 1×24 jam'],
+      ['rekaman.html', 'Rekaman sesi', 'Kelas daring yang terlewat'],
+      ['portal.html', 'Tugas', 'Kumpulkan dan pantau tugas'],
+      ['kalender.html', 'Kalender akademik', 'Jadwal satu semester'],
+    ]],
+    ['Nilai dan kemajuan', [
+      ['dasbor.html', 'Dasbor belajar', 'Beban belajar dan capaian CPL'],
+      ['nilai.html', 'Nilai proyek', 'Rincian per mata kuliah'],
+      ['rapor.html', 'Rapor', 'IP per semester dan IPK'],
+      ['autograder.html', 'Hasil autograder', 'Tes otomatis kode praktikum'],
+    ]],
+    ['Administrasi', [
+      ['kerja.html', 'Proyek kerja / magang', 'Konversi pekerjaan jadi kredit'],
+      ['rpl.html', 'Rekognisi pembelajaran lampau', 'Pengakuan pengalaman kerja'],
+    ]],
+  ],
+  dosen: [
+    ['Pengajaran', [
+      ['kelola-materi.html', 'Kelola materi', 'Video dan bacaan per minggu'],
+      ['dosen.html', 'Buat tugas', 'Termasuk laporan kemiripan'],
+      ['forum.html', 'Forum dan SLA', 'Pertanyaan yang menunggu jawaban'],
+      ['rekaman.html', 'Rekaman sesi', 'Terbitkan sebelum tenggat'],
+      ['kuis.html', 'Status kuis gerbang', 'Kelulusan per mahasiswa'],
+    ]],
+    ['Penilaian', [
+      ['proyek.html', 'Proyek blok', 'Anggota dan nilai per mata kuliah'],
+      ['ujian.html', 'Pengawas ujian', 'Jadwal dan kehadiran'],
+      ['autograder.html', 'Autograder', 'Hasil tes otomatis dan bobot'],
+      ['rapor.html', 'Rapor dan rekap nilai', 'Per mahasiswa atau per angkatan'],
+      ['rpl.html', 'Tinjau RPL', 'Pengajuan yang menunggu'],
+      ['kerja.html', 'Proyek kerja bimbingan', 'Putusan dan tinjauan'],
+    ]],
+    ['Akademik dan mutu', [
+      ['kalender.html', 'Kalender akademik', 'Susun dan terbitkan'],
+      ['kurikulum.html', 'Kurikulum', 'Rumpun, mata kuliah, CPL'],
+      ['akademik.html', 'Roster dan NIP', 'Data mahasiswa'],
+      ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
+      ['kepatuhan.html', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi'],
+    ]],
+  ],
+};
+
+function htmlKelompok(judul, butir) {
+  return `<div class="kelompok"><h3>${esc(judul)}</h3><ul class="daftar-layanan">
+    ${butir.map(([href, nama, ket]) => `<li><a href="${href}"><b>${esc(nama)}</b><span>${esc(ket)}</span></a></li>`).join('')}
+  </ul></div>`;
 }
 
-getJSON(API_BASE + '/api/kurikulum/prodi', async (res) => {
-  // status 0 = jaringan gagal atau timeout (crootjs selalu memanggil callback).
-  if (res.status !== 200) {
-    setInner('prodi', `<p class="redup">Backend tidak terjangkau (${esc(API_BASE)}).
-      Data program studi tidak bisa dimuat saat ini.</p>`);
+function tampilLayanan(peran) {
+  const wadah = document.getElementById('layanan');
+  if (peran === 'dosen' || peran === 'mahasiswa') {
+    wadah.innerHTML = LAYANAN[peran].map(([j, b]) => htmlKelompok(j, b)).join('');
     return;
   }
+  // Belum masuk: tampilkan keduanya, dipisah per peran.
+  wadah.innerHTML = LAYANAN.mahasiswa.map(([j, b]) => htmlKelompok(`Mahasiswa · ${j}`, b)).join('')
+    + LAYANAN.dosen.map(([j, b]) => htmlKelompok(`Dosen · ${j}`, b)).join('');
+}
+
+function tampilAkun(saya) {
+  if (!saya) return;
+  const akun = document.getElementById('akun');
+  const keterangan = saya.peran === 'mahasiswa' && saya.nim ? `NIM ${esc(saya.nim)}` : '';
+  akun.innerHTML = `
+    <span class="peran">${esc(saya.peran)}</span>
+    ${keterangan ? `<span class="redup">${keterangan}</span>` : ''}
+    <a class="tautan-tombol" href="saya.html">Beranda Saya</a>
+    <button type="button" class="tautan-tombol" id="keluar">Keluar</button>`;
+  document.getElementById('keluar').addEventListener('click', () => { logout(); location.reload(); });
+}
+
+// Minggu yang ditampilkan: minggu yang memuat hari ini; kalau hari ini tanpa
+// sesi, minggu dari sesi terakhir yang lewat (maks. 7 hari). Sebelum semester
+// mulai ditampilkan minggu pertama; sesudah berakhir, tidak ada tabel.
+function mingguAcuan(sesi, hariIni) {
+  const urut = [...sesi].sort((a, b) => tanggalSesi(a.tanggal).localeCompare(tanggalSesi(b.tanggal)));
+  if (!urut.length) return { status: 'kosong' };
+  const pertama = tanggalSesi(urut[0].tanggal);
+  const terakhir = tanggalSesi(urut[urut.length - 1].tanggal);
+  if (hariIni < pertama) return { status: 'belum', minggu: urut[0].minggu, mulai: pertama };
+  if (hariIni > terakhir) return { status: 'selesai', selesai: terakhir };
+  const lewat = urut.filter(s => tanggalSesi(s.tanggal) <= hariIni);
+  const acuan = lewat[lewat.length - 1];
+  if (selisihHari(hariIni, tanggalSesi(acuan.tanggal)) > 7) return { status: 'jeda' };
+  return { status: 'berjalan', minggu: acuan.minggu };
+}
+
+function tampilJadwal(kal) {
+  const wadah = document.getElementById('jadwal');
+  const hariIni = hariIniYMD();
+  const acuan = mingguAcuan(kal.sesi || [], hariIni);
+  if (acuan.status === 'kosong') { wadah.innerHTML = '<p class="pesan-kosong">Kalender ini belum punya sesi.</p>'; return; }
+  if (acuan.status === 'selesai') { wadah.innerHTML = `<p class="pesan-kosong">Masa perkuliahan semester ini berakhir ${esc(tampilTanggal(acuan.selesai))}.</p>`; return; }
+  if (acuan.status === 'jeda') { wadah.innerHTML = '<p class="pesan-kosong">Tidak ada sesi terjadwal minggu ini.</p>'; return; }
+
+  const baris = kal.sesi.filter(s => s.minggu === acuan.minggu)
+    .sort((a, b) => tanggalSesi(a.tanggal).localeCompare(tanggalSesi(b.tanggal)));
+  const catatan = acuan.status === 'belum'
+    ? `<p class="pesan-kosong">Perkuliahan dimulai ${esc(tampilTanggal(acuan.mulai))}. Berikut jadwal minggu pertama.</p>` : '';
+  wadah.innerHTML = `${catatan}<div class="gulir"><table class="jadwal">
+    <tr><th>Hari</th><th>Tanggal</th><th>Kegiatan</th><th>Waktu</th></tr>
+    ${baris.map(s => {
+      const tgl = tanggalSesi(s.tanggal);
+      const [nama, label] = KEGIATAN[s.moda] || [s.moda, ''];
+      const kelas = [tgl === hariIni ? 'hari-ini' : '', s.moda === 'bebas' ? 'libur' : ''].filter(Boolean).join(' ');
+      return `<tr${kelas ? ` class="${kelas}"` : ''}>
+        <td>${esc(s.hari)}${tgl === hariIni ? '<span class="label-moda label-hari-ini">hari ini</span>' : ''}</td>
+        <td>${esc(tampilTanggal(tgl))}</td>
+        <td>${esc(nama)}${label ? `<span class="label-moda">${esc(label)}</span>` : ''}${s.keterangan ? `<br><span class="redup">${esc(s.keterangan)}</span>` : ''}</td>
+        <td class="waktu">${s.jam_mulai ? `${esc(s.jam_mulai)}–${esc(s.jam_selesai || '')}` : '–'}</td></tr>`;
+    }).join('')}
+  </table></div>`;
+  document.getElementById('judul-jadwal').textContent = `Jadwal minggu ${acuan.minggu}`;
+}
+
+async function muatJadwal(prodiSaya) {
+  const wadah = document.getElementById('jadwal');
   try {
-    const list = (res.data && res.data.prodi) || [];
-    if (!list.length) { setInner('prodi', '<p class="redup">Data program studi belum tersedia.</p>'); return; }
-    const kartuHtml = await Promise.all(list.map(p => new Promise((resolve) => {
-      getJSON(API_BASE + '/api/kurikulum/prodi/' + p.kode + '/rumpun', (rres) => {
-        resolve(kartuProdi(p, (rres.data && rres.data.rumpun) || []));
-      });
-    })));
-    setInner('prodi', kartuHtml.join(''));
+    const { kalender = [] } = await apiGet('/api/kalender');
+    if (!kalender.length) { wadah.innerHTML = '<p class="pesan-kosong">Belum ada kalender akademik yang diterbitkan.</p>'; return; }
+    const pilih = document.getElementById('pilih-kalender');
+    pilih.innerHTML = kalender.map((k, i) =>
+      `<option value="${i}">${esc(k.prodi_kode.toUpperCase())} · angkatan ${esc(k.angkatan)} · semester ${esc(k.semester)}</option>`).join('');
+    const awal = Math.max(0, kalender.findIndex(k => k.prodi_kode === prodiSaya));
+    pilih.value = String(awal);
+    pilih.hidden = kalender.length < 2;
+    pilih.addEventListener('change', () => tampilJadwal(kalender[Number(pilih.value)]));
+    tampilJadwal(kalender[awal]);
   } catch (err) {
-    setInner('prodi', `<p class="redup">Gagal memuat data program studi: ${esc(err.message)}</p>`);
+    wadah.innerHTML = `<p class="pesan-kosong">Jadwal tidak bisa dimuat: ${esc(err.message)}</p>`;
   }
-});
+}
+
+async function muatProdi() {
+  const wadah = document.getElementById('prodi');
+  try {
+    const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
+    wadah.innerHTML = prodi.length
+      ? prodi.map(p => `<li>${esc(p.nama)}<span class="kecil">${esc(p.jenjang)} · ${esc(p.sks_total)} SKS · ${esc(p.semester)} semester</span></li>`).join('')
+      : '<li class="redup">Data program studi belum tersedia.</li>';
+  } catch (err) {
+    wadah.innerHTML = `<li class="redup">Tidak bisa dimuat: ${esc(err.message)}</li>`;
+  }
+}
+
+document.getElementById('hari-ini').textContent =
+  new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: ZONA });
+
+let saya = null;
+if (isLoggedIn()) {
+  // Token kedaluwarsa atau nomor tak dikenal: beranda tetap tampil sebagai publik.
+  try { saya = await apiGet('/api/proyekblok/saya', { auth: true }); } catch { saya = null; }
+}
+tampilAkun(saya);
+tampilLayanan(saya && saya.peran);
+muatProdi();
+muatJadwal(saya && saya.prodi_kode);
