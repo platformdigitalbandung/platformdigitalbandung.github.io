@@ -1,5 +1,5 @@
 import { apiGet } from './api.js';
-import { sayaSekarang } from './akun.js';
+import { sayaSekarang, adalahPimpinan } from './akun.js';
 
 // Beranda LMS. Isi yang publik (jadwal dari kalender terbit, program studi)
 // tampil tanpa login; daftar layanan menyesuaikan peran kalau cookie login ada.
@@ -81,10 +81,18 @@ function htmlKelompok(judul, butir) {
   </ul></div>`;
 }
 
-function tampilLayanan(peran) {
+// Laporan tingkat prodi hanya untuk kaprodi dan direktur (backend menolak 403).
+const LAPORAN_PRODI = new Set(['kaprodi.html', 'kepatuhan.html']);
+
+function tampilLayanan(saya) {
   const wadah = document.getElementById('layanan');
+  const peran = saya && saya.peran;
   if (peran === 'dosen' || peran === 'mahasiswa') {
-    wadah.innerHTML = LAYANAN[peran].map(([j, b]) => htmlKelompok(j, b)).join('');
+    const pimpinan = adalahPimpinan(saya);
+    wadah.innerHTML = LAYANAN[peran]
+      .map(([j, b]) => [j, b.filter(([href]) => pimpinan || !LAPORAN_PRODI.has(href))])
+      .filter(([, b]) => b.length)
+      .map(([j, b]) => htmlKelompok(j, b)).join('');
     return;
   }
   // Belum masuk: tampilkan keduanya, dipisah per peran.
@@ -172,6 +180,6 @@ document.getElementById('hari-ini').textContent =
 // Status akun di bilah atas diurus akun.js; beranda cukup memakai hasilnya.
 // Token kedaluwarsa atau nomor tak dikenal: beranda tampil sebagai publik.
 const saya = await sayaSekarang;
-tampilLayanan(saya && saya.peran);
+tampilLayanan(saya);
 muatProdi();
 muatJadwal(saya && saya.prodi_kode);

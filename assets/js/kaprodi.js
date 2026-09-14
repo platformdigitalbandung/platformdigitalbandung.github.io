@@ -1,4 +1,5 @@
 import { apiGet, isLoggedIn, arahkanKeLogin } from './api.js';
+import { adalahPimpinan, prodiPimpinan } from './akun.js';
 
 // Pantau Proyek Kerja (kaprodi/dosen). Semua angka dihitung backend
 // (GET /api/proyekkerja/dasbor); halaman ini hanya menampilkannya tanpa
@@ -7,13 +8,13 @@ import { apiGet, isLoggedIn, arahkanKeLogin } from './api.js';
 const isi = document.getElementById('isi');
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
-function kartuSaring(prodi) {
+function kartuSaring(prodi, semua) {
   return `
     <div class="kartu">
       <h3>Saringan</h3>
       <p class="meta">Titik tengah semester hanya bisa dihitung kalau prodi, angkatan, <b>dan</b> semester diisi — kalender disimpan per kombinasi itu.</p>
       <form id="form-saring">
-        <label>Program studi <select name="prodi"><option value="">(semua)</option>
+        <label>Program studi <select name="prodi">${semua ? '<option value="">(semua)</option>' : ''}
           ${prodi.map(p => `<option value="${esc(p.kode)}">${esc(p.nama)}</option>`).join('')}</select></label>
         <label>Angkatan (untuk kalender acuan) <input name="angkatan" maxlength="9" placeholder="2024"></label>
         <label>Semester <input type="number" name="semester" min="0" max="8" value="0"></label>
@@ -71,13 +72,15 @@ async function muatRingkas(e) {
 
 async function muat() {
   const saya = await apiGet('/api/proyekblok/saya', { auth: true });
-  if (saya.peran !== 'dosen') {
-    isi.innerHTML = `<div class="kartu"><h3>Halaman ini untuk kaprodi/dosen</h3>
+  if (!adalahPimpinan(saya)) {
+    isi.innerHTML = `<div class="kartu"><h3>Khusus kaprodi dan direktur</h3>
+      <p class="meta">Pantauan proyek kerja tingkat prodi hanya bisa dibuka kaprodi (untuk prodinya) dan direktur.</p>
       <a class="aksi" href="saya.html">Kembali ke Beranda Saya</a></div>`;
     return;
   }
   const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
-  isi.innerHTML = kartuSaring(prodi);
+  const boleh = prodiPimpinan(saya);
+  isi.innerHTML = kartuSaring(boleh ? prodi.filter(p => boleh.includes(p.kode)) : prodi, !boleh);
   document.getElementById('form-saring').addEventListener('submit', muatRingkas);
   await muatRingkas();
 }

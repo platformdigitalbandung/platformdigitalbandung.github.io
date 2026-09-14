@@ -66,7 +66,7 @@ function render(hasil) {
   } else {
     const { isi, saya } = hasil;
     const nama = isi.alias || isi.id || 'Pengguna';
-    const peran = saya ? saya.peran : '';
+    const peran = labelPeran(saya);
     const nomorInduk = saya && saya.nip ? `NIP ${saya.nip}` : (saya && saya.nim ? `NIM ${saya.nim}` : '');
     const judul = [`Masuk sebagai ${nama}`, isi.id ? `nomor ${isi.id}` : '', nomorInduk, isi.exp ? `berlaku sampai ${waktu(isi.exp)}` : '',
       hasil.status === 'tak-terjangkau' ? 'backend tidak terjangkau, peran belum bisa dipastikan' : ''].filter(Boolean).join(' · ');
@@ -86,6 +86,25 @@ function render(hasil) {
   // dengan token yang sama setelah kembali dari /login/.
   const tombolMasukLagi = wadah.querySelector('[data-masuk-lagi]');
   if (tombolMasukLagi) tombolMasukLagi.addEventListener('click', () => { logout(); arahkanKeLogin(); });
+}
+
+// Jabatan pimpinan dari GET /api/proyekblok/saya. Direktur melihat laporan
+// tingkat prodi untuk semua prodi; kaprodi hanya prodinya (kaprodi_prodi).
+// Kewenangan tetap diputuskan backend — ini hanya untuk menyembunyikan menu
+// yang pasti ditolak.
+export function adalahDirektur(saya) { return Boolean(saya && (saya.jabatan || []).includes('direktur')); }
+export function adalahPimpinan(saya) { return Boolean(saya && (saya.jabatan || []).length); }
+/** Kode prodi yang boleh dilaporkan: null berarti semua prodi (direktur). */
+export function prodiPimpinan(saya) {
+  if (adalahDirektur(saya)) return null;
+  return (saya && saya.kaprodi_prodi) || [];
+}
+
+function labelPeran(saya) {
+  if (!saya) return '';
+  if (adalahDirektur(saya)) return 'direktur';
+  if ((saya.jabatan || []).includes('kaprodi')) return `kaprodi ${(saya.kaprodi_prodi || []).join('/').toUpperCase()}`.trim();
+  return saya.peran;
 }
 
 // Diekspor supaya halaman yang juga butuh peran (mis. beranda) tidak memanggil

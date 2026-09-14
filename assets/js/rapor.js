@@ -1,4 +1,5 @@
 import { apiGet, isLoggedIn, arahkanKeLogin } from './api.js';
+import { adalahPimpinan, prodiPimpinan } from './akun.js';
 
 // Rapor per semester dan rekap nilai. Mahasiswa melihat rapornya sendiri (NIM
 // dari /api/proyekblok/saya); dosen membuka rapor mahasiswa mana pun lewat NIM
@@ -116,7 +117,9 @@ async function tampilRekap(prodi, angkatan, semester) {
   }
 }
 
-function formDosen(prodi, nimAwal) {
+// Rekap nilai satu angkatan adalah laporan tingkat prodi: hanya untuk kaprodi
+// (prodinya) dan direktur. Dosen biasa tetap bisa membuka rapor per NIM.
+function formDosen(prodi, nimAwal, bolehRekap) {
   return `
     <div class="kartu tidak-cetak">
       <h3>Rapor Mahasiswa</h3>
@@ -125,7 +128,7 @@ function formDosen(prodi, nimAwal) {
         <button>Tampilkan Rapor</button>
       </form>
     </div>
-    <div class="kartu tidak-cetak">
+    ${bolehRekap ? `<div class="kartu tidak-cetak">
       <h3>Rekap Nilai Semester</h3>
       <p class="meta">Satu baris per mahasiswa di roster, kolomnya mata kuliah semester itu.</p>
       <form id="form-rekap">
@@ -134,7 +137,7 @@ function formDosen(prodi, nimAwal) {
         <label>Semester <select name="semester">${[1, 2, 3, 4, 5, 6, 7, 8].map(s => `<option value="${s}">${s}</option>`).join('')}</select></label>
         <button>Tampilkan Rekap</button>
       </form>
-    </div>
+    </div>` : ''}
     <div id="hasil"></div>`;
 }
 
@@ -144,14 +147,15 @@ async function muat() {
 
   if (saya.peran === 'dosen') {
     const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
-    isi.innerHTML = formDosen(prodi, nimQuery);
+    const boleh = prodiPimpinan(saya);
+    isi.innerHTML = formDosen(boleh ? prodi.filter(p => boleh.includes(p.kode)) : prodi, nimQuery, adalahPimpinan(saya));
     document.getElementById('form-nim').addEventListener('submit', e => {
       e.preventDefault();
       const nim = new FormData(e.target).get('nim').trim();
       history.replaceState(null, '', `?nim=${encodeURIComponent(nim)}`);
       tampilRapor(nim);
     });
-    document.getElementById('form-rekap').addEventListener('submit', e => {
+    document.getElementById('form-rekap')?.addEventListener('submit', e => {
       e.preventDefault();
       const fd = new FormData(e.target);
       history.replaceState(null, '', 'rapor.html');

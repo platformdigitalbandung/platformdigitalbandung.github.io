@@ -1,4 +1,5 @@
 import { apiGet, apiPostJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { adalahPimpinan } from './akun.js';
 
 // Rekaman Sesi Sinkron. Semua pemegang token bisa melihat rekaman per kalender
 // terbit; dosen menerbitkan/menghapus rekaman dan melihat rekap keterlambatan.
@@ -32,6 +33,7 @@ function lencana(status) {
 }
 
 let dosen = false;
+let pimpinan = false;
 let kalenderAktif = '';
 
 function selRekaman(s) {
@@ -98,7 +100,7 @@ async function terbitkan(form) {
     pesan(r.terlambat
       ? `<div class="pesan gagal">Rekaman terbit, tetapi melewati tenggat ${waktuWIB(r.tenggat)} dan tercatat terlambat.</div>`
       : '<div class="pesan sukses">Rekaman terbit tepat waktu.</div>');
-    if (dosen) muatRekap();
+    if (pimpinan) muatRekap();
   } catch (err) {
     tombol.disabled = false;
     pesan(`<div class="pesan gagal">Gagal menerbitkan: ${esc(err.message)}</div>`);
@@ -110,7 +112,7 @@ async function hapus(id) {
   try {
     await apiDeleteJson(`/api/rekaman/${encodeURIComponent(id)}`);
     await muatKalender(kalenderAktif);
-    if (dosen) muatRekap();
+    if (pimpinan) muatRekap();
   } catch (err) {
     pesan(`<div class="pesan gagal">Gagal menghapus: ${esc(err.message)}</div>`);
   }
@@ -140,13 +142,16 @@ async function muatRekap() {
 async function muat() {
   const saya = await apiGet('/api/proyekblok/saya', { auth: true });
   dosen = saya.peran === 'dosen';
+  // Rekap keterlambatan adalah laporan tingkat prodi: kaprodi (prodinya) dan
+  // direktur. Dosen biasa tetap menerbitkan rekaman sesinya.
+  pimpinan = adalahPimpinan(saya);
   const { kalender = [] } = await apiGet('/api/kalender');
   if (!kalender.length) {
     isi.innerHTML = '<div class="kosong">Belum ada kalender semester yang diterbitkan.</div>';
     return;
   }
   isi.innerHTML = `
-    ${dosen ? '<div id="rekap-rekaman"><p class="redup">Memuat rekap…</p></div>' : ''}
+    ${pimpinan ? '<div id="rekap-rekaman"><p class="redup">Memuat rekap…</p></div>' : ''}
     <div class="kartu">
       <h3>Pilih Kalender</h3>
       <form id="form-kalender">
@@ -174,7 +179,7 @@ async function muat() {
     if (b) hapus(b.dataset.id);
   });
 
-  if (dosen) muatRekap();
+  if (pimpinan) muatRekap();
   await muatKalender(pilih.value);
 }
 

@@ -1,4 +1,5 @@
 import { apiGet, isLoggedIn, arahkanKeLogin } from './api.js';
+import { adalahPimpinan, prodiPimpinan } from './akun.js';
 
 // Laporan Kepatuhan per Mata Kuliah untuk akreditasi. Khusus dosen/admin —
 // kewenangannya dicek backend (403). Ekspornya halaman ini sendiri: tombol
@@ -157,11 +158,13 @@ async function tampilRekap(kode) {
 
 async function muat() {
   const saya = await apiGet('/api/proyekblok/saya', { auth: true });
-  if (saya.peran !== 'dosen') {
-    isi.innerHTML = '<div class="kosong">Laporan kepatuhan hanya untuk dosen atau admin.</div>';
+  if (!adalahPimpinan(saya)) {
+    isi.innerHTML = '<div class="kosong">Laporan kepatuhan hanya untuk kaprodi (prodinya sendiri) dan direktur.</div>';
     return;
   }
-  const { kalender = [] } = await apiGet('/api/kalender');
+  const boleh = prodiPimpinan(saya);
+  const { kalender: semuaKalender = [] } = await apiGet('/api/kalender');
+  const kalender = boleh ? semuaKalender.filter(k => boleh.includes(k.prodi_kode)) : semuaKalender;
   if (!kalender.length) {
     isi.innerHTML = '<div class="kosong">Belum ada kalender semester yang diterbitkan, jadi belum ada yang bisa dilaporkan. Terbitkan kalender di halaman <a href="kalender.html">Kalender</a>.</div>';
     return;

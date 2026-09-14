@@ -1,4 +1,5 @@
 import { apiGet, isLoggedIn, logout, arahkanKeLogin } from './api.js';
+import { adalahDirektur, adalahPimpinan } from './akun.js';
 
 // Beranda Saya: kartu tugas sesuai peran (Task-Oriented UI) — bukan menu
 // navigasi umum. Peran datang dari backend (GET /api/proyekblok/saya), bukan
@@ -30,11 +31,9 @@ function tampil(saya) {
       + kartu('Tinjau RPL', 'Setujui atau tolak pengajuan rekognisi pembelajaran lampau; yang disetujui jadi bukti CPL.', 'rpl.html', 'Tinjau Pengajuan')
       + kartu('Status Kuis Gerbang', 'Cek apakah mahasiswa sudah lulus kuis gerbang sebelum sesi Jumat.', 'kuis.html', 'Cek Status Kuis')
       + kartu('Pengawas Ujian', 'Jadwalkan ujian berpengawas dan catat kehadiran mahasiswa di sesi yang Anda awasi.', 'ujian.html', 'Buka Pengawas Ujian')
-      + kartu('Pantau Proyek Kerja', 'Untuk kaprodi: proyek kerja aktif dan yang telat tinjauan tengah semester, beserta siapa yang belum menilai.', 'kaprodi.html', 'Pantau Proyek Kerja')
       + kartu('Rekaman Sesi & Tenggat', 'Terbitkan rekaman sesi daring sinkron sebelum tengah malam dan pantau yang terlambat atau belum ada.', 'rekaman.html', 'Kelola Rekaman')
       + kartu('Forum & SLA Jawaban','Balas pertanyaan mahasiswa dan pantau yang lewat target 1×24 jam (dihitung Senin–Rabu).', 'forum.html', 'Buka Forum')
       + kartu('Rapor & Rekap Nilai', 'Buka rapor mahasiswa per NIM atau rekap nilai huruf dan IP satu angkatan per semester, siap dicetak.', 'rapor.html', 'Buka Rapor')
-      + kartu('Laporan Kepatuhan','Menit asinkron, daring, dan luring per mata kuliah terhadap tuntutan SKS, beserta bukti nilai dan CPL — siap dicetak untuk akreditasi.', 'kepatuhan.html', 'Buka Laporan')
       + kartu('Kelola Materi','Tambah video YouTube dan bacaan asinkron per minggu rumpun — progres mahasiswa hanya tercatat untuk materi di katalog ini.', 'kelola-materi.html', 'Kelola Materi')
       + kartu('Hasil Autograder','Hasil tes otomatis atas kode yang dikirim mahasiswa lewat Pull Request, beserta pengaturan pembagian bobotnya.', 'autograder.html', 'Lihat Hasil Autograder')
       + kartu('Kurikulum Program Studi','Daftarkan prodi, rumpun beserta mata kuliahnya, CPL, dan ritme mingguan — prasyarat sebelum kalender, roster, dan dasbor bisa dipakai prodi itu.', 'kurikulum.html', 'Kelola Kurikulum')
@@ -49,6 +48,14 @@ function tampil(saya) {
       + kartu('Nilai Proyek Saya','Lihat rekap nilai proyek blok Anda beserta rincian per mata kuliah.', 'nilai.html', 'Lihat Nilai Saya')
       + kartu('Proyek Kerja/Magang', 'Ajukan konversi pekerjaan di perusahaan jadi proyek, lalu ikuti status dan tinjauannya.', 'kerja.html', 'Ajukan / Lihat Proyek Kerja');
 
+  // Laporan tingkat prodi hanya untuk kaprodi (prodinya) dan direktur (semua
+  // prodi) — keputusan pemilik produk 2026-09-14. Backend tetap menolak 403.
+  const lingkup = adalahDirektur(saya) ? 'semua prodi' : (saya.kaprodi_prodi || []).join(', ').toUpperCase();
+  const kartuPimpinan = adalahPimpinan(saya)
+    ? kartu('Pantau Proyek Kerja', `Proyek kerja aktif dan yang telat tinjauan tengah semester, beserta siapa yang belum menilai — ${lingkup}.`, 'kaprodi.html', 'Pantau Proyek Kerja')
+      + kartu('Laporan Kepatuhan', `Menit asinkron, daring, dan luring per mata kuliah terhadap tuntutan SKS, beserta bukti nilai dan CPL — ${lingkup}.`, 'kepatuhan.html', 'Buka Laporan')
+    : '';
+
   const catatanNIP = dosen && !saya.nip
     ? '<div class="pesan gagal">Nomor ini terdaftar sebagai dosen, tetapi NIP-nya belum diisi di data dosen. Pembuatan dan penilaian proyek blok baru bisa dilakukan setelah NIP terisi — <a href="akademik.html">isi NIP Anda di halaman Roster &amp; NIP</a>.</div>'
     : '';
@@ -61,7 +68,7 @@ function tampil(saya) {
   isi.innerHTML = `
     ${catatanNIP}
     <p class="redup">Peran: ${esc(saya.peran)} · ${ringkas}</p>
-    <div class="kartu-grid">${kartuUmum}${kartuPeran}</div>
+    <div class="kartu-grid">${kartuPimpinan}${kartuUmum}${kartuPeran}</div>
     <p><button class="sekunder" id="keluar">Keluar</button></p>`;
 
   document.getElementById('keluar').addEventListener('click', () => { logout(); location.href = './'; });

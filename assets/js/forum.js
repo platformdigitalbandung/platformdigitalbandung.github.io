@@ -1,4 +1,5 @@
 import { apiGet, apiPostJson, isLoggedIn, arahkanKeLogin } from './api.js';
+import { adalahPimpinan, prodiPimpinan } from './akun.js';
 
 // Forum Tanya Dosen. Peran datang dari backend (GET /api/proyekblok/saya):
 // mahasiswa bertanya untuk prodinya sendiri (prodi dan NIM diambil backend dari
@@ -130,10 +131,14 @@ async function muatDaftar(form) {
   } catch (err) {
     wadah.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
-  if (saya.peran === 'dosen') {
+  // Ringkasan SLA adalah laporan tingkat prodi: hanya kaprodi (prodinya) dan
+  // direktur. Kaprodi yang menyaring prodi lain tetap melihat SLA prodinya.
+  if (adalahPimpinan(saya)) {
     const sla = document.getElementById('ringkasan-sla');
+    const boleh = prodiPimpinan(saya);
+    const prodiSla = !boleh || boleh.includes(prodi) ? prodi : '';
     try {
-      sla.innerHTML = kartuSLA(await apiGet(`/api/forum/sla${prodi ? `?prodi=${encodeURIComponent(prodi)}` : ''}`, { auth: true }));
+      sla.innerHTML = kartuSLA(await apiGet(`/api/forum/sla${prodiSla ? `?prodi=${encodeURIComponent(prodiSla)}` : ''}`, { auth: true }));
     } catch (err) {
       sla.innerHTML = `<div class="pesan gagal">Ringkasan SLA: ${esc(err.message)}</div>`;
     }
