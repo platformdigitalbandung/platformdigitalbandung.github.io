@@ -1,14 +1,18 @@
 import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, apiPostBerkasToken, isLoggedIn, arahkanKeLogin } from './api.js';
 import { hitungHalaman } from './pdfmateri.js';
+import { adalahAdmin } from './akun.js';
 
 // Kelola Materi (dosen). Kewenangan tetap dicek backend. Prodi dan rumpun dibaca
 // dari data kurikulum, tidak diketik ulang. YouTube ID diurai server dari
 // tautan apa pun, jadi halaman ini tidak mencoba mengurainya sendiri.
 //
+// Menambah, mengubah, dan menghapus materi hanya untuk prodi tempat dosen
+// mengajar (kaprodi: prodinya; admin: semua) — keputusan pemilik produk
+// 2026-09-14. Katalog tetap bisa dilihat untuk semua prodi.
+//
 // Materi jenis "berkas": PDF diunggah ke repo storage GitHub privat lewat
-// backend. Jumlah halamannya dihitung di sini dengan pdf.js lalu ikut dikirim,
-// karena penyebut progres mahasiswa ditetapkan dosen saat mengunggah — bukan
-// oleh peramban mahasiswa yang membacanya nanti.
+// backend, yang menghitung jumlah halamannya dari berkas itu. Hitungan pdf.js
+// di sini hanya ikut dikirim sebagai cadangan kalau server gagal mengurai PDF.
 
 // Batas yang sama dengan yang dijaga backend; diperiksa di sini juga supaya
 // dosen tidak menunggu unggahan 30 MiB cuma untuk ditolak di ujung.
@@ -19,6 +23,9 @@ const isi = document.getElementById('isi');
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
 let prodi = [];
+// Prodi yang materinya boleh diubah pemegang token: prodi mengajar, atau semua
+// untuk admin.
+let prodiKelola = [];
 const rumpunPerProdi = new Map();
 let katalog = [];
 
@@ -31,8 +38,10 @@ async function rumpunProdi(kode) {
   return rumpunPerProdi.get(kode);
 }
 
-function opsiProdi(terpilih) {
-  return prodi.map(p => `<option value="${esc(p.kode)}"${p.kode === terpilih ? ' selected' : ''}>${esc(p.nama)}</option>`).join('');
+function bolehKelola(kode) { return prodiKelola.some(p => p.kode === kode); }
+
+function opsiProdi(terpilih, daftar = prodi) {
+  return daftar.map(p => `<option value="${esc(p.kode)}"${p.kode === terpilih ? ' selected' : ''}>${esc(p.nama)}</option>`).join('');
 }
 
 async function isiPilihanRumpun(selectProdi, selectRumpun, terpilih, denganSemua) {
@@ -62,7 +71,7 @@ function kartuForm(m = {}) {
     <div class="kartu">
       <h3>${m.id ? 'Ubah' : 'Tambah'} Materi</h3>
       <form id="form-materi" data-id="${esc(m.id || '')}">
-        <label>Program studi <select name="prodi_kode" id="form-prodi" required>${opsiProdi(m.prodi_kode)}</select></label>
+        <label>Program studi <select name="prodi_kode" id="form-prodi" required>${opsiProdi(m.prodi_kode, prodiKelola)}</select></label>
         <label>Rumpun <select name="rumpun_kode" id="form-rumpun" required></select></label>
         <label>Minggu <input type="number" name="minggu" min="1" max="52" required value="${esc(m.minggu ?? 1)}"></label>
         <label>Urutan dalam minggu <input type="number" name="urutan" min="0" value="${esc(m.urutan ?? 0)}"></label>
@@ -92,6 +101,11 @@ function kartuForm(m = {}) {
 
 async function pasangForm(m = {}) {
   const wadah = document.getElementById('wadah-form');
+  if (!prodiKelola.length) {
+    wadah.innerHTML = `<div class="kartu"><h3>Tambah Materi</h3>
+      <div class="kosong">Anda belum tercatat mengajar di prodi mana pun, jadi belum bisa menambah atau mengubah materi. Admin mengaturnya di halaman Kelola Kaprodi, bagian Prodi Mengajar Dosen. Katalog di bawah tetap bisa dilihat.</div></div>`;
+    return;
+  }
   wadah.innerHTML = kartuForm(m);
   const selProdi = document.getElementById('form-prodi');
   const selRumpun = document.getElementById('form-rumpun');
@@ -222,8 +236,8 @@ async function tampilDaftar(e) {
         ${katalog.map(m => `<tr>
           <td class="num">${esc(m.minggu)}</td><td class="num">${esc(m.urutan)}</td>
           <td>${esc(m.judul)}</td><td>${esc(m.jenis)}${selBerkas(m)}</td><td>${esc(m.rumpun_kode)}</td>
-          <td><button class="sekunder ubah" data-id="${esc(m.id)}">Ubah</button>
-              <button class="sekunder hapus" data-id="${esc(m.id)}">Hapus</button></td></tr>`).join('')}
+          <td>${bolehKelola(m.prodi_kode) ? `<button class="sekunder ubah" data-id="${esc(m.id)}">Ubah</button>
+              <button class="sekunder hapus" data-id="${esc(m.id)}">Hapus</button>` : '<span class="redup kecil">hanya dosen pengampu prodi ini</span>'}</td></tr>`).join('')}
       </table></div><div id="hasil-hapus"></div>`
       : '<div class="kosong">Belum ada materi untuk saringan ini.</div>';
     daftar.querySelectorAll('.ubah').forEach(b => b.addEventListener('click', () => {
@@ -268,6 +282,8 @@ async function muat() {
   }
   const res = await apiGet('/api/kurikulum/prodi');
   prodi = res.prodi || [];
+  const mengajar = saya.prodi_mengajar || [];
+  prodiKelola = adalahAdmin(saya) ? prodi : prodi.filter(p => mengajar.includes(p.kode));
   if (!prodi.length) {
     isi.innerHTML = '<div class="pesan gagal">Data program studi kosong; jalankan seed kurikulum dahulu.</div>';
     return;
