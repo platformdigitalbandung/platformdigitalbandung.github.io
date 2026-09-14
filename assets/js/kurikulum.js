@@ -60,7 +60,7 @@ function kartuRumpun() {
   return `
     <div class="kartu">
       <h3>2. Rumpun Mata Kuliah</h3>
-      <p class="meta">Satu rumpun = satu proyek pengikat per semester. Mata kuliahnya ditulis satu per baris; koleksi mata kuliah diturunkan dari daftar ini.</p>
+      <p class="meta">Satu rumpun = satu proyek pengikat per semester. Mata kuliahnya ditulis satu per baris beserta SKS dalam kurung, mis. <code>Fikih Muamalah (3)</code>; koleksi mata kuliah diturunkan dari daftar ini.</p>
       <form id="form-rumpun">
         <label>Prodi <select name="prodi_kode" required>${opsiProdi()}</select></label>
         <label>Kode rumpun <input name="kode" required placeholder="R1"></label>
@@ -73,8 +73,9 @@ function kartuRumpun() {
             <option value="ritme_mingguan">Ritme mingguan (dikerjakan di kampus/daring)</option>
             <option value="tempat_kerja">Tempat kerja (di luar anggaran waktu mingguan)</option>
           </select></label>
-        <label>Mata kuliah (satu per baris)
-          <textarea name="mata_kuliah" rows="5" required placeholder="Fiqh Muamalah&#10;Ushul Fiqh&#10;Bahasa Arab"></textarea></label>
+        <label>Mata kuliah — satu per baris, <b>SKS dalam kurung di akhir</b>
+          <textarea name="mata_kuliah" rows="5" required placeholder="Fikih Muamalah (3)&#10;Ushul Fikih (3)&#10;Bahasa Arab Hukum (2)"></textarea></label>
+        <p class="redup">Tanpa "(SKS)" di akhir baris, penyimpanan ditolak — mata kuliah ber-SKS nol merusak perhitungan beban belajar, jadi lebih baik gagal terang-terangan.</p>
         <label>Kode CPL yang disentuh (pisahkan koma, boleh kosong)
           <input name="cpl" placeholder="CPL01, CPL03"></label>
         <button>Simpan Rumpun</button>
