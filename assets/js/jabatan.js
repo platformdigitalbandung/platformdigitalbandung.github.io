@@ -42,8 +42,8 @@ function tabelProdi() {
   </table></div>`;
 }
 
-// Prodi tempat dosen mengajar menentukan kuis gerbang prodi mana yang boleh ia
-// susun (PUT /api/jabatan/dosen/:nip/prodi). Kaprodi otomatis untuk prodinya.
+// Prodi tempat dosen mengajar menentukan kuis gerbang dan materi prodi mana yang
+// boleh ia kelola (PUT /api/jabatan/dosen/:nip/prodi). Kaprodi otomatis untuk prodinya.
 function tabelProdiDosen() {
   if (!dosen.length) return '<div class="kosong">Belum ada dosen aktif yang ber-NIP.</div>';
   return `<div class="gulir"><table class="tabel-sunting">
@@ -87,7 +87,7 @@ function render(pesan = '') {
     </div>
     <div class="kartu">
       <h3>Prodi Mengajar Dosen</h3>
-      <p class="meta">Centang prodi tempat tiap dosen mengajar, lalu tekan <b>Simpan</b> di barisnya. Dosen hanya bisa menyusun kuis gerbang untuk prodi yang dicentang; kaprodi otomatis untuk prodi yang dipimpinnya.</p>
+      <p class="meta">Centang prodi tempat tiap dosen mengajar, lalu tekan <b>Simpan</b> di barisnya. Dosen hanya bisa menyusun kuis gerbang dan mengelola materi untuk prodi yang dicentang; kaprodi otomatis untuk prodi yang dipimpinnya.</p>
       <div id="pesan-prodi-dosen"></div>
       ${prodi.length ? tabelProdiDosen() : ''}
     </div>
