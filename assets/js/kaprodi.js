@@ -1,23 +1,24 @@
 import { apiGet, isLoggedIn, arahkanKeLogin } from './api.js';
-import { adalahPimpinan, prodiPimpinan } from './akun.js';
+import { sayaSekarang, prodiPimpinan } from './akun.js';
+import { esc, halamanUntuk, keadaanKosong, istilah, pilihProdiBawaan } from './ui.js';
 
-// Pantau Proyek Kerja (kaprodi/dosen). Semua angka dihitung backend
+// Pantau Proyek Kerja (kaprodi untuk prodinya, admin untuk semua prodi). Semua angka dihitung backend
 // (GET /api/proyekkerja/dasbor); halaman ini hanya menampilkannya tanpa
 // menambah tafsiran — terutama tidak mengubah "tanpa acuan" jadi "telat".
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
 function kartuSaring(prodi, semua) {
   return `
     <div class="kartu">
       <h3>Saringan</h3>
-      <p class="meta">Titik tengah semester hanya bisa dihitung kalau prodi, angkatan, <b>dan</b> semester diisi — kalender disimpan per kombinasi itu.</p>
+      <div class="meta">Pantauan ${istilah('proyek kerja')} mahasiswa per program studi. Titik tengah semester hanya bisa dihitung kalau prodi, ${istilah('angkatan')}, <b>dan</b> semester diisi — kalender disimpan per kombinasi itu.</div>
       <form id="form-saring">
         <label>Program studi <select name="prodi">${semua ? '<option value="">(semua)</option>' : ''}
           ${prodi.map(p => `<option value="${esc(p.kode)}">${esc(p.nama)}</option>`).join('')}</select></label>
         <label>Angkatan (untuk kalender acuan) <input name="angkatan" maxlength="9" placeholder="2024"></label>
         <label>Semester <input type="number" name="semester" min="0" max="8" value="0"></label>
+        <p class="redup">Semester 0 = tanpa kalender acuan (hanya jumlah proyek).</p>
         <button>Tampilkan</button>
       </form>
     </div>
@@ -28,7 +29,20 @@ function tampil(r) {
   const perStatus = Object.entries(r.per_status || {});
   const acuan = r.acuan_tengah === 'kalender'
     ? `<p class="meta">Titik tengah semester (dari kalender terbit): <b>${esc(r.titik_tengah)}</b></p>`
-    : '<div class="kosong">Tidak ada kalender terbit untuk saringan ini, jadi keterlambatan tinjauan tengah <b>tidak dihitung</b>. Isi prodi, angkatan, dan semester yang kalendernya sudah diterbitkan.</div>';
+    : keadaanKosong({
+      judul: 'Keterlambatan tinjauan tengah belum dihitung',
+      keterangan: 'Tidak ada kalender terbit untuk saringan ini. Isi prodi, angkatan, dan semester yang kalendernya sudah diterbitkan.',
+      siapa: 'kaprodi (menerbitkan kalender semester)',
+      aksi: { href: 'kalender.html', label: 'Lihat kalender terbit' },
+    });
+  if (!r.total) {
+    return `<div class="kartu"><h3>Ringkasan</h3>${keadaanKosong({
+      judul: 'Belum ada pengajuan proyek kerja',
+      keterangan: 'Proyek kerja diajukan mahasiswa sendiri di halaman Proyek Kerja/Magang, lalu disetujui dosen pembimbing. Pantauan muncul di sini begitu ada pengajuan.',
+      siapa: 'mahasiswa (mengajukan) dan dosen pembimbing (menyetujui)',
+      aksi: null,
+    })}</div>`;
+  }
   return `
     <div class="kartu">
       <h3>Ringkasan</h3>
@@ -71,17 +85,17 @@ async function muatRingkas(e) {
 }
 
 async function muat() {
-  const saya = await apiGet('/api/proyekblok/saya', { auth: true });
-  if (!adalahPimpinan(saya)) {
-    isi.innerHTML = `<div class="kartu"><h3>Khusus kaprodi dan admin</h3>
-      <p class="meta">Pantauan proyek kerja tingkat prodi hanya bisa dibuka kaprodi (untuk prodinya) dan admin. Yang sedang memakai peran dosen: pilih peran kaprodi atau admin di pojok kanan atas.</p>
-      <a class="aksi" href="saya.html">Kembali ke Beranda Saya</a></div>`;
-    return;
-  }
+  const saya = await sayaSekarang;
+  if (!halamanUntuk(saya, ['kaprodi', 'admin'], {
+    judul: 'Pantau Proyek Kerja',
+    pesan: 'Pantauan proyek kerja tingkat prodi dibuka kaprodi (untuk prodinya) dan admin (semua prodi).',
+  })) return;
   const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
   const boleh = prodiPimpinan(saya);
   isi.innerHTML = kartuSaring(boleh ? prodi.filter(p => boleh.includes(p.kode)) : prodi, !boleh);
-  document.getElementById('form-saring').addEventListener('submit', muatRingkas);
+  const form = document.getElementById('form-saring');
+  pilihProdiBawaan(form.elements.prodi, saya);
+  form.addEventListener('submit', muatRingkas);
   await muatRingkas();
 }
 

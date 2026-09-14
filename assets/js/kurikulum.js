@@ -1,5 +1,6 @@
 import { apiGet, apiPostJson, isLoggedIn, arahkanKeLogin } from './api.js';
-import { adalahAdmin, adalahPimpinan, prodiPimpinan } from './akun.js';
+import { sayaSekarang, adalahAdmin, prodiPimpinan } from './akun.js';
+import { esc, halamanUntuk, keadaanKosong, istilah, labelTabel, opsiModa, pilihProdiBawaan } from './ui.js';
 
 // Pengisian kurikulum program studi. Kaprodi mengisi kurikulum prodinya; admin
 // hanya membuat program studi baru (keputusan pemilik produk 2026-09-14: peran
@@ -13,9 +14,12 @@ import { adalahAdmin, adalahPimpinan, prodiPimpinan } from './akun.js';
 // Mata kuliah sengaja tidak punya formulir sendiri: ia diturunkan dari daftar
 // mata kuliah tiap rumpun saat rumpunnya disimpan, jadi dokumen kurikulum
 // tetap satu-satunya sumber.
+//
+// Audit UX 2026-09-14: tabel berisi tombol Sunting dan isian ritme menjadi
+// kartu bertumpuk di HP (labelTabel), prodi bawaan = prodi yang dipimpin,
+// istilah (rumpun, CPL, SKS, ritme mingguan) bisa diketuk untuk dijelaskan.
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 
 const MODA_SESI = ['asinkron', 'daring_sinkron', 'opsional_luring_daring', 'bebas'];
@@ -33,16 +37,23 @@ function opsiProdi() {
 }
 
 function tabelProdi() {
-  if (!prodi.length) return '<div class="kosong">Belum ada program studi.</div>';
-  return `<div class="gulir"><table>
-    <tr><th>Kode</th><th>Nama</th><th class="num">SKS</th><th class="num">Semester</th><th>Jenjang</th><th class="num">Proyek kerja mulai</th></tr>
+  if (!prodi.length) {
+    return keadaanKosong({
+      judul: 'Belum ada program studi',
+      keterangan: 'Program studi dibuat admin; setelah itu admin menetapkan kaprodinya, dan kaprodi mengisi kurikulumnya.',
+      siapa: 'admin',
+      aksi: null,
+    });
+  }
+  return `<div class="gulir"><table data-tabel-kartu>
+    <thead><tr><th>Kode</th><th>Nama</th><th class="num">SKS</th><th class="num">Semester</th><th>Jenjang</th><th class="num">Proyek kerja mulai</th></tr></thead><tbody>
     ${prodi.map(p => `<tr>
       <td><code>${esc(p.kode)}</code></td><td>${esc(p.nama)}</td>
       <td class="num">${esc(p.sks_total)}</td><td class="num">${esc(p.semester)}</td>
       <td>${esc(p.jenjang)}</td>
-      <td class="num">${p.semester_proyek_kerja_min ? `semester ${esc(p.semester_proyek_kerja_min)}` : '<span class="redup">bawaan</span>'}</td>
+      <td class="num">${p.semester_proyek_kerja_min ? `semester ${esc(p.semester_proyek_kerja_min)}` : '<span class="redup">semester 4 (bawaan)</span>'}</td>
     </tr>`).join('')}
-  </table></div>`;
+  </tbody></table></div>`;
 }
 
 function isianKodeProdi() {
@@ -52,9 +63,9 @@ function isianKodeProdi() {
 
 function kartuProdi() {
   return `
-    <div class="kartu">
+    <div class="kartu" id="prodi">
       <h3>1. Program Studi</h3>
-      <p class="meta">Kode dipakai sebagai kunci di rumpun, CPL, mata kuliah, roster mahasiswa, dan kalender — huruf kecil, tanpa spasi, dan sebaiknya tidak diubah lagi setelah ada datanya.</p>
+      <div class="meta">Total ${istilah('sks', 'SKS')} dan jumlah semester menjadi batas isian rumpun. Kode dipakai sebagai kunci di rumpun, CPL, mata kuliah, roster mahasiswa, dan kalender — huruf kecil, tanpa spasi, dan sebaiknya tidak diubah lagi setelah ada datanya.</div>
       ${tabelProdi()}
       <h4>${admin ? 'Tambah program studi baru' : 'Perbarui prodi Anda'}</h4>
       ${admin
@@ -93,13 +104,26 @@ function sksBaris(teks) {
 }
 
 function tabelRumpun() {
-  if (!rumpunProdi.length) return '<div class="kosong">Prodi ini belum punya rumpun.</div>';
+  if (!rumpunProdi.length) {
+    const kode = document.getElementById('prodi-rumpun').value.toUpperCase();
+    return keadaanKosong({
+      judul: `${kode} belum punya rumpun`,
+      keterangan: seedProdi.includes(kode.toLowerCase())
+        ? 'Isi rumpun pertama lewat formulir di bawah, atau muat data bawaan platform di kartu 5 lalu sesuaikan.'
+        : 'Isi rumpun pertama lewat formulir di bawah: kode, nama, semester, SKS, dan daftar mata kuliahnya.',
+      siapa: `kaprodi ${kode}`,
+      aksi: seedProdi.includes(kode.toLowerCase())
+        ? [{ href: '#form-rumpun', label: 'Isi rumpun pertama' }, { href: '#seed', label: 'Muat data bawaan' }]
+        : { href: '#form-rumpun', label: 'Isi rumpun pertama' },
+    });
+  }
   const p = prodi.find(x => x.kode === rumpunProdi[0].prodi_kode);
   const total = rumpunProdi.reduce((n, r) => n + (r.sks || 0), 0);
   const draf = rumpunProdi.filter(r => r.catatan).length;
-  return `<p class="redup">${rumpunProdi.length} rumpun · ${total} SKS dari total ${p ? esc(p.sks_total) : '?'} SKS prodi · ${draf} masih draf</p>
-    <div class="gulir"><table>
-    <tr><th>Kode</th><th>Nama</th><th class="num">Smt</th><th class="num">SKS</th><th>Moda</th><th class="num">MK</th><th>CPL</th><th>Status</th><th></th></tr>
+  return `<details class="lipat-tabel"${bukaLipatan()}>
+    <summary>Daftar ${rumpunProdi.length} rumpun · ${total} SKS dari total ${p ? esc(p.sks_total) : '?'} SKS prodi · ${draf} masih draf</summary>
+    <div class="gulir"><table data-tabel-kartu>
+    <thead><tr><th>Kode</th><th>Nama</th><th class="num">Semester</th><th class="num">SKS</th><th>Moda</th><th class="num">Mata kuliah</th><th>CPL</th><th>Status</th><th></th></tr></thead><tbody>
     ${rumpunProdi.map(r => `<tr>
       <td><code>${esc(r.kode)}</code></td><td>${esc(r.nama)}</td>
       <td class="num">${esc(r.semester)}</td><td class="num">${esc(r.sks)}</td>
@@ -107,16 +131,16 @@ function tabelRumpun() {
       <td class="num">${(r.mata_kuliah || []).length}</td>
       <td class="kecil">${esc((r.cpl || []).join(', '))}</td>
       <td>${lencanaStatus(r)}</td>
-      <td><button type="button" class="sekunder" data-aksi="sunting-rumpun" data-kode="${escAttr(r.kode)}">Sunting</button></td>
+      <td><button type="button" class="sekunder" data-aksi="sunting-rumpun" data-kode="${escAttr(r.kode)}" aria-label="Sunting rumpun ${escAttr(r.kode)}">Sunting</button></td>
     </tr>`).join('')}
-  </table></div>`;
+  </tbody></table></div></details>`;
 }
 
 function kartuRumpun() {
   return `
-    <div class="kartu">
+    <div class="kartu" id="rumpun">
       <h3>2. Rumpun Mata Kuliah</h3>
-      <p class="meta">Satu rumpun = satu proyek pengikat per semester. Tekan <b>Sunting</b> untuk meninjau rumpun yang sudah ada — formulir di bawah terisi datanya — lalu simpan dengan kode yang sama. Mata kuliahnya ditulis satu per baris beserta SKS dalam kurung, mis. <code>Fikih Muamalah (3)</code>.</p>
+      <div class="meta">${istilah('rumpun', 'Rumpun')}: satu rumpun = satu proyek pengikat per semester. Tekan <b>Sunting</b> untuk meninjau rumpun yang sudah ada — formulir di bawah terisi datanya — lalu simpan dengan kode yang sama. Mata kuliahnya ditulis satu per baris beserta SKS dalam kurung, mis. <code>Fikih Muamalah (3)</code>.</div>
       <label>Prodi <select id="prodi-rumpun">${opsiProdi()}</select></label>
       <div id="daftar-rumpun"><p class="redup">Memuat rumpun…</p></div>
       <h4 id="judul-form-rumpun">Tambah / perbarui rumpun</h4>
@@ -153,6 +177,7 @@ async function muatRumpun() {
     ({ rumpun: rumpunProdi = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(kode)}/rumpun`));
     rumpunProdi = (rumpunProdi || []).sort((a, b) => (a.semester - b.semester) || a.kode.localeCompare(b.kode, 'id', { numeric: true }));
     wadah.innerHTML = tabelRumpun();
+    labelSemuaTabel(wadah);
   } catch (err) {
     wadah.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
@@ -216,6 +241,11 @@ async function simpanRumpun(e) {
 
 const DOMAIN_CPL = [['sikap', 'Sikap'], ['pengetahuan', 'Pengetahuan'], ['keterampilan_umum', 'Keterampilan umum'], ['keterampilan_khusus', 'Keterampilan khusus']];
 
+function labelDomain(kode) {
+  const d = DOMAIN_CPL.find(([v]) => v === kode);
+  return d ? d[1] : String(kode || '').replace(/_/g, ' ');
+}
+
 function opsiDomain(terpilih) {
   const ada = DOMAIN_CPL.some(([v]) => v === terpilih);
   // Domain lama di luar empat pilihan (mis. "ket. umum" dari seed TRPL) tetap
@@ -225,23 +255,33 @@ function opsiDomain(terpilih) {
 }
 
 function tabelCPL() {
-  if (!cplProdi.length) return '<div class="kosong">Prodi ini belum punya CPL.</div>';
-  return `<div class="gulir"><table>
-    <tr><th>Kode</th><th>Domain</th><th>Rumusan</th><th>Rumpun penyentuh</th><th></th></tr>
+  if (!cplProdi.length) {
+    const kode = document.getElementById('prodi-cpl').value.toUpperCase();
+    return keadaanKosong({
+      judul: `${kode} belum punya CPL`,
+      keterangan: 'Salin rumusan capaian pembelajaran dari dokumen kurikulum prodi ke formulir di bawah, satu CPL per simpan. Laporan kepatuhan memakai daftar ini.',
+      siapa: `kaprodi ${kode}`,
+      aksi: { href: '#form-cpl', label: 'Isi CPL pertama' },
+    });
+  }
+  return `<details class="lipat-tabel"${bukaLipatan()}>
+    <summary>Daftar ${cplProdi.length} CPL</summary>
+    <div class="gulir"><table data-tabel-kartu>
+    <thead><tr><th>Kode</th><th>Domain</th><th>Rumusan</th><th>Rumpun penyentuh</th><th></th></tr></thead><tbody>
     ${cplProdi.map(c => `<tr>
-      <td><code>${esc(c.kode)}</code></td><td>${esc(c.domain)}</td>
+      <td><code>${esc(c.kode)}</code></td><td>${esc(labelDomain(c.domain))}</td>
       <td class="kecil">${esc(c.deskripsi || '')}${(c.penopang_lain || []).length ? `<br><span class="redup">Penopang lain: ${esc(c.penopang_lain.join(', '))}</span>` : ''}</td>
       <td class="kecil">${esc((c.rumpun_penyentuh || []).join(', '))}</td>
-      <td><button type="button" class="sekunder" data-aksi="sunting-cpl" data-kode="${escAttr(c.kode)}">Sunting</button></td>
+      <td><button type="button" class="sekunder" data-aksi="sunting-cpl" data-kode="${escAttr(c.kode)}" aria-label="Sunting ${escAttr(c.kode)}">Sunting</button></td>
     </tr>`).join('')}
-  </table></div>`;
+  </tbody></table></div></details>`;
 }
 
 function kartuCPL() {
   return `
-    <div class="kartu">
+    <div class="kartu" id="cpl">
       <h3>3. Capaian Pembelajaran (CPL)</h3>
-      <p class="meta">Teks CPL datang dari dokumen kurikulum prodi, jangan ditebak. Tekan <b>Sunting</b> untuk meninjau CPL yang sudah ada. Penguatan usulan dan penopang lain tidak diubah dari halaman ini dan tetap dipertahankan saat CPL disimpan.</p>
+      <div class="meta">${istilah('cpl', 'CPL')} ditulis sekali per prodi dan dirujuk rumpun lewat kodenya. Teks CPL datang dari dokumen kurikulum prodi, jangan ditebak. Tekan <b>Sunting</b> untuk meninjau CPL yang sudah ada. Penguatan usulan dan penopang lain tidak diubah dari halaman ini dan tetap dipertahankan saat CPL disimpan.</div>
       <label>Prodi <select id="prodi-cpl">${opsiProdi()}</select></label>
       <div id="daftar-cpl"><p class="redup">Memuat CPL…</p></div>
       <h4 id="judul-form-cpl">Tambah / perbarui CPL</h4>
@@ -264,6 +304,7 @@ async function muatCPL() {
     ({ cpl: cplProdi = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(kode)}/cpl`));
     cplProdi = (cplProdi || []).sort((a, b) => a.kode.localeCompare(b.kode, 'id', { numeric: true }));
     wadah.innerHTML = tabelCPL();
+    labelSemuaTabel(wadah);
   } catch (err) {
     wadah.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
@@ -305,12 +346,12 @@ async function simpanCPL(e) {
 function barisSesiRitme(sesi = {}) {
   return `<tr>
     <td><select name="hari">${HARI.map(h => `<option${h === sesi.hari ? ' selected' : ''}>${h}</option>`).join('')}</select></td>
-    <td><select name="moda">${MODA_SESI.map(m => `<option value="${m}"${m === sesi.moda ? ' selected' : ''}>${esc(m)}</option>`).join('')}</select></td>
-    <td><input name="jam_mulai" placeholder="08:00" size="6" value="${escAttr(sesi.jam_mulai || '')}"></td>
-    <td><input name="jam_selesai" placeholder="10:00" size="6" value="${escAttr(sesi.jam_selesai || '')}"></td>
+    <td><select name="moda">${opsiModa(sesi.moda, MODA_SESI.includes(sesi.moda) || !sesi.moda ? MODA_SESI : [...MODA_SESI, sesi.moda])}</select></td>
+    <td><input name="jam_mulai" placeholder="08:00" size="6" inputmode="numeric" value="${escAttr(sesi.jam_mulai || '')}"></td>
+    <td><input name="jam_selesai" placeholder="10:00" size="6" inputmode="numeric" value="${escAttr(sesi.jam_selesai || '')}"></td>
     <td><input name="menit" type="number" min="0" size="5" value="${escAttr(sesi.menit_instruksional || 0)}"></td>
     <td><input name="catatan" placeholder="opsional" value="${escAttr(sesi.catatan || '')}"></td>
-    <td><button type="button" class="sekunder" data-aksi="hapus-baris-ritme" aria-label="Hapus baris">×</button></td>
+    <td><button type="button" class="sekunder" data-aksi="hapus-baris-ritme" aria-label="Hapus baris ini" title="Hapus baris ini">×</button></td>
   </tr>`;
 }
 
@@ -320,9 +361,9 @@ function barisBawaanRitme() {
 
 function kartuRitme() {
   return `
-    <div class="kartu">
+    <div class="kartu" id="ritme">
       <h3>4. Ritme Mingguan</h3>
-      <p class="meta">Pola satu minggu yang diulang jadi kalender semester. Isi ini hanya kalau prodi memakai pola yang berbeda dari yang sudah ada — kalender memilih ritme lewat namanya.</p>
+      <div class="meta">${istilah('ritme mingguan', 'Ritme mingguan')}: pola satu minggu yang diulang jadi kalender semester. Kalender belum bisa disusun sebelum ada ritme. Isi ini hanya kalau prodi memakai pola yang berbeda dari yang sudah ada — kalender memilih ritme lewat namanya.</div>
       ${'<p class="redup">Ritme dipakai kalender lewat namanya. Ritme yang sudah ada boleh Anda ubah selama tidak dipakai kalender prodi lain; kalau dipakai, simpan pola prodi Anda dengan nama ritme baru.</p>'}
       <label>Muat ritme <select id="pilih-ritme">
         <option value="">(ritme baru)</option>
@@ -330,7 +371,7 @@ function kartuRitme() {
       </select></label>
       <form id="form-ritme">
         <label>Nama ritme <input name="nama" required placeholder="Ritme PAI — Semester 1-6"></label>
-        <div class="gulir"><table class="tabel-sunting">
+        <div class="gulir"><table class="tabel-sunting tabel-ritme" data-tabel-kartu>
           <thead><tr><th>Hari</th><th>Moda</th><th>Jam mulai</th><th>Jam selesai</th><th class="num">Menit</th><th>Catatan</th><th></th></tr></thead>
           <tbody id="sesi-ritme">${barisBawaanRitme()}</tbody>
         </table></div>
@@ -360,6 +401,7 @@ function muatRitmeKeFormulir(nama) {
   const r = ritme.find(x => x.nama === nama);
   f.elements.nama.value = r ? r.nama : '';
   document.getElementById('sesi-ritme').innerHTML = r ? r.sesi.map(s => barisSesiRitme(s)).join('') : barisBawaanRitme();
+  labelTabel(document.querySelector('.tabel-ritme'));
   document.getElementById('pesan-ritme').innerHTML = '';
   perbaruiRingkasRitme();
 }
@@ -400,7 +442,7 @@ function prodiBerSeedDikelola() {
 function kartuSeed() {
   const pilihan = prodiBerSeedDikelola();
   return `
-    <div class="kartu">
+    <div class="kartu" id="seed">
       <h3>5. Data Bawaan (Seed)</h3>
       <p class="meta">Menulis ulang data prodi, rumpun, dan CPL bawaan platform untuk satu prodi, lalu menurunkan mata kuliahnya. Hanya tampil untuk prodi yang punya data bawaan.</p>
       <form id="form-seed">
@@ -410,6 +452,17 @@ function kartuSeed() {
       </form>
       <div id="pesan-seed"></div>
     </div>`;
+}
+
+// Di HP daftar rumpun dan CPL (belasan kartu) terlipat supaya formulir di
+// bawahnya tidak tertimbun; di layar lebar terbuka.
+function bukaLipatan() {
+  return window.matchMedia('(min-width: 621px)').matches ? ' open' : '';
+}
+
+// Tabel berisi kontrol (dan tabel prodi) menjadi kartu bertumpuk di HP.
+function labelSemuaTabel(wadah) {
+  wadah.querySelectorAll('table[data-tabel-kartu]').forEach(t => labelTabel(t));
 }
 
 function daftarDari(teks, pemisah) {
@@ -491,6 +544,7 @@ function pasang() {
     else if (aksi === 'kosongkan-cpl') kosongkanCPL();
     else if (aksi === 'tambah-baris-ritme') {
       document.getElementById('sesi-ritme').insertAdjacentHTML('beforeend', barisSesiRitme({ hari: 'Senin', moda: 'asinkron' }));
+      labelTabel(document.querySelector('.tabel-ritme'));
       perbaruiRingkasRitme();
     } else if (aksi === 'hapus-baris-ritme') {
       b.closest('tr').remove();
@@ -512,11 +566,20 @@ function isiDataProdi(form) {
 }
 
 async function muat() {
-  const saya = await apiGet('/api/proyekblok/saya', { auth: true });
+  const saya = await sayaSekarang;
   ({ prodi = [] } = await apiGet('/api/kurikulum/prodi'));
-  if (!adalahPimpinan(saya)) {
-    isi.innerHTML = `<div class="kartu"><h3>Program Studi</h3>${tabelProdi()}</div>
-      <div class="kosong">Kurikulum hanya bisa diubah kaprodi prodi itu. Kalau Anda kaprodi yang sedang memakai peran dosen, pilih peran kaprodi di pojok kanan atas.</div>`;
+  // Dosen biasa dan mahasiswa hanya membaca daftar prodi. Pemberitahuan peran
+  // ditulis di wadahnya sendiri supaya tabel bacaan tetap tampil.
+  isi.innerHTML = '<div id="catatan-peran"></div>';
+  if (!halamanUntuk(saya, ['kaprodi', 'admin'], {
+    judul: 'Mengubah kurikulum',
+    pesan: 'Kurikulum diisi kaprodi untuk prodinya; admin hanya membuat program studi baru. Daftar program studi di bawah tetap bisa Anda baca.',
+    wadah: document.getElementById('catatan-peran'),
+  })) {
+    isi.insertAdjacentHTML('beforeend', `<div class="kartu"><h3>Program Studi</h3>
+      <div class="meta">Setiap program studi punya total ${istilah('sks', 'SKS')}, ${istilah('rumpun')} mata kuliah, dan ${istilah('cpl', 'CPL')} sendiri.</div>
+      ${tabelProdi()}</div>`);
+    labelSemuaTabel(isi);
     return;
   }
   admin = adalahAdmin(saya);
@@ -535,8 +598,14 @@ async function muat() {
   // Admin: hanya kartu prodi baru. Kaprodi: seluruh kartu untuk prodinya.
   isi.innerHTML = kartuProdi() + (prodiDikelola.length ? kartuRumpun() + kartuCPL() + kartuRitme() : '')
     + (prodiBerSeedDikelola().length ? kartuSeed() : '');
+  labelSemuaTabel(isi);
+  // Prodi bawaan (yang dipimpin) terpilih sebelum rumpun/CPL dimuat di pasang().
+  ['prodi-rumpun', 'prodi-cpl'].forEach(id => pilihProdiBawaan(document.getElementById(id), saya));
+  const formSeed = document.getElementById('form-seed');
+  if (formSeed) pilihProdiBawaan(formSeed.elements.prodi, saya);
   const formProdi = document.getElementById('form-prodi');
   if (!admin) {
+    pilihProdiBawaan(formProdi.elements.kode, saya);
     isiDataProdi(formProdi);
     formProdi.elements.kode.addEventListener('change', () => isiDataProdi(formProdi));
   }

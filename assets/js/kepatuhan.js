@@ -1,13 +1,13 @@
 import { apiGet, isLoggedIn, arahkanKeLogin } from './api.js';
-import { adalahPimpinan, prodiPimpinan } from './akun.js';
+import { sayaSekarang, prodiPimpinan } from './akun.js';
+import { esc, halamanUntuk, keadaanKosong, istilah, labelModa, prodiBawaan } from './ui.js';
 
-// Laporan Kepatuhan per Mata Kuliah untuk akreditasi. Khusus dosen/admin —
+// Laporan Kepatuhan per Mata Kuliah untuk akreditasi. Khusus kaprodi/admin —
 // kewenangannya dicek backend (403). Ekspornya halaman ini sendiri: tombol
 // cetak memakai dialog cetak peramban (simpan sebagai PDF), tanpa berkas di
 // server — keputusan pemilik produk 2026-09-13.
 
 const isi = document.getElementById('isi');
-function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 function angka(n) { return typeof n === 'number' ? n.toLocaleString('id-ID', { maximumFractionDigits: 1 }) : '–'; }
 
@@ -21,7 +21,7 @@ function formPilih(kalender) {
   return `
     <div class="kartu tidak-cetak">
       <h3>Pilih Kalender Semester</h3>
-      <p class="meta">Hanya kalender yang sudah diterbitkan yang bisa dilaporkan: yang dilampirkan ke borang harus jadwal resmi yang dilihat mahasiswa.</p>
+      <div class="meta">Laporan ${istilah('kepatuhan')} membandingkan menit kegiatan terjadwal tiap mata kuliah dengan tuntutan ${istilah('sks', 'SKS')}-nya. Hanya kalender yang sudah diterbitkan yang bisa dilaporkan: yang dilampirkan ke borang harus jadwal resmi yang dilihat mahasiswa.</div>
       <form id="form-laporan">
         <label>Kalender terbit <select name="kalender" required>${opsi}</select></label>
         <div class="cta-row">
@@ -39,7 +39,7 @@ function barisMenit(m) {
 }
 
 function kepalaMenit(adaLain) {
-  return `<th class="num">Asinkron</th><th class="num">Daring sinkron</th><th class="num">Opsional luring/daring</th>${adaLain ? '<th class="num">Lain</th>' : ''}<th class="num">Total</th>`;
+  return `<th class="num">${esc(labelModa('asinkron'))}</th><th class="num">${esc(labelModa('daring_sinkron'))}</th><th class="num">${esc(labelModa('opsional_luring_daring'))}</th>${adaLain ? '<th class="num">Lain</th>' : ''}<th class="num">Total</th>`;
 }
 
 function tabelMataKuliah(lap) {
@@ -106,7 +106,12 @@ function laporanHtml(lap) {
 }
 
 function rekapHtml(r) {
-  if (!r.per_angkatan.length) return `<p class="redup">Belum ada angkatan dengan kalender terbit untuk ${esc(r.kode)}.</p>`;
+  if (!r.per_angkatan.length) return keadaanKosong({
+    judul: `Belum ada angkatan dengan kalender terbit untuk ${r.kode}`,
+    keterangan: 'Rekap lintas angkatan muncul setelah mata kuliah ini dijadwalkan di kalender semester yang diterbitkan.',
+    siapa: 'kaprodi',
+    aksi: { href: 'kalender.html', label: 'Buka Kalender' },
+  });
   return `
     <h4>Lintas angkatan: ${esc(r.nama)} (${esc(r.sks)} SKS, semester ${esc(r.semester)})</h4>
     <div class="gulir"><table>
@@ -157,16 +162,25 @@ async function tampilRekap(kode) {
 }
 
 async function muat() {
-  const saya = await apiGet('/api/proyekblok/saya', { auth: true });
-  if (!adalahPimpinan(saya)) {
-    isi.innerHTML = '<div class="kosong">Laporan kepatuhan hanya untuk kaprodi (prodinya sendiri) dan admin. Yang sedang memakai peran dosen: pilih peran kaprodi atau admin di pojok kanan atas.</div>';
-    return;
-  }
+  const saya = await sayaSekarang;
+  if (!halamanUntuk(saya, ['kaprodi', 'admin'], {
+    judul: 'Laporan Kepatuhan',
+    pesan: 'Laporan kepatuhan untuk akreditasi dibuka kaprodi (prodinya sendiri) dan admin (semua prodi).',
+  })) return;
   const boleh = prodiPimpinan(saya);
   const { kalender: semuaKalender = [] } = await apiGet('/api/kalender');
-  const kalender = boleh ? semuaKalender.filter(k => boleh.includes(k.prodi_kode)) : semuaKalender;
+  // Prodi bawaan (kaprodi: prodi yang dipimpin) di urutan pertama.
+  const bawaan = prodiBawaan(saya);
+  const kalender = (boleh ? semuaKalender.filter(k => boleh.includes(k.prodi_kode)) : semuaKalender)
+    .sort((a, b) => Number(b.prodi_kode === bawaan) - Number(a.prodi_kode === bawaan));
   if (!kalender.length) {
-    isi.innerHTML = '<div class="kosong">Belum ada kalender semester yang diterbitkan, jadi belum ada yang bisa dilaporkan. Terbitkan kalender di halaman <a href="kalender.html">Kalender</a>.</div>';
+    const kode = boleh && boleh.length ? boleh.join(', ').toUpperCase() : '';
+    isi.innerHTML = keadaanKosong({
+      judul: `Belum ada kalender semester ${kode ? `${kode} ` : ''}yang diterbitkan`,
+      keterangan: 'Laporan kepatuhan disusun dari kalender yang sudah terbit, jadi belum ada yang bisa dilaporkan. Susun draft kalender dari ritme mingguan, periksa sesinya, lalu terbitkan.',
+      siapa: kode ? `kaprodi ${kode}` : 'kaprodi tiap program studi',
+      aksi: kode ? [{ href: 'kalender.html', label: 'Susun kalender' }, { href: 'kurikulum.html#ritme', label: 'Periksa ritme mingguan' }] : { href: 'kalender.html', label: 'Buka Kalender' },
+    });
     return;
   }
   isi.innerHTML = formPilih(kalender) + '<div id="laporan"></div>';

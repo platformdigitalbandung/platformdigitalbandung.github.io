@@ -1,0 +1,142 @@
+/* Halaman kelompok kaprodi & admin: Kurikulum, Kelola Kaprodi, Dosen Pengampu,
+   Pantau Proyek Kerja, Laporan Kepatuhan, Kalender Akademik.
+   Ditautkan sesudah style.css; hanya kelas milik halaman-halaman ini. */
+
+/* ===== Kurikulum: ritme mingguan (R03) ===== */
+#sesi-ritme input, #sesi-ritme select { min-width: 0; max-width: 100%; }
+#sesi-ritme input[name="menit"] { width: 5.5em; }
+@media (max-width: 620px) {
+  #sesi-ritme input[name="menit"] { width: 100%; }
+  /* Tombol × hapus baris: rata kanan kartu. */
+  .tabel-ritme.tabel-kartu td[data-label=""] button { justify-self: end; }
+}
+
+/* Sel sunting keterangan (kalender) punya min-width 14em dari style.css yang
+   lebih spesifik dari aturan kartu; di HP harus boleh menyempit. */
+@media (max-width: 620px) {
+  table.tabel-kartu.tabel-sunting input[name="keterangan"] { min-width: 0; }
+}
+
+/* Bagian yang ditautkan (#ritme, #form-rumpun) tidak tertutup tepi atas. */
+.kartu[id], form[id] { scroll-margin-top: 1rem; }
+
+/* Blok .meta berbentuk div (memuat istilah yang bisa diketuk). */
+div.meta { line-height: 1.55; }
+
+/* Lipatan "belum mengisi email kampus" (Pengampu, Kelola Kaprodi) */
+.lipat-belum-email { margin-top: 1rem; border-top: 1px solid var(--garis-halus); padding-top: .6rem; }
+.lipat-belum-email > summary { cursor: pointer; color: var(--redup); font-size: .86rem; padding: .35rem 0; }
+.lipat-belum-email .daftar-ringkas li { padding: .4rem 0; }
+
+/* ===== Dosen Pengampu: daftar centang (U12, R04) ===== */
+.kelompok-pengampu { border: 1px solid var(--garis); border-radius: var(--radius); margin: .8rem 0 0; padding: .2rem 0 0; min-width: 0; }
+.kelompok-pengampu legend { font-weight: 600; font-size: .9rem; padding: 0 .4rem; margin-left: .6rem; }
+.kelompok-pengampu legend .redup { font-weight: 400; }
+label.pilih-dosen {
+  display: flex; align-items: center; gap: .7rem; margin: 0; min-height: 48px;
+  padding: .45rem .9rem; border-top: 1px solid var(--garis-halus); cursor: pointer; font-weight: 400;
+}
+label.pilih-dosen:first-of-type { border-top: 0; }
+label.pilih-dosen:hover { background: var(--aksen-muda); }
+label.pilih-dosen input[type="checkbox"] { margin: 0; flex: none; }
+label.pilih-dosen:has(input:checked) { background: #f3f8fc; }
+.pilih-dosen-teks { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.pilih-dosen-nama { font-weight: 500; }
+.pilih-dosen-teks .redup { font-size: .8rem; }
+.bilah-simpan { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-top: .9rem; }
+.bilah-simpan button { margin-top: 0; }
+.bilah-simpan .redup { font-size: .84rem; }
+
+/* ===== Kalender: saringan prodi & sesi terlipat per minggu (U05, U11) ===== */
+.kartu-saring { display: grid; grid-template-columns: minmax(0, 1fr); gap: .2rem; }
+.saring-kalender { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .8rem; }
+.saring-kalender label { margin: 0; }
+.saring-kalender select { width: auto; min-width: 0; max-width: 100%; flex: 1 1 16rem; }
+.kartu-saring .meta { margin-bottom: 0; }
+
+.daftar-minggu { border: 1px solid var(--garis); border-radius: var(--radius); overflow: hidden; }
+details.minggu + details.minggu { border-top: 1px solid var(--garis); }
+details.minggu > summary {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .7rem;
+  padding: .6rem .9rem .6rem 2rem; min-height: 44px; cursor: pointer; list-style: none; position: relative;
+  background: #fafbfc;
+}
+details.minggu > summary::-webkit-details-marker { display: none; }
+details.minggu > summary::before {
+  content: ""; position: absolute; left: .95rem; top: 50%; width: .45rem; height: .45rem;
+  border-right: 2px solid var(--redup); border-bottom: 2px solid var(--redup);
+  transform: translateY(-65%) rotate(-45deg); transition: transform .15s;
+}
+details.minggu[open] > summary::before { transform: translateY(-75%) rotate(45deg); }
+details.minggu > summary:hover { background: var(--aksen-muda); }
+details.minggu[open] > summary { border-bottom: 1px solid var(--garis-halus); }
+.minggu-judul { font-weight: 600; font-size: .9rem; }
+.minggu-tanggal { color: var(--redup); font-size: .84rem; }
+
+.daftar-sesi { list-style: none; margin: 0; padding: 0; }
+.kartu .daftar-sesi { padding-left: 0; }
+li.sesi {
+  display: grid; grid-template-columns: 11rem minmax(12rem, 18rem) 8.5rem minmax(0, 1fr);
+  gap: .2rem .9rem; align-items: baseline; padding: .5rem .9rem .5rem 2rem;
+  border-top: 1px solid var(--garis-halus); font-size: .86rem;
+}
+li.sesi:first-child { border-top: 0; }
+.sesi-hari { font-weight: 500; }
+.sesi-jam { font-family: var(--mono); font-size: .8rem; color: var(--tinta); }
+.sesi-ket { color: var(--redup); font-size: .8rem; }
+li.sesi-bebas { color: var(--redup); }
+li.sesi-bebas .sesi-hari { font-weight: 400; }
+
+.sesi-moda { display: inline-block; padding-left: .5rem; border-left: 3px solid var(--garis-kuat); }
+.sesi-moda.moda-asinkron { border-left-color: #7a9cc0; }
+.sesi-moda.moda-daring_sinkron { border-left-color: var(--aksen); }
+.sesi-moda.moda-opsional_luring_daring { border-left-color: var(--rendah); }
+.sesi-moda.moda-luring { border-left-color: var(--rendah); }
+.sesi-moda.moda-bebas { border-left-color: var(--garis); color: var(--redup); }
+
+@media (max-width: 900px) {
+  li.sesi { grid-template-columns: 9.5rem minmax(0, 1fr); }
+  .sesi-jam { grid-column: 2; }
+  .sesi-ket { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  details.minggu > summary { padding-left: 1.9rem; }
+  li.sesi { grid-template-columns: minmax(0, 1fr) auto; padding-left: 1rem; padding-right: .8rem; }
+  .sesi-hari { grid-column: 1; }
+  .sesi-jam { grid-column: 2; grid-row: 1; text-align: right; }
+  .sesi-moda { grid-column: 1 / -1; }
+}
+
+@media print {
+  details.minggu > summary::before { display: none; }
+  details.minggu > summary { padding-left: .9rem; }
+}
+
+/* Lencana di sel tabel-kartu tidak melebar selebar sel. */
+@media (max-width: 620px) {
+  table.tabel-kartu td > .lencana, table.tabel-kartu td > code { justify-self: start; }
+  /* Tabel sunting (ritme, sesi kalender): kolom label sempit, isian lebar. */
+  .tabel-ritme.tabel-kartu td, details.minggu table.tabel-kartu td { grid-template-columns: 5.5rem minmax(0, 1fr); }
+  .tabel-ritme.tabel-kartu td[data-label=""] { grid-template-columns: minmax(0, 1fr); }
+  .tabel-ritme select[name="moda"] { max-width: 100%; }
+}
+
+/* Kurikulum: daftar rumpun/CPL yang bisa dilipat (terlipat di HP). */
+details.lipat-tabel { margin: .6rem 0; }
+details.lipat-tabel > summary {
+  cursor: pointer; padding: .55rem .2rem; min-height: 44px; font-size: .86rem; color: var(--redup);
+  display: list-item;
+}
+details.lipat-tabel[open] > summary { margin-bottom: .2rem; }
+
+/* Kurikulum: tabel ritme muat tanpa digulir di tablet (≥ 621px). */
+.tabel-ritme select[name="moda"] { max-width: 13rem; }
+.tabel-ritme input[name="catatan"] { width: 100%; min-width: 6rem; }
+
+/* Kalender: form sunting sesi di dalam lipatan minggu. */
+details.minggu .gulir { margin: 0; }
+details.minggu .tabel-sunting th:first-child, details.minggu .tabel-sunting td:first-child { padding-left: 2rem; }
+@media (max-width: 620px) {
+  details.minggu table.tabel-kartu td:first-child { padding-left: 0; }
+  details.minggu table.tabel-kartu tr { padding-left: 1rem; padding-right: .8rem; }
+}
