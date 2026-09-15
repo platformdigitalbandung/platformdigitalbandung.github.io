@@ -1,4 +1,4 @@
-import { getJSON, postJSON, putJSON, deleteJSON, postFile, postFileJSON } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/api.min.js';
+import { getJSON, postJSON, putJSON, deleteJSON, postFileJSON } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/api.min.js';
 import { getCookie, deleteCookie, setCookieWithExpireHour } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/cookie.min.js';
 import { redirect } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/url.min.js';
 import { API_BASE } from './config.js';
@@ -63,10 +63,11 @@ export function apiDeleteJson(path) {
     deleteJSON(API_BASE + path, undefined, menurutStatus(resolve, reject), nama, nilai));
 }
 
-// Unggah berkas untuk rute yang MEMBUTUHKAN token. postFileJSON crootjs
-// mengirim header Authorization dan membalas {status, data} — bentuk yang sama
-// dengan getJSON/postJSON, jadi galatnya ikut membawa status HTTP. Field teks
-// dikirim lewat query string, sama seperti apiPostBerkas.
+// Unggah berkas (semua rute unggah butuh token sejak 2026-09-14). postFileJSON
+// crootjs mengirim header Authorization dan membalas {status, data} — bentuk
+// yang sama dengan getJSON/postJSON, jadi galatnya ikut membawa status HTTP.
+// postFileJSON hanya mengirim satu field berkas dari elemen input, jadi field
+// teks dikirim lewat query string (backend membaca keduanya lewat c.FormValue).
 //
 // Hanya satu berkas per kiriman (crootjs mengambil input.files[0]).
 export function apiPostBerkasToken(path, fields, inputId, namaField) {
@@ -74,24 +75,6 @@ export function apiPostBerkasToken(path, fields, inputId, namaField) {
   const url = API_BASE + path + '?' + new URLSearchParams(fields);
   return new Promise((resolve, reject) =>
     postFileJSON(url, nama, nilai, inputId, namaField, menurutStatus(resolve, reject)));
-}
-
-// PERHATIAN: apiPostBerkas TIDAK mengirim token — postFile crootjs tidak punya
-// parameter header sama sekali. Aman hanya untuk rute publik seperti kirim
-// tugas; untuk rute yang butuh token pakai apiPostBerkasToken di atas.
-//
-// postFile crootjs hanya mengirim satu field berkas dari elemen input, jadi field
-// teks dikirim lewat query string (backend membaca keduanya lewat c.FormValue).
-// Callback-nya menerima JSON balasan, atau null kalau jaringan gagal, timeout,
-// atau balasan bukan JSON.
-export function apiPostBerkas(path, fields, inputId, namaField) {
-  const url = API_BASE + path + '?' + new URLSearchParams(fields);
-  return new Promise((resolve, reject) =>
-    postFile(url, inputId, namaField, (data) => {
-      if (data === null) reject(new Error(PESAN_TIDAK_TERJANGKAU));
-      else if (data.detail) reject(new Error(data.detail));
-      else resolve(data);
-    }));
 }
 
 export function isLoggedIn() {

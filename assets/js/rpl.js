@@ -4,8 +4,7 @@ import { esc, keadaanKosong, istilah } from './ui.js';
 
 // Rekognisi Pembelajaran Lampau. Mahasiswa mengajukan (NIM diambil server dari
 // roster lewat token) dengan satu berkas bukti; dosen menyaring dan meninjau.
-// Pengajuan butuh token, jadi unggahnya lewat apiPostBerkasToken — apiPostBerkas
-// biasa tidak mengirim Authorization sama sekali.
+// Pengajuan butuh token, jadi unggahnya lewat apiPostBerkasToken (api.js).
 
 const isi = document.getElementById('isi');
 

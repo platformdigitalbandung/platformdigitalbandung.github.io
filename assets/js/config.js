@@ -4,7 +4,7 @@
 // Sebelumnya menunjuk ke tunnel trycloudflare.com sementara yang sudah mati
 // (DNS tidak lagi resolve) — diperbaiki ke backend produksi asli.
 //
-// PENTING: setiap pemanggil (apiGet/apiPostJson/apiPostBerkas di api.js) sudah
+// PENTING: setiap pemanggil (apiGet/apiPostJson/apiPostBerkasToken di api.js) sudah
 // menyertakan awalan "/api/..." sendiri di argumen path-nya (kecuali
 // "/health", yang memang rute akar, bukan di bawah /api) — jadi API_BASE di
 // sini TIDAK boleh diberi akhiran "/api", atau semua panggilan selain health
