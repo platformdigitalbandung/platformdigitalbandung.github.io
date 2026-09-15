@@ -68,7 +68,7 @@ function render() {
   isi.innerHTML = `
     <div class="kartu">
       <h3>Dosen Pengampu ${esc(kode)}</h3>
-      <div class="meta">Centang dosen ${istilah('pengampu')} prodi Anda, yaitu dosen yang mengajar di prodi ini, lalu tekan <b>Simpan perubahan</b>. Dosen yang dicentang bisa menyusun kuis gerbang dan mengelola katalog materi prodi Anda. Anda sendiri sebagai kaprodi otomatis termasuk.</div>
+      <div class="meta">Centang dosen ${istilah('pengampu')} prodi Anda, yaitu dosen yang mengajar di prodi ini, lalu tekan <b>Simpan perubahan</b>. Dosen yang dicentang bisa menyusun kuis gerbang, mengelola katalog materi, membuat tugas, dan menerbitkan rekaman sesi untuk prodi Anda. Anda sendiri sebagai kaprodi otomatis termasuk.</div>
       ${siap.length
         ? `<form id="form-pengampu">
             ${prodiSaya.map(p => daftarProdi(p, siap)).join('')}

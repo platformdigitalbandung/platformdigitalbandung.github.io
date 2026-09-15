@@ -69,7 +69,7 @@ function render(hasil) {
   if (!wadah) return;
   const dalam = wadah.parentElement;
   const keluar = '<button type="button" class="tautan-tombol" data-keluar>Keluar</button>';
-  const tentang = '<a class="tautan-tentang" href="program.html">Tentang program</a>';
+  const tentang = '<a class="tautan-tentang" href="program.html">Tentang program</a><a class="tautan-tentang" href="panduan/">Panduan</a>';
   let ringkas = '';
   let lembarAkun = null;
 
@@ -96,6 +96,7 @@ function render(hasil) {
       </a>
       ${bisaPilih ? pemilihPeran(saya) : `<span class="peran">${esc(peran)}</span>`}
       ${nomorInduk ? `<span class="nomor-induk">${esc(nomorInduk)}</span>` : ''}
+      <a class="tautan-tentang" href="${tautanPanduan(sah ? saya : null)}" title="Panduan pemakaian untuk peran Anda">Panduan</a>
       ${keluar}`;
 
     const peranPendek = sah ? (peranAktif(saya) || '') : '';
@@ -117,6 +118,7 @@ function render(hasil) {
         <small>Mengubah menu yang tampil. Hak akses tetap mengikuti jabatan Anda.</small></fieldset>` : ''}
       <div class="akun-aksi">
         ${sah ? '<a class="tautan-tombol" href="saya.html">Beranda Saya</a>' : ''}
+        <a class="tautan-tombol" href="${tautanPanduan(sah ? saya : null)}">Panduan</a>
         <button type="button" class="tautan-tombol bahaya" data-keluar>Keluar</button>
       </div>`;
     lembarAkun.querySelectorAll('[data-peran]').forEach(b => b.addEventListener('click', () => {
@@ -173,6 +175,12 @@ function pilihanPeran(saya) {
     jab.includes('kaprodi') ? ['kaprodi', `kaprodi ${(saya.kaprodi_prodi || []).join('/').toUpperCase()}`.trim()] : null,
     ['dosen', 'dosen'],
   ].filter(Boolean);
+}
+
+/** Tautan panduan pengguna (repo `panduan`, di-serve di /panduan/) untuk peran aktif. */
+export function tautanPanduan(saya) {
+  const p = saya ? peranAktif(saya) : '';
+  return ['mahasiswa', 'dosen', 'kaprodi', 'admin'].includes(p) ? `panduan/${p}/` : 'panduan/';
 }
 
 /** Peran aktif untuk menentukan isi beranda: admin, kaprodi, dosen, atau mahasiswa. */
