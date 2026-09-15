@@ -57,8 +57,33 @@
   .mulai-aksi a { display: inline-flex; align-items: center; min-height: 44px; }
 }
 
-/* ===== Tamu dan nomor belum terdaftar ===== */
-.catatan-daftar { color: var(--redup); font-size: .86rem; }
+/* ===== Tamu dan nomor belum terdaftar: sambutan kampus digital =====
+   Satu panel penuh lebar di atas .tata: teks + sorotan layanan di kiri, pola
+   minggu dan cara mendaftar di kanan. Tetap tema LMS (tanpa gradien/ikon). */
+.sambutan { display: grid; gap: 1.2rem; padding: 1.3rem 1.4rem; margin-bottom: 1rem; }
+@media (min-width: 900px) { .sambutan { grid-template-columns: minmax(0, 1fr) 340px; gap: 1.6rem; } }
+.sambutan .eyebrow { font-size: .78rem; color: var(--aksen-tua); font-weight: 500; margin: 0 0 .35rem; letter-spacing: .01em; }
+.sambutan h2 { font-size: 1.45rem; margin: 0 0 .6rem; }
+.sambutan .lead { color: var(--redup); max-width: 60em; margin: 0; font-size: .95rem; }
+.sambutan .cta-row { margin-top: 1rem; }
+.sambutan h3 { font-size: .9rem; margin: 0 0 .5rem; }
+.sorotan { list-style: none; margin: 1.4rem 0 0; padding: 0; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.sorotan li { padding: .7rem .85rem; border: 1px solid var(--garis-halus); border-left: 3px solid var(--aksen); border-radius: 4px; background: var(--latar); }
+.sorotan b { display: block; font-weight: 500; margin-bottom: .15rem; }
+.sorotan span { display: block; font-size: .82rem; color: var(--redup); }
+.sambutan-samping { display: flex; flex-direction: column; gap: 1.2rem; }
+.sambutan-minggu .linimasa { background: var(--permukaan); }
+.sambutan-daftar { padding: .9rem 1rem; border: 1px solid var(--garis); border-radius: var(--radius); background: var(--aksen-muda); }
+.sambutan-daftar p { margin: 0 0 .6rem; font-size: .86rem; }
+.sambutan-daftar .daftar-ringkas { margin: 0 0 .6rem; background: var(--permukaan); border: 1px solid var(--garis-halus); border-radius: 4px; }
+.sambutan-daftar .daftar-ringkas li { padding: .45rem .8rem; }
+.sambutan-daftar .daftar-ringkas b { display: block; font-weight: 500; }
+.sambutan-daftar a.aksi { display: inline-flex; align-items: center; min-height: 40px; }
+.sambutan-daftar .kecil.redup { margin: .5rem 0 0; }
+/* Nomor sudah masuk tapi belum terdaftar: tombol Masuk tidak relevan, blok
+   pendaftaran ditegaskan. */
+.sambutan.belum-terdaftar .cta-row [data-masuk-sambutan] { display: none; }
+.sambutan.belum-terdaftar .sambutan-daftar { border-color: var(--aksen); }
 
 /* Perintah WhatsApp: contoh utuh boleh terlipat, tidak meluap. */
 .perintah-wa code { white-space: normal; overflow-wrap: anywhere; }

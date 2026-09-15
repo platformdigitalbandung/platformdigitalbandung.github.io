@@ -1,4 +1,4 @@
-import { apiGet } from './api.js';
+import { apiGet, arahkanKeLogin } from './api.js';
 import { sayaSekarang, peranAktif, labelPeran } from './akun.js';
 import { esc, keadaanKosong } from './ui.js';
 import { LAYANAN } from './menu.js';
@@ -360,10 +360,17 @@ if (sudahTerdaftar(saya)) {
 } else {
   // Tamu dan nomor tak terdaftar diberi tahu siapa yang mendaftarkan: tidak ada
   // pendaftaran mandiri (pdb/README.md bagian Frontend).
+  // Nomor yang sudah masuk tapi belum terdaftar tidak perlu tombol Masuk lagi;
+  // yang ia butuhkan adalah cara didaftarkan (blok "Belum terdaftar?").
+  const sambutan = document.getElementById('panel-belum-masuk');
   if (saya) {
-    document.getElementById('judul-belum-masuk').textContent = 'Nomor belum terdaftar';
+    sambutan.classList.add('belum-terdaftar');
+    document.getElementById('judul-belum-masuk').textContent = 'Nomor WhatsApp Anda belum terdaftar';
     document.getElementById('pesan-belum-masuk').textContent =
-      'Nomor WhatsApp ini belum terdaftar sebagai mahasiswa atau dosen, jadi belum ada jadwal dan layanan yang bisa ditampilkan.';
+      'Anda sudah masuk, tetapi nomor ini belum tercatat sebagai mahasiswa atau dosen, jadi jadwal dan layanan belum bisa ditampilkan. Ikuti langkah "Belum terdaftar?" di samping — setelah didaftarkan, keluar lalu masuk lagi.';
   }
-  document.getElementById('panel-belum-masuk').hidden = false;
+  // Tombol Masuk di sambutan hanya mengarahkan ke /login/, sama seperti tombol
+  // di bilah atas (akun.js) — tidak ada form login di halaman ini.
+  sambutan.querySelectorAll('[data-masuk-sambutan]').forEach(b => b.addEventListener('click', () => arahkanKeLogin()));
+  sambutan.hidden = false;
 }
