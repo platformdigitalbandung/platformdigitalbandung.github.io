@@ -24,18 +24,18 @@ function opsiStatus(terpilih = 'aktif') {
 }
 
 // Email kampus menggantikan NIP sebagai identitas dosen (keputusan pemilik
-// produk 2026-09-14). Dosen mengisinya sendiri; backend tetap memeriksa domain,
-// keabsahan, dan keunikannya.
-const DOMAIN_KAMPUS = '@digitalbdg.ac.id';
+// produk 2026-09-14). Dosen mengisinya sendiri; backend memeriksa keabsahan dan
+// keunikannya. Domain tidak dikunci (keputusan pemilik produk 2026-09-17):
+// dosen boleh memakai email institusi asal atau email pribadi.
 
 function kartuEmail() {
   return `
     <div class="kartu">
       <h3>Email Kampus Anda</h3>
-      <p class="meta">Email kampus menentukan proyek mana yang boleh Anda nilai, pengajuan mana yang boleh Anda putuskan, dan sesi ujian yang Anda awasi. Anda hanya bisa mengisi email kampus nomor Anda sendiri, dan wajib berakhiran ${DOMAIN_KAMPUS}.</p>
+      <p class="meta">Email kampus menentukan proyek mana yang boleh Anda nilai, pengajuan mana yang boleh Anda putuskan, dan sesi ujian yang Anda awasi. Anda hanya bisa mengisi email nomor Anda sendiri; boleh email institusi asal atau email pribadi, asal aktif dan tidak dipakai dosen lain.</p>
       ${saya.email ? `<p>Email kampus tercatat: <b>${esc(saya.email)}</b></p>` : '<div class="pesan gagal">Email kampus belum diisi — Anda belum bisa dicentang sebagai dosen pengampu, dipilih sebagai kaprodi, membuat dan menilai proyek blok, atau memutus proyek kerja.</div>'}
       <form id="form-email">
-        <label>Email kampus <input type="email" name="email" required maxlength="120" value="${esc(saya.email || '')}" placeholder="nama${DOMAIN_KAMPUS}"></label>
+        <label>Email kampus <input type="email" name="email" required maxlength="120" value="${esc(saya.email || '')}" placeholder="nama@kampus.ac.id"></label>
         <button>${saya.email ? 'Perbarui Email' : 'Simpan Email'}</button>
       </form>
       <div id="hasil-email"></div>
@@ -118,10 +118,6 @@ async function simpanEmail(e) {
   e.preventDefault();
   const hasil = document.getElementById('hasil-email');
   const email = String(new FormData(e.target).get('email') || '').trim().toLowerCase();
-  if (!email.endsWith(DOMAIN_KAMPUS)) {
-    hasil.innerHTML = `<div class="pesan gagal">Email kampus wajib berakhiran ${DOMAIN_KAMPUS}.</div>`;
-    return;
-  }
   hasil.innerHTML = '<p class="redup">Menyimpan…</p>';
   try {
     const d = await apiPutJson('/api/dosen/email', { email });

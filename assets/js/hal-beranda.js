@@ -42,7 +42,7 @@ export function langkahMulai(peran, saya, agenda, tugas = null) {
     return [
       {
         kunci: 'email', judul: 'Isi email kampus',
-        keterangan: 'Email @digitalbdg.ac.id adalah identitas dosen: pembimbing, pengawas, dan kaprodi dirujuk lewat email ini.',
+        keterangan: 'Email kampus adalah identitas dosen: pembimbing, pengawas, dan kaprodi dirujuk lewat email ini. Boleh email institusi asal atau email pribadi.',
         status: saya && saya.email ? `Tercatat: ${saya.email}` : 'Belum diisi.',
         href: 'akademik.html', label: 'Isi email kampus', selesai: !!(saya && saya.email), jenis: ['email_belum_diisi'],
       },

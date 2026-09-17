@@ -54,7 +54,7 @@ export function halamanMengajar(saya, isi, { judul, pesan = '', untukMahasiswa =
 export function kartuPrasyarat(saya, { judul, untuk, pengampu = false, catatan = '' }) {
   const langkah = [{
     selesai: Boolean(saya.email),
-    label: 'Isi email kampus Anda (@digitalbdg.ac.id)',
+    label: 'Isi email kampus Anda',
     kosong: {
       judul: 'Email kampus Anda belum diisi',
       keterangan: `Email kampus adalah identitas dosen di platform ini. ${untuk} baru bisa setelah email itu terisi.`,

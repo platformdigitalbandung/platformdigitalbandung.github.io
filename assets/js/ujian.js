@@ -51,7 +51,7 @@ function kartuJadwalkan() {
         </select></label>
         <label>Tanggal &amp; jam (WIB) <input type="datetime-local" name="tanggal_jam" required></label>
         <label>Lokasi <input name="lokasi" required maxlength="120" placeholder="Lab Komputer 2"></label>
-        <label>Email kampus pengawas${saya.email ? ' (opsional)' : ''} <input type="email" name="pengawas" maxlength="120" placeholder="nama@digitalbdg.ac.id"${saya.email ? '' : ' required'}></label>
+        <label>Email kampus pengawas${saya.email ? ' (opsional)' : ''} <input type="email" name="pengawas" maxlength="120" placeholder="email kampus pengawas"${saya.email ? '' : ' required'}></label>
         <button>Jadwalkan</button>
       </form>
       <div id="hasil-jadwal"></div>
