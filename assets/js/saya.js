@@ -27,7 +27,6 @@ function kartu([judul, keterangan, tautan, labelAksi]) {
 function layananDosen() {
   return [
     ['Buat Tugas & Laporan Kemiripan', 'Buat tugas baru dan tinjau laporan kemiripan antar-kiriman.', 'dosen.html', 'Buat Tugas'],
-    ['Forum Tanya Mahasiswa', `Balas pertanyaan mahasiswa sebelum ${istilah('sla', 'target 1×24 jam')}.`, 'forum.html', 'Buka Forum'],
     ['Rekaman Sesi & Tenggat', 'Terbitkan rekaman sesi daring sinkron sebelum tengah malam dan pantau yang terlambat atau belum ada.', 'rekaman.html', 'Kelola Rekaman'],
     ['Proyek Blok', `Buat ${istilah('proyek blok')} per rumpun, lihat anggotanya, dan isi nilai per mahasiswa per mata kuliah.`, 'proyek.html', 'Kelola Proyek Blok'],
     ['Proyek Kerja Bimbingan', 'Putuskan pengajuan proyek di tempat kerja, kirim tinjauan, dan terbitkan tautan tinjauan untuk atasan.', 'kerja.html', 'Buka Proyek Kerja'],
@@ -43,7 +42,6 @@ function layananDosen() {
 
 function layananMahasiswa() {
   return [
-    ['Forum Tanya Dosen', 'Tersendat di materi asinkron Senin–Rabu? Ajukan pertanyaan; dosen menargetkan jawaban 1×24 jam.', 'forum.html', 'Buka Forum'],
     ['Rekaman Sesi Sinkron', 'Tidak bisa ikut sesi daring Kamis? Tonton rekamannya sebelum sesi Jumat.', 'rekaman.html', 'Buka Rekaman'],
     ['Dasbor Belajar', `Beban belajar minggu ini dan ${istilah('cpl', 'CPL')} yang sudah terbukti dari nilai dan RPL Anda.`, 'dasbor.html', 'Buka Dasbor'],
     ['Nilai Proyek Saya', `Rekap nilai ${istilah('proyek blok')} Anda beserta rincian per mata kuliah.`, 'nilai.html', 'Lihat Nilai Saya'],
@@ -61,7 +59,6 @@ function layananLaporan(lingkup) {
     ['Pantau Proyek Kerja', `Proyek kerja aktif dan yang telat tinjauan tengah semester — ${l}.`, 'kaprodi.html', 'Pantau Proyek Kerja'],
     ['Laporan Kepatuhan', `Menit kegiatan per mata kuliah terhadap tuntutan SKS, sebagai bukti ${istilah('kepatuhan', 'kepatuhan')} — ${l}.`, 'kepatuhan.html', 'Buka Laporan'],
     ['Rekap Rapor Angkatan', `Nilai huruf dan IP satu angkatan per semester — ${l}.`, 'rapor.html', 'Buka Rekap Rapor'],
-    ['SLA Forum', `Pertanyaan mahasiswa yang lewat target jawaban 1×24 jam — ${l}.`, 'forum.html', 'Buka SLA Forum'],
     ['Rekap Rekaman', `Sesi daring sinkron yang rekamannya terlambat atau belum ada — ${l}.`, 'rekaman.html', 'Buka Rekap Rekaman'],
   ];
 }

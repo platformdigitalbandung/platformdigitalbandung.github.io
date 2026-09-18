@@ -102,7 +102,7 @@ async function muatKuis(e) {
         judul: `Belum ada kuis rumpun ${rumpun} minggu ${minggu}`,
         keterangan: 'Dosen pengampu belum menyusun kuis gerbangnya. Kuis muncul di sini begitu disimpan dosen.',
         siapa: `dosen pengampu ${prodiMahasiswa.toUpperCase()}`,
-        aksi: [{ href: 'materi.html', label: 'Buka materi minggu ini' }, { href: 'forum.html', label: 'Tanya di forum' }],
+        aksi: [{ href: 'materi.html', label: 'Buka materi minggu ini' }],
       })
       : `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
@@ -468,7 +468,7 @@ async function muat() {
       judul: `Kalender semester ${PRODI} belum diterbitkan`,
       keterangan: 'Kuis gerbang dibuka per minggu mengikuti kalender semester. Begitu kaprodi menerbitkan kalender Anda, kuis minggu berjalan langsung tampil di sini.',
       siapa: `kaprodi ${PRODI}`,
-      aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }, { href: 'forum.html', label: 'Tanya di forum' }],
+      aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }],
     })}</div>` + riwayat;
     muatRiwayat(saya.nim);
     return;

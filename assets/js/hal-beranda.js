@@ -89,7 +89,7 @@ export function langkahMulai(peran, saya, agenda, tugas = null) {
       },
       {
         kunci: 'laporan', judul: 'Pantau laporan prodi',
-        keterangan: 'Proyek kerja, kepatuhan, rekap rapor, SLA forum, dan rekaman — dipantau rutin sepanjang semester.',
+        keterangan: 'Proyek kerja, kepatuhan, rekap rapor, dan rekaman — dipantau rutin sepanjang semester.',
         status: '', href: 'kaprodi.html', label: 'Buka laporan', selesai: null,
       },
     ];

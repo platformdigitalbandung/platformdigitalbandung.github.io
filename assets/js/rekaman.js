@@ -212,7 +212,7 @@ async function muat() {
         judul: `Kalender semester ${P} belum diterbitkan`,
         keterangan: `Rekaman kelas daring muncul di sini per sesi setelah kaprodi ${P} menerbitkan kalender dan dosen mengunggah rekamannya.`,
         siapa: `kaprodi ${P}`,
-        aksi: [{ href: 'materi.html', label: 'Buka Materi' }, { href: 'forum.html', label: 'Tanya di Forum' }],
+        aksi: [{ href: 'materi.html', label: 'Buka Materi' }],
       });
       return;
     }

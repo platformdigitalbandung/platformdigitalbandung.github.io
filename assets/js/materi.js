@@ -213,7 +213,7 @@ async function muatMateri({ nim, prodi, rumpun = '', minggu, rumpunBerlaku = [],
         judul: `Belum ada materi ${untuk}`,
         keterangan: 'Dosen pengampu belum menambahkan materinya ke katalog. Materi langsung tampil di halaman ini begitu ditambahkan.',
         siapa: `dosen pengampu ${prodi.toUpperCase()}`,
-        aksi: [{ href: 'forum.html', label: 'Tanya di forum' }, { href: 'kalender.html', label: 'Lihat kalender' }],
+        aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }],
       });
       return;
     }
@@ -292,7 +292,7 @@ async function muat() {
       judul: `Kalender semester ${PRODI} belum diterbitkan`,
       keterangan: 'Materi dibuka per minggu mengikuti kalender semester. Begitu kaprodi menerbitkan kalender Anda, materi minggu berjalan langsung tampil di halaman ini tanpa perlu memilih apa pun.',
       siapa: `kaprodi ${PRODI}`,
-      aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }, { href: 'forum.html', label: 'Tanya di forum' }],
+      aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }],
     });
     return;
   }

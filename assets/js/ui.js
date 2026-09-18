@@ -112,7 +112,7 @@ export function halamanUntuk(saya, peranDiizinkan, { judul = 'Halaman ini', pesa
  *     judul: 'Belum ada materi minggu 2',
  *     keterangan: 'Dosen pengampu belum menambahkannya.',
  *     siapa: 'dosen pengampu PAI',
- *     aksi: { href: 'forum.html', label: 'Tanya di forum' },
+ *     aksi: { href: 'kalender.html', label: 'Lihat kalender' },
  *   });
  */
 export function keadaanKosong({ judul = '', keterangan = '', siapa = '', aksi = null } = {}) {

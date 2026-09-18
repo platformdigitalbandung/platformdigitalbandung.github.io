@@ -58,7 +58,6 @@ function tabelHasil(daftar) {
         judul: 'Belum ada hasil autograder untuk Anda',
         keterangan: 'Hasil muncul otomatis beberapa saat setelah Anda membuka Pull Request di repo tugas. Kalau tidak juga muncul, username GitHub Anda mungkin belum tercatat di roster — itu yang menghubungkan kiriman ke NIM Anda.',
         siapa: 'dosen Anda (mengisi username GitHub di roster)',
-        aksi: { href: 'forum.html', label: 'Tanya di Forum' },
       });
   }
   return `<div class="gulir"><table>

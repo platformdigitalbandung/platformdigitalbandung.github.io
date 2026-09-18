@@ -13,7 +13,7 @@
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
 // Menu layanan per peran aktif (Beranda). Laporan tingkat prodi (kaprodi.html,
-// kepatuhan.html, rekap rapor, SLA forum, rekap rekaman) hanya untuk kaprodi
+// kepatuhan.html, rekap rapor, rekap rekaman) hanya untuk kaprodi
 // dan admin — halamannya sendiri berganti ke tampilan laporan untuk peran itu,
 // dan backend tetap menolak 403 untuk yang lain.
 export const LAYANAN = {
@@ -21,7 +21,6 @@ export const LAYANAN = {
     ['Pembelajaran', [
       ['materi.html', 'Materi pekan ini', 'Video dan bacaan asinkron'],
       ['kuis.html', 'Kuis gerbang', 'Syarat sebelum sesi Jumat'],
-      ['forum.html', 'Forum tanya dosen', 'Target jawaban 1×24 jam'],
       ['rekaman.html', 'Rekaman sesi', 'Kelas daring yang terlewat'],
       ['portal.html', 'Tugas', 'Kumpulkan dan pantau tugas'],
       ['kalender.html', 'Kalender akademik', 'Jadwal semester'],
@@ -42,7 +41,6 @@ export const LAYANAN = {
       ['kelola-materi.html', 'Kelola materi', 'Video dan bacaan per minggu'],
       ['kuis.html', 'Kuis gerbang', 'Susun soal dan cek kelulusan'],
       ['dosen.html', 'Buat tugas', 'Termasuk laporan kemiripan'],
-      ['forum.html', 'Forum tanya mahasiswa', 'Pertanyaan yang menunggu jawaban'],
       ['rekaman.html', 'Rekaman sesi', 'Terbitkan sebelum tenggat'],
     ]],
     ['Penilaian', [
@@ -69,7 +67,6 @@ export const LAYANAN = {
       ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
       ['kepatuhan.html', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi'],
       ['rapor.html', 'Rekap rapor angkatan', 'Nilai huruf dan IP per semester'],
-      ['forum.html', 'SLA forum', 'Pertanyaan yang lewat target jawaban'],
       ['rekaman.html', 'Rekap rekaman', 'Sesi daring yang terlambat direkam'],
     ]],
   ],
@@ -82,7 +79,6 @@ export const LAYANAN = {
       ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
       ['kepatuhan.html', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi'],
       ['rapor.html', 'Rekap rapor angkatan', 'Nilai huruf dan IP per semester'],
-      ['forum.html', 'SLA forum', 'Pertanyaan yang lewat target jawaban'],
       ['rekaman.html', 'Rekap rekaman', 'Sesi daring yang terlambat direkam'],
     ]],
   ],
@@ -93,30 +89,33 @@ export const LAYANAN = {
 //   atas — nav atas layar lebar (ditambah tombol grup berisi sisa `grup`),
 //   grup — lembar "Lainnya"/"Laporan": pekerjaan yang lebih jarang dibuka.
 // Alasan pemilihan: bar berisi pekerjaan mingguan tiap peran (mahasiswa belajar
-// dan mengumpulkan; dosen menyiapkan materi, tugas, dan menjawab forum; kaprodi
+// dan mengumpulkan; dosen menyiapkan materi, tugas, dan kuis; kaprodi
 // menyiapkan kurikulum, pengampu, kalender; admin menyiapkan kaprodi dan prodi).
 // Laporan dikumpulkan dalam satu grup karena dibuka berkala, bukan harian.
+// Forum web disembunyikan sejak 2026-09-18 (keputusan pemilik produk):
+// diskusi mata kuliah pindah ke grup WhatsApp per mata kuliah. forum.html
+// tetap ada tetapi tidak ditautkan dari menu mana pun.
 export const NAV = {
   mahasiswa: {
     bar: ['./', 'kalender.html', 'materi.html', 'portal.html'],
-    atas: ['./', 'kalender.html', 'materi.html', 'kuis.html', 'portal.html', 'forum.html'],
-    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['kuis.html', 'forum.html', 'rekaman.html', 'nilai.html', 'rapor.html', 'dasbor.html', 'kerja.html', 'rpl.html', 'autograder.html'] },
+    atas: ['./', 'kalender.html', 'materi.html', 'kuis.html', 'portal.html'],
+    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['kuis.html', 'rekaman.html', 'nilai.html', 'rapor.html', 'dasbor.html', 'kerja.html', 'rpl.html', 'autograder.html'] },
   },
   dosen: {
-    bar: ['./', 'kelola-materi.html', 'dosen.html', 'forum.html'],
-    atas: ['./', 'kelola-materi.html', 'dosen.html', 'kuis.html', 'forum.html', 'kalender.html'],
+    bar: ['./', 'kelola-materi.html', 'dosen.html', 'kuis.html'],
+    atas: ['./', 'kelola-materi.html', 'dosen.html', 'kuis.html', 'kalender.html'],
     grup: { label: 'Lainnya', ikon: 'lainnya', href: ['kuis.html', 'kalender.html', 'proyek.html', 'rekaman.html', 'ujian.html', 'akademik.html', 'rapor.html', 'rpl.html', 'kerja.html', 'autograder.html', 'kurikulum.html'] },
   },
   kaprodi: {
     bar: ['./', 'kurikulum.html', 'pengampu.html', 'kalender.html'],
     atas: ['./', 'kurikulum.html', 'pengampu.html', 'kalender.html'],
-    grup: { label: 'Laporan', ikon: 'laporan', href: ['kaprodi.html', 'kepatuhan.html', 'rapor.html', 'forum.html', 'rekaman.html'] },
+    grup: { label: 'Laporan', ikon: 'laporan', href: ['kaprodi.html', 'kepatuhan.html', 'rapor.html', 'rekaman.html'] },
     catatan: 'Menu mengajar — materi, kuis, tugas, dan penilaian — ada di peran dosen.',
   },
   admin: {
     bar: ['./', 'jabatan.html', 'kurikulum.html'],
     atas: ['./', 'jabatan.html', 'kurikulum.html'],
-    grup: { label: 'Laporan', ikon: 'laporan', href: ['kaprodi.html', 'kepatuhan.html', 'rapor.html', 'forum.html', 'rekaman.html'] },
+    grup: { label: 'Laporan', ikon: 'laporan', href: ['kaprodi.html', 'kepatuhan.html', 'rapor.html', 'rekaman.html'] },
     catatan: 'Admin hanya menyiapkan prodi dan kaprodinya. Menu mengajar ada di peran dosen.',
   },
 };

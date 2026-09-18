@@ -65,10 +65,9 @@ const PERINTAH_WA = {
     ['kalender minggu ini', 'Jadwal minggu ini'],
     ['daftar tugas', 'Tugas yang masih terbuka'],
     ['nilai saya', 'Rekap nilai proyek'],
-    ['tanya forum | rumpun R1 | minggu 3 | Apa maksud kuis gerbang?', 'Bertanya ke dosen: rumpun, minggu, lalu pertanyaan'],
   ],
   dosen: [
-    ['forum belum dijawab', 'Pertanyaan mahasiswa yang menunggu jawaban'],
+    ['mk diampu', 'Mata kuliah Anda beserta tautan grup WhatsApp-nya'],
     ['daftar proyek saya', 'Proyek blok yang Anda bimbing'],
     ['status proyek kerja', 'Proyek kerja bimbingan dan statusnya'],
     ['daftar tugas', 'Tugas yang masih terbuka'],
@@ -134,7 +133,7 @@ function htmlPerluKosong(agenda, peran, bagian, saya, adaDiMulai) {
         judul: 'Agenda mingguan belum bisa dihitung',
         keterangan: `Kalender semester ${prodi} belum diterbitkan, jadi materi dan kuis gerbang pekan ini belum ada. Agenda mingguan muncul di sini setelah kaprodi menerbitkan kalender prodi.`,
         siapa: `kaprodi ${prodi}`,
-        aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }, { href: 'forum.html', label: 'Tanya di forum' }],
+        aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }],
       });
     }
     if (!minggu) {
@@ -156,8 +155,8 @@ function htmlPerluKosong(agenda, peran, bagian, saya, adaDiMulai) {
       });
     }
     return beres(minggu
-      ? 'Tidak ada yang perlu dikerjakan: pertanyaan forum, rekaman, pengajuan, serta materi dan kuis minggu ini dan depan sudah tertangani.'
-      : 'Tidak ada yang perlu dikerjakan saat ini: pertanyaan forum, rekaman, dan pengajuan sudah tertangani. Sedang tidak ada minggu perkuliahan berjalan.');
+      ? 'Tidak ada yang perlu dikerjakan: rekaman, pengajuan, serta materi dan kuis minggu ini dan depan sudah tertangani.'
+      : 'Tidak ada yang perlu dikerjakan saat ini: rekaman dan pengajuan sudah tertangani. Sedang tidak ada minggu perkuliahan berjalan.');
   }
   if (peran === 'admin') return beres('Tidak ada yang perlu dikerjakan: semua prodi sudah punya kaprodi dan semua dosen aktif sudah mengisi email kampus.');
   return beres('Tidak ada yang perlu dikerjakan untuk prodi Anda saat ini: kurikulum, dosen pengampu, dan kalender sudah siap.');
