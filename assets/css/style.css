@@ -469,6 +469,8 @@ progress.progres { width: 100%; height: .45rem; accent-color: var(--aksen); }
 .pdf-kanvas { display: block; width: 100%; height: auto; border: 1px solid var(--garis); background: var(--permukaan); }
 .pdf-nav { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin-top: .6rem; }
 .pdf-nav button { margin-top: 0; }
+.pdf-kunci { margin: .4rem 0 0; font-size: .85rem; }
+.peringatan-video { margin: -.2rem 0 .6rem; padding: .45rem .7rem; border-left: 3px solid #b54708; background: #fffaeb; color: #7a2e0e; font-size: .88rem; border-radius: 0 4px 4px 0; }
 
 /* ===== Laporan kepatuhan ===== */
 button.lintas {

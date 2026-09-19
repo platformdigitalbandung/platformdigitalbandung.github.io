@@ -84,35 +84,130 @@ function muatAPIYouTube() {
   return apiYouTube;
 }
 
-function persenVideo(pemutar) {
-  const durasi = pemutar.getDuration();
-  return durasi > 0 ? (pemutar.getCurrentTime() / durasi) * 100 : 0;
+// --- Video: aturan ala LMS korporat (keputusan pemilik produk 2026-09-19) ---
+// * Dijeda otomatis saat tab ditinggal, jendela berpindah ke aplikasi lain,
+//   atau videonya di-scroll keluar layar; hanya satu video berputar sekaligus.
+// * Kecepatan dikunci 1x: perubahan dari menu pemutar dikembalikan.
+// * Tidak bisa dilompati ke depan melewati bagian yang sudah ditonton (boleh
+//   mundur/mengulang). Progres = bagian terjauh yang benar-benar ditonton,
+//   bukan posisi putar — melompat ke akhir tidak lagi tercatat 100%.
+// Pemutar YouTube tidak bisa menyembunyikan tombolnya, jadi aturan ditegakkan
+// dengan memeriksa posisi tiap detik dan mengembalikannya.
+const TOLERANSI_DTK = 2;      // selisih wajar antar-cek tiap detik
+const pemutarAktif = [];      // { pemutar, lepas } per video yang terpasang
+
+function jedaSemuaKecuali(pemutar) {
+  pemutarAktif.forEach(p => { if (p.pemutar !== pemutar && p.pemutar.pauseVideo) p.pemutar.pauseVideo(); });
 }
 
-async function pasangVideo(m) {
+function lepasSemuaVideo() {
+  pemutarAktif.splice(0).forEach(p => p.lepas());
+}
+
+function tampilkanPeringatan(id, teks) {
+  const el = document.querySelector(`.peringatan-video[data-id="${id}"]`);
+  if (!el) return;
+  el.textContent = teks;
+  el.hidden = false;
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => { el.hidden = true; }, 6000);
+}
+
+async function pasangVideo(m, persenAwal) {
   const YT = await muatAPIYouTube();
-  let interval = null;
+  let durasi = 0;
+  let terjauh = 0;          // detik terjauh yang ditonton wajar
+  let penjaga = null;       // cek posisi & kecepatan tiap detik selama diputar
+  let kirimBerkala = null;
+  const persenTonton = () => (durasi > 0 ? Math.min(100, (terjauh / durasi) * 100) : 0);
+  // Mendekati akhir dianggap tuntas (pemutar sering berhenti sepersekian detik sebelum durasi).
+  const kirim = () => kirimProgres(m.id, terjauh >= durasi - TOLERANSI_DTK && durasi > 0 ? 100 : persenTonton(), LANGKAH_VIDEO);
+
   const pemutar = new YT.Player(`yt-${m.id}`, {
     host: 'https://www.youtube-nocookie.com',
     videoId: m.youtube_id,
-    playerVars: { rel: 0, modestbranding: 1 },
+    // disablekb: pintasan papan ketik (panah untuk melompat, < > untuk kecepatan) dimatikan.
+    playerVars: { rel: 0, modestbranding: 1, disablekb: 1, playsinline: 1 },
     events: {
+      onReady: () => {
+        durasi = pemutar.getDuration() || 0;
+        terjauh = durasi * Math.min(100, Math.max(0, persenAwal || 0)) / 100;
+      },
+      onPlaybackRateChange: (e) => {
+        if (e.data !== 1) {
+          pemutar.setPlaybackRate(1);
+          tampilkanPeringatan(m.id, 'Kecepatan video dikunci 1×.');
+        }
+      },
       onStateChange: (e) => {
         if (e.data === YT.PlayerState.PLAYING) {
-          if (!interval) interval = setInterval(() => kirimProgres(m.id, persenVideo(pemutar), LANGKAH_VIDEO), JEDA_POLL_MS);
-        } else {
-          clearInterval(interval); interval = null;
-          if (e.data === YT.PlayerState.ENDED) kirimProgres(m.id, 100, LANGKAH_VIDEO);
-          else if (e.data === YT.PlayerState.PAUSED) kirimProgres(m.id, persenVideo(pemutar), LANGKAH_VIDEO);
+          if (!durasi) durasi = pemutar.getDuration() || 0;
+          jedaSemuaKecuali(pemutar);
+          if (!penjagaBoleh()) { pemutar.pauseVideo(); return; }
+          if (!penjaga) penjaga = setInterval(jaga, 1000);
+          if (!kirimBerkala) kirimBerkala = setInterval(kirim, JEDA_POLL_MS);
+          return;
         }
+        clearInterval(penjaga); penjaga = null;
+        clearInterval(kirimBerkala); kirimBerkala = null;
+        if (e.data === YT.PlayerState.ENDED) {
+          // Sampai di akhir karena melompat: kembalikan ke bagian terjauh yang ditonton.
+          if (durasi > 0 && terjauh < durasi - TOLERANSI_DTK) {
+            pemutar.seekTo(terjauh, true);
+            pemutar.pauseVideo();
+            tampilkanPeringatan(m.id, 'Video tidak bisa dilompati. Lanjutkan dari bagian terakhir yang Anda tonton.');
+            return;
+          }
+          terjauh = durasi;
+        }
+        kirim();
       },
     },
   });
-  // Menutup tab di tengah video: kirim posisi terakhir.
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && pemutar.getDuration) {
-      kirimProgres(m.id, persenVideo(pemutar), LANGKAH_VIDEO);
+
+  function jaga() {
+    const kini = pemutar.getCurrentTime ? pemutar.getCurrentTime() : 0;
+    if (kini > terjauh + TOLERANSI_DTK) {
+      pemutar.seekTo(terjauh, true);
+      tampilkanPeringatan(m.id, 'Video tidak bisa dilompati. Lanjutkan dari bagian terakhir yang Anda tonton.');
+      return;
     }
+    if (kini > terjauh) terjauh = kini;
+    if (pemutar.getPlaybackRate && pemutar.getPlaybackRate() !== 1) pemutar.setPlaybackRate(1);
+  }
+
+  // Boleh berputar hanya selagi tab terlihat, jendela aktif, dan videonya di layar.
+  let diLayar = true;
+  function penjagaBoleh() {
+    // Mengeklik pemutar memindahkan fokus ke iframe-nya — itu bukan meninggalkan halaman.
+    const fokusDiPemutar = document.activeElement && document.activeElement.tagName === 'IFRAME';
+    return document.visibilityState === 'visible' && (document.hasFocus() || fokusDiPemutar) && diLayar;
+  }
+  function periksa() {
+    if (!pemutar.getPlayerState || pemutar.getPlayerState() !== YT.PlayerState.PLAYING) return;
+    if (!penjagaBoleh()) {
+      pemutar.pauseVideo();
+      tampilkanPeringatan(m.id, 'Video dijeda karena Anda meninggalkan halaman materi. Tekan putar untuk melanjutkan.');
+    }
+  }
+  // blur jendela diperiksa sesaat kemudian: saat pemutar diklik, fokus pindah ke iframe lebih dulu.
+  const padaBlur = () => setTimeout(periksa, 0);
+  document.addEventListener('visibilitychange', periksa);
+  window.addEventListener('blur', padaBlur);
+  const wadahVideo = document.getElementById(`yt-${m.id}`)?.closest('.video') || document.getElementById(`yt-${m.id}`);
+  let pengamat = null;
+  if (wadahVideo && 'IntersectionObserver' in window) {
+    pengamat = new IntersectionObserver(([ent]) => { diLayar = ent.isIntersecting; periksa(); }, { threshold: 0.5 });
+    pengamat.observe(wadahVideo);
+  }
+  pemutarAktif.push({
+    pemutar,
+    lepas() {
+      clearInterval(penjaga); clearInterval(kirimBerkala);
+      document.removeEventListener('visibilitychange', periksa);
+      window.removeEventListener('blur', padaBlur);
+      if (pengamat) pengamat.disconnect();
+    },
   });
 }
 
@@ -141,7 +236,7 @@ function pasangBacaan(m) {
 // dengan tab terbuka (lihat pelacak.js).
 const pelacakBerkas = [];
 
-async function pasangBerkas(m) {
+async function pasangBerkas(m, halamanAwal) {
   const wadah = document.querySelector(`.pdf[data-id="${m.id}"]`);
   if (!wadah) return;
   // Keadaan "Memuat berkas…" sudah dipasang kartunya; berkas besar bisa perlu
@@ -150,16 +245,32 @@ async function pasangBerkas(m) {
   // jaringan lambat akan jatuh ke pesan galat di bawah, bukan menggantung.
   const d = await apiGet(`/api/materi/${encodeURIComponent(m.id)}/berkas`, { auth: true });
   const total = Number(d.halaman) || 0;
+  // Halaman berikutnya baru terbuka setelah halaman yang sedang dibaca dihitung
+  // selesai; halaman yang pernah dibuka (halaman_terakhir di server) tetap terbuka.
+  let pdf = null;
+  // halaman_terakhir = halaman terakhir yang sudah dihitung selesai, jadi halaman sesudahnya ikut terbuka.
+  let terbuka = Math.max(1, (Math.floor(halamanAwal) || 0) + 1);
   const pel = buatPelacak({
     total,
-    onMaju: ({ persen, unitTerakhir }) => kirimProgres(m.id, persen, LANGKAH_BERKAS, unitTerakhir),
+    onMaju: ({ persen, unitTerakhir }) => {
+      terbuka = Math.max(terbuka, unitTerakhir + 1);
+      if (pdf) pdf.buka(terbuka);
+      kirimProgres(m.id, persen, LANGKAH_BERKAS, unitTerakhir);
+    },
   });
   pelacakBerkas.push(pel);
-  await pasangPDF(wadah, { base64: d.isi_base64, halaman: total, onHalaman: (n) => pel.lihat(n) });
+  // Di-scroll ke materi lain = waktu baca berhenti.
+  if ('IntersectionObserver' in window) {
+    const pengamat = new IntersectionObserver(([ent]) => pel.tampak(ent.isIntersecting), { threshold: 0.3 });
+    pengamat.observe(wadah);
+    pelacakBerkas.push({ berhenti: () => pengamat.disconnect() });
+  }
+  pdf = await pasangPDF(wadah, { base64: d.isi_base64, halaman: total, terbukaSampai: terbuka, onHalaman: (n) => pel.lihat(n) });
+  pdf.buka(terbuka);
 }
 
 function badanMateri(m) {
-  if (m.jenis === 'video') return `<div class="video"><div id="yt-${esc(m.id)}"></div></div>`;
+  if (m.jenis === 'video') return `<div class="video"><div id="yt-${esc(m.id)}"></div></div><p class="peringatan-video" data-id="${esc(m.id)}" role="status" hidden></p>`;
   if (m.jenis === 'berkas') return `<div class="pdf" data-id="${esc(m.id)}"><p class="redup">Memuat berkas…</p></div>`;
   return `<div class="bacaan" data-id="${esc(m.id)}">${(m.isi || '').split(/\n\s*\n/).map(par => `<p>${esc(par.trim())}</p>`).join('')}</div>`;
 }
@@ -198,6 +309,7 @@ async function muatMateri({ nim, prodi, rumpun = '', minggu, rumpunBerlaku = [],
   // Kartu lama dibuang: pelacak halamannya ikut dihentikan supaya listener
   // visibilitychange-nya tidak menumpuk tiap saringan diganti.
   pelacakBerkas.splice(0).forEach(pel => pel.berhenti());
+  lepasSemuaVideo();
   pelacak.clear();
   try {
     const q = new URLSearchParams({ prodi, minggu: String(minggu) });
@@ -218,6 +330,7 @@ async function muatMateri({ nim, prodi, rumpun = '', minggu, rumpunBerlaku = [],
       return;
     }
     const tersimpan = new Map(progres.map(p => [p.materi_id, p.persen_selesai]));
+    const halamanTersimpan = new Map(progres.map(p => [p.materi_id, p.halaman_terakhir || 0]));
     materi.forEach(m => pelacakUntuk(m, tersimpan.get(m.id) || 0));
     // Dikelompokkan per rumpun (urutan katalog dipertahankan dalam tiap rumpun).
     const kelompok = new Map();
@@ -232,12 +345,12 @@ async function muatMateri({ nim, prodi, rumpun = '', minggu, rumpunBerlaku = [],
       </section>`).join('');
     for (const m of materi) {
       if (m.jenis === 'video') {
-        pasangVideo(m).catch(err => {
+        pasangVideo(m, tersimpan.get(m.id) || 0).catch(err => {
           const t = document.querySelector(`.teks-progres[data-id="${m.id}"]`);
           if (t) t.textContent = err.message;
         });
       } else if (m.jenis === 'berkas') {
-        pasangBerkas(m).catch(err => {
+        pasangBerkas(m, halamanTersimpan.get(m.id) || 0).catch(err => {
           const w = document.querySelector(`.pdf[data-id="${m.id}"]`);
           if (w) w.innerHTML = `<div class="pesan gagal">Berkas tidak bisa ditampilkan: ${esc(err.message)}</div>`;
         });

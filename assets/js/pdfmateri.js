@@ -69,9 +69,13 @@ export async function hitungHalaman(data) {
  *                 dipakai kalau dokumennya sendiri tidak bisa ditanya.
  * @param {function} [opsi.onHalaman] dipanggil tiap halaman berpindah, termasuk
  *                 halaman pertama, dengan nomor halamannya.
- * @returns {Promise<{total: number, berhenti: function(): void}>}
+ * @param {number} [opsi.terbukaSampai] halaman terjauh yang boleh dibuka.
+ *                 Tidak bisa melompat melewatinya (ala LMS korporat, 2026-09-19):
+ *                 pemanggil membuka halaman berikutnya lewat buka() setelah
+ *                 halaman saat ini dihitung terbaca. Bawaan: semua halaman.
+ * @returns {Promise<{total: number, buka: function(number): void, berhenti: function(): void}>}
  */
-export async function pasangPDF(wadah, { base64, halaman, onHalaman } = {}) {
+export async function pasangPDF(wadah, { base64, halaman, onHalaman, terbukaSampai } = {}) {
   let pdfjsLib;
   try {
     pdfjsLib = await muatPDFJS();
@@ -107,7 +111,18 @@ export async function pasangPDF(wadah, { base64, halaman, onHalaman } = {}) {
   const penunjuk = document.createElement('span');
   penunjuk.className = 'redup';
   nav.append(tSebelum, penunjuk, tBerikut);
-  wadah.append(kanvas, nav);
+  const kunci = document.createElement('p');
+  kunci.className = 'redup pdf-kunci';
+  kunci.textContent = 'Halaman berikutnya terbuka setelah halaman ini dibaca beberapa detik, dengan tab dan halaman ini tetap aktif.';
+  wadah.append(kanvas, nav, kunci);
+
+  let terbuka = Math.min(total, Math.max(1, Math.floor(Number(terbukaSampai) || total)));
+  function aturTombol() {
+    const n = diminta || kini || 1;
+    tSebelum.disabled = n <= 1;
+    tBerikut.disabled = n >= total || n >= terbuka;
+    kunci.hidden = n >= total || n < terbuka;
+  }
 
   let kini = 0;       // halaman yang benar-benar sedang tampil
   let diminta = 0;    // halaman terakhir yang diminta, termasuk yang masih dirender
@@ -119,8 +134,7 @@ export async function pasangPDF(wadah, { base64, halaman, onHalaman } = {}) {
     // Tombol dikunci menurut halaman yang DIMINTA, bukan yang sudah selesai
     // dirender, supaya dua klik beruntun tetap melangkah dua halaman.
     diminta = nomor;
-    tSebelum.disabled = nomor <= 1;
-    tBerikut.disabled = nomor >= total;
+    aturTombol();
     const hal = await dok.getPage(nomor);
     // Bitmap dirender selebar wadahnya dikali kerapatan layar supaya tetap tajam
     // di HP; CSS yang menyusutkannya kembali ke lebar wadah (terbaca di 360px).
@@ -152,7 +166,7 @@ export async function pasangPDF(wadah, { base64, halaman, onHalaman } = {}) {
 
   function pindah(delta) {
     const tujuan = (diminta || kini) + delta;
-    if (tujuan < 1 || tujuan > total) return;
+    if (tujuan < 1 || tujuan > total || tujuan > terbuka) return;
     tampilkan(tujuan).catch(() => { penunjuk.textContent = 'Halaman ini gagal ditampilkan.'; });
   }
   tSebelum.addEventListener('click', () => pindah(-1));
@@ -162,6 +176,12 @@ export async function pasangPDF(wadah, { base64, halaman, onHalaman } = {}) {
 
   return {
     total,
+    buka(n) {
+      const baru = Math.min(total, Math.floor(Number(n) || 0));
+      if (baru <= terbuka) return;
+      terbuka = baru;
+      aturTombol();
+    },
     berhenti() {
       dibuang = true;
       if (tugas) { tugas.cancel(); tugas = null; }

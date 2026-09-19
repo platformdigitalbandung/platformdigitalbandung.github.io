@@ -19,7 +19,10 @@
 // progres 100% cukup dengan menekan "Berikutnya" berkali-kali, dan menghitung
 // waktu saat tab disembunyikan membuat progres jalan sendiri sementara
 // mahasiswanya mengerjakan hal lain. Karena itu penghitung hanya berjalan
-// selama document.visibilityState === 'visible'.
+// selama tab terlihat (document.visibilityState === 'visible'), jendelanya
+// sedang aktif (tidak berpindah ke aplikasi lain), dan — bila pemanggil
+// melaporkannya lewat tampak() — materinya ada di layar, bukan sudah di-scroll
+// ke bagian lain halaman (2026-09-19, perilaku ala LMS korporat).
 
 /**
  * Membuat pelacak baru.
@@ -30,7 +33,7 @@
  *                               dalam keadaan tab terlihat) sebelum dihitung selesai.
  * @param {function} [opsi.onMaju] dipanggil HANYA saat persen naik, dengan
  *                               { persen, unitTerakhir, unitSelesai }.
- * @returns {{lihat: function(number): void, berhenti: function(): void}}
+ * @returns {{lihat: function(number): void, tampak: function(boolean): void, berhenti: function(): void}}
  */
 export function buatPelacak({ total, minDetik = 3, onMaju } = {}) {
   const jumlahUnit = Math.max(0, Math.floor(Number(total) || 0));
@@ -44,8 +47,10 @@ export function buatPelacak({ total, minDetik = 3, onMaju } = {}) {
                       // terus-menerus saat tab disembunyikan.
   let persen = 0;
   let mati = false;
+  let diLayar = true;          // dilaporkan pemanggil lewat tampak()
+  let jendelaAktif = document.hasFocus();
 
-  const terlihat = () => document.visibilityState === 'visible';
+  const terlihat = () => document.visibilityState === 'visible' && jendelaAktif && diLayar;
 
   // Menghentikan penghitung dan menyimpan waktu yang sudah berjalan ke unitnya.
   function jeda() {
@@ -87,7 +92,11 @@ export function buatPelacak({ total, minDetik = 3, onMaju } = {}) {
   function padaVisibilitas() {
     if (terlihat()) jalan(); else jeda();
   }
+  const padaFokus = () => { jendelaAktif = true; padaVisibilitas(); };
+  const padaBlur = () => { jendelaAktif = false; padaVisibilitas(); };
   document.addEventListener('visibilitychange', padaVisibilitas);
+  window.addEventListener('focus', padaFokus);
+  window.addEventListener('blur', padaBlur);
 
   return {
     // Menandai unit ke-`unit` sedang dilihat sekarang. Waktu unit sebelumnya
@@ -101,6 +110,13 @@ export function buatPelacak({ total, minDetik = 3, onMaju } = {}) {
       unitKini = n;
       jalan();
     },
+    // Dilaporkan pemanggil (mis. IntersectionObserver): apakah materinya
+    // sedang tampil di layar. Di-scroll ke bagian lain = penghitung berhenti.
+    tampak(ya) {
+      if (mati) return;
+      diLayar = Boolean(ya);
+      padaVisibilitas();
+    },
     // Melepas timer dan listener. Wajib dipanggil sebelum wadahnya dibuang,
     // supaya listener visibilitychange tidak menumpuk tiap materi dimuat ulang.
     berhenti() {
@@ -108,6 +124,8 @@ export function buatPelacak({ total, minDetik = 3, onMaju } = {}) {
       mati = true;
       jeda();
       document.removeEventListener('visibilitychange', padaVisibilitas);
+      window.removeEventListener('focus', padaFokus);
+      window.removeEventListener('blur', padaBlur);
     },
   };
 }
