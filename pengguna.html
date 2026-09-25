@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kelola Kaprodi — Platform Digital Bandung</title>
+  <title>Pengguna — Platform Digital Bandung</title>
   <meta name="robots" content="noindex">
   <link rel="icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
-  <link rel="stylesheet" href="assets/css/hal-kaprodi.css">
+  <link rel="stylesheet" href="assets/css/hal-dosen.css">
+  <link rel="stylesheet" href="assets/css/hal-pengguna.css">
 </head>
 <body>
   <header class="appbar">
@@ -27,9 +28,9 @@
   <main class="halaman">
     <div class="kepala-halaman">
       <div>
-        <p class="remah"><a href="./">Beranda</a> / Kelola Kaprodi</p>
-        <h1>Kelola Kaprodi</h1>
-        <p>Tetapkan, ganti, atau kosongkan kaprodi tiap program studi</p>
+        <p class="remah"><a href="./">Beranda</a> / Pengguna</p>
+        <h1>Pengguna</h1>
+        <p>Mahasiswa dan dosen, kata sandi, dan jabatan admin</p>
       </div>
     </div>
 
@@ -39,14 +40,14 @@
   <footer class="kaki">
     <div class="kaki-dalam">
       <div class="kaki-catatan">
-        <p>Kaprodi membuka laporan tingkat prodi (Pantau Proyek Kerja, Laporan Kepatuhan, rekap Rapor, rekap Rekaman) hanya untuk prodinya. Satu prodi punya satu kaprodi; menetapkan kaprodi baru otomatis menggantikan yang lama.</p>
-        <p class="redup">Perubahan akses laporan berlaku seketika. Label peran di pojok kanan atas baru berubah setelah orangnya keluar lalu masuk lagi. Jabatan admin diatur di halaman Pengguna.</p>
+        <p>Mahasiswa masuk dengan <b>NIM</b>, dosen dengan <b>email kampus</b>. Kata sandi awal adalah bagian email sebelum tanda @ ditambah <b>ADB</b> (mahasiswa tanpa email: NIM ditambah <b>ADB</b>). <b>Reset kata sandi</b> mengembalikannya ke kata sandi awal itu.</p>
+        <p class="redup">Nomor WhatsApp wajib ada supaya akun bisa masuk, dan selalu dibakukan ke awalan 62. Admin mengelola semua pengguna; kaprodi mengelola mahasiswa prodinya dan dosen yang mengajar di prodinya.</p>
       </div>
       <p class="kaki-baris"><span>Akademi Digital Bandung</span><span><a href="program.html">Tentang program</a> · <a href="panduan/">Panduan</a></span></p>
     </div>
   </footer>
 
   <script type="module" src="assets/js/akun.js"></script>
-  <script type="module" src="assets/js/jabatan.js"></script>
+  <script type="module" src="assets/js/pengguna.js"></script>
 </body>
 </html>

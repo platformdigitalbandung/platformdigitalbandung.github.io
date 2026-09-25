@@ -74,7 +74,7 @@ function render(hasil) {
   let lembarAkun = null;
 
   if (hasil.status === 'belum') {
-    wadah.innerHTML = `${tentang}<button type="button" class="tautan-tombol utama" data-masuk title="Masuk dengan WhatsApp">Masuk</button>`;
+    wadah.innerHTML = `${tentang}<button type="button" class="tautan-tombol utama" data-masuk title="Masuk dengan NIM/email dan kata sandi, atau WhatsApp">Masuk</button>`;
     ringkas = `${tentang}<button type="button" class="tautan-tombol utama" data-masuk>Masuk</button>`;
   } else if (hasil.status === 'berakhir') {
     wadah.innerHTML = `${tentang}<span class="status-akun" title="Sesi login sudah tidak berlaku."><span class="titik berakhir"></span>Sesi berakhir</span>
@@ -97,6 +97,7 @@ function render(hasil) {
       ${bisaPilih ? pemilihPeran(saya) : `<span class="peran">${esc(peran)}</span>`}
       ${nomorInduk ? `<span class="nomor-induk">${esc(nomorInduk)}</span>` : ''}
       <a class="tautan-tentang" href="${tautanPanduan(sah ? saya : null)}" title="Panduan pemakaian untuk peran Anda">Panduan</a>
+      ${sah ? '<a class="tautan-tentang" href="sandi.html" title="Ganti kata sandi untuk masuk dengan NIM atau email">Kata sandi</a>' : ''}
       ${keluar}`;
 
     const peranPendek = sah ? (peranAktif(saya) || '') : '';
@@ -118,6 +119,7 @@ function render(hasil) {
         <small>Mengubah menu yang tampil. Hak akses tetap mengikuti jabatan Anda.</small></fieldset>` : ''}
       <div class="akun-aksi">
         ${sah ? '<a class="tautan-tombol" href="saya.html">Beranda Saya</a>' : ''}
+        ${sah ? '<a class="tautan-tombol" href="sandi.html">Kata sandi</a>' : ''}
         <a class="tautan-tombol" href="${tautanPanduan(sah ? saya : null)}">Panduan</a>
         <button type="button" class="tautan-tombol bahaya" data-keluar>Keluar</button>
       </div>`;

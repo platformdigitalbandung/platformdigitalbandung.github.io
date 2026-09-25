@@ -102,7 +102,7 @@ function render(pesan = '') {
     </div>
     <div class="kartu">
       <h3>Super Admin</h3>
-      <p class="meta">Admin hanya menyiapkan: menetapkan kaprodi, membuat program studi baru, dan membuka laporan semua prodi. Kurikulum, dosen pengampu, kuis, dan materi dijalankan kaprodi untuk prodinya. Jabatan admin diubah langsung di database oleh pengelola, bukan dari halaman ini.</p>
+      <p class="meta">Admin hanya menyiapkan: menetapkan kaprodi, membuat program studi baru, dan membuka laporan semua prodi. Kurikulum, dosen pengampu, kuis, dan materi dijalankan kaprodi untuk prodinya. Jabatan admin ditetapkan atau dicabut di halaman <a href="pengguna.html#dosen">Pengguna</a> (tab Dosen).</p>
       ${daftarAdmin()}
     </div>`;
   const tabel = isi.querySelector('table');

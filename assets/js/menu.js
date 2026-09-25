@@ -62,6 +62,7 @@ export const LAYANAN = {
       ['kurikulum.html', 'Kurikulum program studi', 'Rumpun, mata kuliah, CPL, dan ritme'],
       ['pengampu.html', 'Dosen pengampu prodi', 'Centang dosen yang mengajar di prodi Anda'],
       ['kalender.html', 'Kalender akademik', 'Susun dan terbitkan kalender prodi Anda'],
+      ['pengguna.html', 'Pengguna prodi', 'Mahasiswa dan dosen prodi, reset kata sandi'],
     ]],
     ['Laporan prodi', [
       ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
@@ -72,6 +73,7 @@ export const LAYANAN = {
   ],
   admin: [
     ['Penyiapan', [
+      ['pengguna.html', 'Kelola pengguna', 'Dosen, mahasiswa, admin, dan reset kata sandi'],
       ['jabatan.html', 'Kelola kaprodi', 'Tetapkan atau ganti kaprodi tiap prodi'],
       ['kurikulum.html', 'Program studi baru', 'Buat prodi, lalu serahkan ke kaprodinya'],
     ]],
@@ -108,13 +110,13 @@ export const NAV = {
   },
   kaprodi: {
     bar: ['./', 'kurikulum.html', 'pengampu.html', 'kalender.html'],
-    atas: ['./', 'kurikulum.html', 'pengampu.html', 'kalender.html'],
-    grup: { label: 'Laporan', ikon: 'laporan', href: ['kaprodi.html', 'kepatuhan.html', 'rapor.html', 'rekaman.html'] },
+    atas: ['./', 'kurikulum.html', 'pengampu.html', 'kalender.html', 'pengguna.html'],
+    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['pengguna.html', 'kaprodi.html', 'kepatuhan.html', 'rapor.html', 'rekaman.html'] },
     catatan: 'Menu mengajar — materi, kuis, tugas, dan penilaian — ada di peran dosen.',
   },
   admin: {
-    bar: ['./', 'jabatan.html', 'kurikulum.html'],
-    atas: ['./', 'jabatan.html', 'kurikulum.html'],
+    bar: ['./', 'pengguna.html', 'jabatan.html', 'kurikulum.html'],
+    atas: ['./', 'pengguna.html', 'jabatan.html', 'kurikulum.html'],
     grup: { label: 'Laporan', ikon: 'laporan', href: ['kaprodi.html', 'kepatuhan.html', 'rapor.html', 'rekaman.html'] },
     catatan: 'Admin hanya menyiapkan prodi dan kaprodinya. Menu mengajar ada di peran dosen.',
   },
@@ -125,6 +127,7 @@ const PENDEK = {
   './': 'Beranda', 'kalender.html': 'Kalender', 'materi.html': 'Materi', 'portal.html': 'Tugas',
   'kuis.html': 'Kuis', 'forum.html': 'Forum', 'kelola-materi.html': 'Materi', 'dosen.html': 'Tugas',
   'kurikulum.html': 'Kurikulum', 'pengampu.html': 'Pengampu', 'jabatan.html': 'Kaprodi',
+  'pengguna.html': 'Pengguna', 'sandi.html': 'Kata sandi',
 };
 const PENDEK_PERAN = { admin: { 'kurikulum.html': 'Prodi baru' } };
 
@@ -153,6 +156,8 @@ const IKON = {
   ujian: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v2.5H9z"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/>',
   roster: '<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
   kepatuhan: '<path d="M12 3.5 19.5 6v6c0 4.5-3.2 7.6-7.5 8.5-4.3-.9-7.5-4-7.5-8.5V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
+  pengguna: '<circle cx="8.5" cy="8" r="3.5"/><path d="M2.5 20a6 6 0 0 1 12 0"/><path d="M15.5 8.5h6M15.5 12.5h6M17.5 16.5h4"/>',
+  sandi: '<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2.5"/>',
   tutup: '<path d="M6 6l12 12M18 6 6 18"/>',
   panah: '<path d="m9 6 6 6-6 6"/>',
 };
@@ -163,6 +168,7 @@ const IKON_HALAMAN = {
   'rekaman.html': 'rekaman', 'nilai.html': 'nilai', 'rapor.html': 'nilai', 'kaprodi.html': 'laporan',
   'kepatuhan.html': 'kepatuhan', 'dasbor.html': 'dasbor', 'kerja.html': 'kerja', 'rpl.html': 'rpl',
   'autograder.html': 'kode', 'proyek.html': 'proyek', 'ujian.html': 'ujian', 'akademik.html': 'roster',
+  'pengguna.html': 'pengguna', 'sandi.html': 'sandi',
 };
 const IKON_PERAN = { admin: { 'kurikulum.html': 'prodi' } };
 
