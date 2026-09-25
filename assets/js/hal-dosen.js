@@ -72,7 +72,7 @@ export function kartuPrasyarat(saya, { judul, untuk, pengampu = false, catatan =
       label: 'Ditunjuk kaprodi sebagai pengajar kelas',
       kosong: {
         judul: 'Anda belum menjadi pengajar kelas mana pun',
-        keterangan: 'Kaprodi menunjuk pengajar tiap kelas di halaman Kelola Kelas, dari semua dosen aktif. Hubungi kaprodi prodi tempat Anda mengajar; nama Anda baru bisa dipilih setelah email kampus terisi.',
+        keterangan: 'Kaprodi menunjuk pengajar tiap kelas di halaman Siapkan Semester, dari semua dosen aktif. Hubungi kaprodi prodi tempat Anda mengajar; nama Anda baru bisa dipilih setelah email kampus terisi.',
         siapa: 'kaprodi prodi tempat Anda mengajar',
         aksi: { href: 'kelas.html', label: 'Lihat Kelas Saya' },
       },

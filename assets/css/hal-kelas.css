@@ -1,5 +1,6 @@
 /* Halaman Kelas (kelas.html): daftar kelas, isi per minggu, anggota, buku
-   nilai, dan kelola kelas kaprodi. Ditautkan sesudah style.css dan hal-dosen.css. */
+   nilai; juga Siapkan Semester (semester.html: kalender, kelola kelas, peserta).
+   Ditautkan sesudah style.css dan hal-dosen.css. */
 
 /* Kartu kelas di daftar "Kelas Saya". */
 .grid-kelas { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: .9rem; margin: 0 0 1.2rem; }
@@ -61,3 +62,11 @@ table.tabel-kiriman input[type="number"] { width: 5.5rem; }
 #form-pengumuman { margin-bottom: .6rem; }
 label.pilihan-sebaris { display: flex; align-items: center; gap: .4rem; font-weight: 400; }
 label.pilihan-sebaris input { margin: 0; }
+
+/* Siapkan Semester (semester.html): ringkasan langkah persiapan semester. */
+ol.langkah-semester { margin: .2rem 0 0; padding-left: 1.4rem; }
+ol.langkah-semester li { margin: 0 0 .7rem; padding: .1rem 0 .1rem .6rem; border-left: 3px solid transparent; }
+ol.langkah-semester li:last-child { margin-bottom: 0; }
+ol.langkah-semester li.sekarang { border-left-color: var(--aksen); }
+ol.langkah-semester li.selesai b { color: var(--redup); }
+ol.langkah-semester .meta { margin: .15rem 0 0; }

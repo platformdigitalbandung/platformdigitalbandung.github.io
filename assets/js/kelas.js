@@ -11,7 +11,8 @@ import { pasangPanelMateri, pasangPanelKuis, ambilMateri, ambilKuis } from './pa
 //                             Pengajar membuat tugas, materi, dan kuis lewat
 //                             panel di tab Tugas Kelas (panel-isi.js), tanpa
 //                             pindah halaman — keputusan developer Arfan 2026-09-26.
-//   kelas.html?kelola=<prodi> → Kelola Kelas (kaprodi; admin hanya membaca)
+//   kelas.html?kelola=<prodi> → dialihkan ke semester.html?prodi= (Siapkan
+//                             Semester menggantikan Kelola Kelas sejak 2026-09-26)
 // Peran di kelas (peserta/pengajar/kaprodi/admin) dihitung backend; halaman ini
 // hanya tidak menawarkan aksi yang pasti ditolak.
 
@@ -19,6 +20,7 @@ const isi = document.getElementById('isi');
 const param = new URLSearchParams(location.search);
 const idKelas = param.get('id');
 const kelolaProdi = (param.get('kelola') || '').toLowerCase();
+if (kelolaProdi) location.replace(`semester.html?prodi=${encodeURIComponent(kelolaProdi)}`);
 
 function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
 const WIB = { timeZone: 'Asia/Jakarta' };
@@ -84,13 +86,13 @@ async function tampilDaftar(saya) {
     setKepala('Kelas', 'Kelas semua prodi (hanya baca untuk admin)', '<a href="./">Beranda</a> / Kelas');
     isi.innerHTML = `<div class="kartu"><h3>Pilih program studi</h3>
       <p class="meta">Admin melihat kelas semua prodi tanpa mengubahnya; kelas disusun kaprodi masing-masing.</p>
-      <p class="cta-row">${(prodi || []).map(p => `<a class="aksi sekunder" href="kelas.html?kelola=${encodeURIComponent(p.kode)}">${esc(p.nama)}</a>`).join('')}</p></div>`;
+      <p class="cta-row">${(prodi || []).map(p => `<a class="aksi sekunder" href="semester.html?prodi=${encodeURIComponent(p.kode)}">${esc(p.nama)}</a>`).join('')}</p></div>`;
     return;
   }
   const daftar = kelas;
   const mahasiswa = punyaPeran(saya, 'mahasiswa');
   const kelola = kaprodi && kaprodiProdi.length
-    ? `<p class="cta-row">${kaprodiProdi.map(p => `<a class="aksi" href="kelas.html?kelola=${encodeURIComponent(p)}">Kelola kelas ${esc(p.toUpperCase())}</a>`).join('')}</p>` : '';
+    ? `<p class="cta-row">${kaprodiProdi.map(p => `<a class="aksi" href="semester.html?prodi=${encodeURIComponent(p)}">Siapkan semester ${esc(p.toUpperCase())}</a>`).join('')}</p>` : '';
   if (!daftar.length) {
     isi.innerHTML = kelola + (mahasiswa
       ? keadaanKosong({
@@ -102,191 +104,14 @@ async function tampilDaftar(saya) {
       : keadaanKosong({
         judul: kaprodi ? 'Belum ada kelas di prodi Anda' : 'Anda belum menjadi pengajar kelas mana pun',
         keterangan: kaprodi
-          ? 'Kelas dibuat otomatis saat kalender semester diterbitkan. Terbitkan kalendernya, atau buka Kelola Kelas untuk membuat kelas.'
+          ? 'Kelas dibuat otomatis saat kalender semester diterbitkan. Terbitkan kalendernya di halaman Siapkan Semester.'
           : 'Kaprodi menunjuk pengajar tiap kelas. Hubungi kaprodi prodi tempat Anda mengajar.',
         siapa: 'kaprodi',
-        aksi: kaprodi ? { href: 'kalender.html', label: 'Buka kalender' } : null,
+        aksi: kaprodi && kaprodiProdi.length ? { href: `semester.html?prodi=${encodeURIComponent(kaprodiProdi[0])}`, label: 'Siapkan semester' } : null,
       }));
     return;
   }
   isi.innerHTML = kelola + gridPerPeriode(daftar);
-}
-
-// ======================= Kelola Kelas =======================
-
-let kelolaData = { kelas: [], kalender: [], pilihan: [], prodi: '' };
-
-// Pilihan pengajar: semua dosen aktif yang sudah mengisi email kampus (sejak
-// 2026-09-26 tanpa centang pengampu). Yang sudah terpilih di atas; kolom cari
-// menyaring daftar yang panjang.
-function opsiPengajar(terpilih) {
-  if (!kelolaData.pilihan.length) {
-    return '<p class="redup">Belum ada dosen aktif yang mengisi email kampus. Dosen mengisinya sendiri di halaman Roster &amp; Email Dosen.</p>';
-  }
-  const urut = [...kelolaData.pilihan].sort((a, b) => Number(terpilih.includes(b.email)) - Number(terpilih.includes(a.email)));
-  return `<input type="search" class="cari-pengajar" placeholder="Cari nama atau email dosen…" aria-label="Cari dosen">
-    <div class="pilih-pengajar">${urut.map(d => `<label data-cari="${escAttr(`${d.nama || ''} ${d.email}`.toLowerCase())}"><input type="checkbox" name="pengajar" value="${escAttr(d.email)}"${terpilih.includes(d.email) ? ' checked' : ''}>${esc(d.nama || d.email)} <span class="redup">&nbsp;${esc(d.email)}</span></label>`).join('')}</div>`;
-}
-
-function formKelas(k, boleh) {
-  if (!boleh) {
-    return `<tr><td><a href="kelas.html?id=${encodeURIComponent(k.id)}">${esc(k.nama)}</a></td><td>${esc(namaPengajar(k) || '—')}</td><td class="num">${esc(k.jumlah_peserta)}</td><td></td></tr>`;
-  }
-  return `<tr data-id="${escAttr(k.id)}">
-    <td><input name="nama" maxlength="120" value="${escAttr(k.nama)}" aria-label="Nama kelas">
-      <p class="redup">${k.mk_kode ? `Mata kuliah ${esc(k.mk_kode)}` : `Rumpun ${esc(k.rumpun_kode)}`} · <a href="kelas.html?id=${encodeURIComponent(k.id)}">Buka kelas</a></p></td>
-    <td>${opsiPengajar(k.pengajar || [])}</td>
-    <td><label>Peserta tambahan (NIM, pisahkan koma) <input name="tambahan" value="${escAttr((k.peserta_tambahan || []).join(', '))}"></label>
-      <label>Dikeluarkan dari kelas (NIM) <input name="keluar" value="${escAttr((k.peserta_keluar || []).join(', '))}"></label>
-      <p class="redup">${esc(k.jumlah_peserta)} peserta</p></td>
-    <td><div class="aksi-sel"><button type="button" data-aksi="simpan-kelas">Simpan</button>
-      <button type="button" class="bahaya" data-aksi="hapus-kelas">Hapus</button></div></td>
-  </tr>`;
-}
-
-function renderKelola(boleh, pesanAwal = '') {
-  const { kelas, kalender, prodi } = kelolaData;
-  const perKal = kalender.map(kal => {
-    const ks = kelas.filter(k => k.kalender_id === kal.id);
-    return `<div class="kartu">
-      <h3>Angkatan ${esc(kal.angkatan)} · semester ${esc(kal.semester)} <span class="redup">· ${esc(kal.periode)}</span></h3>
-      ${boleh ? `<p class="cta-row"><button type="button" class="sekunder" data-aksi="otomatis" data-kalender="${escAttr(kal.id)}">Buat kelas yang belum ada</button></p>` : ''}
-      ${ks.length ? `<div class="gulir"><table class="tabel-kelola">
-        <thead><tr><th>Kelas</th><th>Pengajar</th><th>Peserta</th><th></th></tr></thead>
-        <tbody>${ks.map(k => formKelas(k, boleh)).join('')}</tbody></table></div>`
-      : '<div class="kosong">Belum ada kelas untuk kalender ini.</div>'}
-    </div>`;
-  }).join('');
-  isi.innerHTML = `<div id="pesan-kelola">${pesanAwal}</div>
-    ${kalender.length ? perKal : keadaanKosong({
-      judul: `Belum ada kalender terbit untuk ${prodi.toUpperCase()}`,
-      keterangan: 'Kelas dibuka per kalender semester yang sudah diterbitkan. Terbitkan kalender dulu; kelasnya dibuat otomatis.',
-      siapa: `kaprodi ${prodi.toUpperCase()}`,
-      aksi: { href: 'kalender.html', label: 'Buka kalender' },
-    })}
-    ${boleh && kalender.length ? `<div class="kartu"><h3>Tambah Kelas</h3>
-      <p class="meta">Untuk kelas yang tidak dibuat otomatis (mis. setelah dihapus, atau rumpun semester lain). Rumpun berproyek dibuka sebagai satu kelas; rumpun tanpa proyek pengikat (wadah mata kuliah lepas) dibuka per mata kuliah.</p>
-      <form id="form-tambah-kelas" class="saringan">
-        <label>Kalender <select name="kalender_id">${kalender.map(k => `<option value="${escAttr(k.id)}">Angkatan ${esc(k.angkatan)} · smt ${esc(k.semester)} · ${esc(k.periode)}</option>`).join('')}</select></label>
-        <label>Rumpun <select name="rumpun_kode" id="tambah-rumpun"></select></label>
-        <label>Mata kuliah <select name="mk_kode" id="tambah-mk"><option value="">(seluruh rumpun)</option></select></label>
-        <label>Nama (opsional) <input name="nama" maxlength="120"></label>
-        <button>Tambah Kelas</button>
-      </form></div>` : ''}`;
-  isi.querySelectorAll('table').forEach(t => labelTabel(t));
-}
-
-async function isiPilihanTambah() {
-  const selR = document.getElementById('tambah-rumpun');
-  if (!selR) return;
-  const { rumpun = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(kelolaData.prodi)}/rumpun`);
-  selR.innerHTML = (rumpun || []).map(r => `<option value="${escAttr(r.kode)}" data-proyek="${r.proyek_pengikat ? '1' : ''}">${esc(r.kode)} — ${esc(r.nama)} (smt ${esc(r.semester)})${r.proyek_pengikat ? '' : ' · mata kuliah lepas'}</option>`).join('');
-  const isiMK = async () => {
-    const selMK = document.getElementById('tambah-mk');
-    const { matakuliah = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(kelolaData.prodi)}/matakuliah?rumpun=${encodeURIComponent(selR.value)}`);
-    selMK.innerHTML = '<option value="">(seluruh rumpun)</option>' + (matakuliah || []).map(m => `<option value="${escAttr(m.kode)}">${esc(m.nama)}</option>`).join('');
-  };
-  selR.addEventListener('change', isiMK);
-  await isiMK();
-}
-
-async function muatKelola() {
-  const [daftar, pilihan] = await Promise.all([
-    apiGet(`/api/kelas?prodi=${encodeURIComponent(kelolaData.prodi)}`),
-    kelolaBoleh ? apiGet(`/api/kelas/pilihan-pengajar?prodi=${encodeURIComponent(kelolaData.prodi)}`).catch(() => ({ dosen: [] })) : Promise.resolve({ dosen: [] }),
-  ]);
-  kelolaData.kelas = daftar.kelas || [];
-  kelolaData.kalender = daftar.kalender || [];
-  kelolaData.pilihan = pilihan.dosen || [];
-}
-
-let kelolaBoleh = false;
-
-async function tampilKelola(saya) {
-  const admin = punyaPeran(saya, 'admin');
-  const dipimpin = (saya.kaprodi_prodi || []).map(p => p.toLowerCase());
-  kelolaBoleh = punyaPeran(saya, 'kaprodi') && dipimpin.includes(kelolaProdi);
-  if (!kelolaBoleh && !admin) {
-    if (!halamanUntuk(saya, ['kaprodi', 'admin'], { judul: 'Kelola Kelas', pesan: 'Kelas prodi disusun kaprodinya.' })) return;
-    if (!dipimpin.includes(kelolaProdi)) {
-      isi.innerHTML = '<div class="pesan gagal">Kaprodi hanya mengelola kelas prodinya sendiri.</div>';
-      return;
-    }
-  }
-  kelolaData.prodi = kelolaProdi;
-  setKepala(`Kelola Kelas ${kelolaProdi.toUpperCase()}`, kelolaBoleh ? 'Tunjuk pengajar, atur peserta, dan buka kelas tiap periode' : 'Kelas prodi ini (hanya baca untuk admin)',
-    `<a href="./">Beranda</a> / <a href="kelas.html">Kelas</a> / Kelola ${esc(kelolaProdi.toUpperCase())}`);
-  await muatKelola();
-  renderKelola(kelolaBoleh);
-  await isiPilihanTambah();
-
-  isi.addEventListener('click', async (e) => {
-    const b = e.target.closest('button[data-aksi]');
-    if (!b || !kelolaBoleh) return;
-    const aksi = b.dataset.aksi;
-    if (aksi === 'otomatis') {
-      b.disabled = true;
-      try {
-        const r = await apiPostJson('/api/kelas/otomatis', { kalender_id: b.dataset.kalender });
-        await muatKelola();
-        renderKelola(true, `<div class="pesan sukses">${r.dibuat ? `${esc(r.dibuat)} kelas baru dibuat.` : 'Semua kelas kalender ini sudah ada.'}</div>`);
-        await isiPilihanTambah();
-      } catch (err) { pesan('pesan-kelola', 'gagal', esc(err.message)); b.disabled = false; }
-      return;
-    }
-    const tr = b.closest('tr[data-id]');
-    if (!tr) return;
-    const id = tr.dataset.id;
-    const k = kelolaData.kelas.find(x => x.id === id);
-    if (aksi === 'simpan-kelas') {
-      const pisah = (s) => String(s || '').split(/[,\s]+/).map(x => x.trim()).filter(Boolean);
-      const body = {
-        nama: tr.querySelector('input[name=nama]').value,
-        pengajar: [...tr.querySelectorAll('input[name=pengajar]:checked')].map(c => c.value),
-        peserta_tambahan: pisah(tr.querySelector('input[name=tambahan]').value),
-        peserta_keluar: pisah(tr.querySelector('input[name=keluar]').value),
-      };
-      b.disabled = true;
-      try {
-        await apiPutJson(`/api/kelas/${encodeURIComponent(id)}`, body);
-        await muatKelola();
-        renderKelola(true, `<div class="pesan sukses">Kelas ${esc(body.nama)} tersimpan.</div>`);
-        await isiPilihanTambah();
-      } catch (err) { pesan('pesan-kelola', 'gagal', `Gagal menyimpan ${esc(k ? k.nama : '')}: ${esc(err.message)}`); b.disabled = false; }
-    } else if (aksi === 'hapus-kelas') {
-      if (!window.confirm(`Hapus kelas ${k ? k.nama : ''}?`)) return;
-      try {
-        await apiDeleteJson(`/api/kelas/${encodeURIComponent(id)}`);
-      } catch (err) {
-        if (err.status !== 422 || !window.confirm(`${err.message}\n\nTetap hapus kelas ini?`)) {
-          if (err.status !== 422) pesan('pesan-kelola', 'gagal', esc(err.message));
-          return;
-        }
-        try { await apiDeleteJson(`/api/kelas/${encodeURIComponent(id)}?konfirmasi=hapus`); } catch (e2) { pesan('pesan-kelola', 'gagal', esc(e2.message)); return; }
-      }
-      await muatKelola();
-      renderKelola(true, '<div class="pesan sukses">Kelas dihapus. Tombol "Buat kelas yang belum ada" membuatnya lagi bila perlu.</div>');
-      await isiPilihanTambah();
-    }
-  });
-  isi.addEventListener('input', (e) => {
-    if (!e.target.classList.contains('cari-pengajar')) return;
-    const q = e.target.value.trim().toLowerCase();
-    e.target.nextElementSibling.querySelectorAll('label').forEach(l => {
-      l.hidden = Boolean(q) && !l.dataset.cari.includes(q) && !l.querySelector('input').checked;
-    });
-  });
-  isi.addEventListener('submit', async (e) => {
-    if (e.target.id !== 'form-tambah-kelas') return;
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    try {
-      const k = await apiPostJson('/api/kelas', { kalender_id: fd.get('kalender_id'), rumpun_kode: fd.get('rumpun_kode'), mk_kode: fd.get('mk_kode') || '', nama: fd.get('nama') || '' });
-      await muatKelola();
-      renderKelola(true, `<div class="pesan sukses">Kelas ${esc(k.nama)} dibuka.</div>`);
-      await isiPilihanTambah();
-    } catch (err) { pesan('pesan-kelola', 'gagal', esc(err.message)); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-  });
 }
 
 // ======================= Isi Kelas =======================
@@ -472,8 +297,8 @@ function tabAnggota() {
   return `<div class="kartu"><h3>Pengajar</h3>
       ${(detail.pengajar_orang || []).length
         ? `<ul class="daftar-ringkas">${detail.pengajar_orang.map(p => `<li>${esc(p.nama)}<span class="kecil">${esc(p.email)}</span></li>`).join('')}</ul>`
-        : '<p class="redup">Belum ada pengajar. Kaprodi menunjuk pengajar di Kelola Kelas.</p>'}
-      ${detail.peran === 'kaprodi' ? `<p class="cta-row"><a class="aksi sekunder" href="kelas.html?kelola=${encodeURIComponent(detail.prodi_kode)}">Kelola Kelas</a></p>` : ''}
+        : '<p class="redup">Belum ada pengajar. Kaprodi menunjuk pengajar di halaman Siapkan Semester.</p>'}
+      ${detail.peran === 'kaprodi' ? `<p class="cta-row"><a class="aksi sekunder" href="semester.html?prodi=${encodeURIComponent(detail.prodi_kode)}#kelas">Tunjuk pengajar &amp; atur peserta</a></p>` : ''}
     </div>
     <div class="kartu"><h3>Peserta (${esc(peserta.length)})</h3>
       <p class="meta">Otomatis dari roster: mahasiswa aktif ${esc(detail.prodi_kode.toUpperCase())} angkatan ${esc(detail.angkatan)} semester ${esc(detail.semester)}, ditambah peserta tambahan — ditambahkan kaprodi, atau peserta yang sejak itu pindah semester/status sehingga tetap tercatat di kelas ini.</p>
@@ -755,7 +580,7 @@ async function muat() {
     halamanUntuk(null, ['mahasiswa', 'dosen', 'kaprodi', 'admin'], { judul: 'Kelas' });
     return;
   }
-  if (kelolaProdi) return tampilKelola(saya);
+  if (kelolaProdi) return undefined; // sedang dialihkan ke semester.html
   if (idKelas) return tampilDetail();
   return tampilDaftar(saya);
 }

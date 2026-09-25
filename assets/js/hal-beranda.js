@@ -70,6 +70,7 @@ export function langkahMulai(peran, saya, agenda, tugas = null) {
 
   if (peran === 'kaprodi') {
     const prodi = besar(((saya && saya.kaprodi_prodi) || []).join(', '));
+    const prodiUtama = ((saya && saya.kaprodi_prodi) || [])[0] || '';
     const kur = ada(butir, 'kurikulum_belum_lengkap');
     const kal = ada(butir, 'kalender_belum_terbit');
     const tanpaPengajar = ada(butir, 'kelas_tanpa_pengajar');
@@ -84,13 +85,13 @@ export function langkahMulai(peran, saya, agenda, tugas = null) {
         kunci: 'kalender', judul: 'Susun dan terbitkan kalender',
         keterangan: 'Kalender semester disusun dari ritme mingguan. Setelah terbit, jadwal dan agenda mingguan muncul untuk dosen dan mahasiswa.',
         status: kal ? kal.keterangan : 'Kalender sudah terbit.',
-        href: 'kalender.html', label: 'Buka kalender', selesai: cek(!kal), jenis: ['kalender_belum_terbit'],
+        href: `semester.html?prodi=${encodeURIComponent(prodiUtama)}#kalender`, label: 'Siapkan semester', selesai: cek(!kal), jenis: ['kalender_belum_terbit'],
       },
       {
         kunci: 'kelas', judul: 'Tunjuk pengajar tiap kelas',
         keterangan: 'Kelas dibuat otomatis saat kalender terbit — satu per rumpun, atau per mata kuliah untuk mata kuliah lepas. Tunjuk pengajarnya dari dosen aktif, dan sesuaikan peserta bila perlu.',
         status: tanpaPengajar ? tanpaPengajar.judul + '.' : (kal ? 'Menunggu kalender terbit.' : 'Semua kelas yang berjalan sudah punya pengajar.'),
-        href: `kelas.html?kelola=${encodeURIComponent(((saya && saya.kaprodi_prodi) || [])[0] || '')}`, label: 'Kelola kelas',
+        href: `semester.html?prodi=${encodeURIComponent(prodiUtama)}#kelas`, label: 'Tunjuk pengajar',
         selesai: cek(!tanpaPengajar && !kal), jenis: ['kelas_tanpa_pengajar'],
       },
       {

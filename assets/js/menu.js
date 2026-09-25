@@ -50,12 +50,15 @@ const B = {
   prodiBaru: ['kurikulum.html?baru=1', 'Prodi baru', 'Program studi baru', 'Buat prodi, lalu serahkan ke kaprodinya', 'prodi'],
 };
 
-/** Butir khusus prodi: Kelola Kelas dan kalender prodi yang dipimpin. */
+/**
+ * Butir khusus prodi yang dipimpin: Siapkan Semester (kalender, kelas,
+ * pengajar, peserta — menggantikan Kelola kelas dan Kalender prodi sejak
+ * 2026-09-26; kalender tetap terbuka lewat Jadwal).
+ */
 function butirProdi(kode) {
   const K = String(kode).toUpperCase();
   return [
-    [`kelas.html?kelola=${encodeURIComponent(kode)}`, 'Kelola kelas', `Kelola kelas ${K}`, 'Tunjuk pengajar, atur peserta, buka kelas tiap periode', 'kelas'],
-    [`kalender.html?prodi=${encodeURIComponent(kode)}`, 'Kalender', `Kalender ${K}`, 'Susun dan terbitkan kalender semester', 'kalender'],
+    [`semester.html?prodi=${encodeURIComponent(kode)}`, 'Semester', `Siapkan semester ${K}`, 'Terbitkan kalender, tunjuk pengajar, cek peserta', 'kalender'],
   ];
 }
 
@@ -140,9 +143,9 @@ export function halamanIni() {
 }
 
 /**
- * Butir menu cocok dengan halaman ini. Href berquery (mis. kelas.html?kelola=trpl)
+ * Butir menu cocok dengan halaman ini. Href berquery (mis. kurikulum.html?baru=1)
  * hanya cocok bila query-nya sama; href tanpa query tidak cocok dengan halaman
- * yang dibuka lewat butir berquery (Kelas vs Kelola kelas).
+ * yang dibuka lewat butir berquery (Kurikulum vs Program studi baru).
  */
 function cocok(href) {
   const [berkas, query = ''] = href.split('?');

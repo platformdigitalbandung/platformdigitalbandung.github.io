@@ -122,7 +122,7 @@ async function simpanEmail(e) {
     const d = await apiPutJson('/api/dosen/email', { email });
     saya.email = d.email || email;
     const berikut = (saya.prodi_mengajar || []).length ? ''
-      : ' Langkah berikutnya: kaprodi prodi tempat Anda mengajar menunjuk Anda sebagai pengajar kelas di halaman Kelola Kelas, supaya Anda bisa menyusun materi, kuis, dan tugas kelas itu.';
+      : ' Langkah berikutnya: kaprodi prodi tempat Anda mengajar menunjuk Anda sebagai pengajar kelas di halaman Siapkan Semester, supaya Anda bisa menyusun materi, kuis, dan tugas kelas itu.';
     hasil.innerHTML = `<div class="pesan sukses">Email kampus ${esc(d.nama)} tersimpan: <b>${esc(saya.email)}</b>.${esc(berikut)}</div>`;
   } catch (err) {
     hasil.innerHTML = `<div class="pesan gagal">Gagal menyimpan email kampus: ${esc(err.message)}</div>`;
