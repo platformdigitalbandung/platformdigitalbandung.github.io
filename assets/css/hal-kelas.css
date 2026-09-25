@@ -44,6 +44,8 @@ table.tabel-bobot input[type="number"] { width: 6rem; }
 /* Kelola kelas: pilihan pengajar. */
 .pilih-pengajar { max-height: 12rem; overflow-y: auto; border: 1px solid var(--garis); border-radius: 4px; padding: .3rem .6rem; }
 .pilih-pengajar label { display: flex; align-items: center; margin: .25rem 0; font-weight: 400; }
+.pilih-pengajar label[hidden] { display: none; }
+input.cari-pengajar { margin: 0 0 .35rem; min-width: 14rem; }
 
 /* Halaman tugas (tugas.html): petunjuk dan jawaban mahasiswa. */
 .teks-panjang { white-space: pre-line; }

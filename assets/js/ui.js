@@ -1,8 +1,8 @@
-import { peranAktif, peranDipegang, gantiPeranAktif } from './akun.js';
+import { peranAktif, peranDipegang } from './akun.js';
 import { arahkanKeLogin } from './api.js';
 
 // Komponen tampilan bersama untuk semua halaman (audit UX 2026-09-14):
-// prodi bawaan pengguna, penolakan halaman sesuai peran aktif, keadaan kosong
+// prodi bawaan pengguna, penolakan halaman sesuai peran yang dipegang, keadaan kosong
 // "langkah berikutnya", glosarium istilah, label moda, dan tabel yang menjadi
 // kartu bertumpuk di HP. Semua teks dari luar di-escape di sini; pemanggil
 // cukup menaruh HTML hasilnya ke innerHTML. Rincian pemakaian:
@@ -22,19 +22,14 @@ function tautanAman(href) {
 /**
  * Kode prodi bawaan pengguna (huruf kecil, mis. "pai"), dipakai sebagai pilihan
  * awal form dan filter — bukan prodi pertama di daftar (TRPL).
- * Mahasiswa: prodi roster. Peran aktif kaprodi: prodi pertama yang dipimpin.
- * Peran aktif dosen: prodi mengajar pertama (atau prodi yang dipimpin).
- * Admin atau tidak diketahui: "".
+ * Mahasiswa: prodi roster. Dosen: prodi pertama yang dipimpin, lalu prodi
+ * mengajar pertama. Admin tanpa prodi atau tidak diketahui: "".
  */
 export function prodiBawaan(saya) {
   if (!saya) return '';
   const pertama = (daftar) => String((daftar || [])[0] || '').toLowerCase();
-  switch (peranAktif(saya)) {
-    case 'mahasiswa': return String(saya.prodi_kode || '').toLowerCase();
-    case 'kaprodi': return pertama(saya.kaprodi_prodi);
-    case 'dosen': return pertama(saya.prodi_mengajar) || pertama(saya.kaprodi_prodi);
-    default: return '';
-  }
+  if (peranAktif(saya) === 'mahasiswa') return String(saya.prodi_kode || '').toLowerCase();
+  return pertama(saya.kaprodi_prodi) || pertama(saya.prodi_mengajar);
 }
 
 /**
@@ -52,16 +47,15 @@ export function pilihProdiBawaan(select, saya, { picu = false } = {}) {
   return true;
 }
 
-// ===== Halaman sesuai peran aktif =====
+// ===== Halaman sesuai peran yang dipegang =====
 
 const NAMA_PERAN = { admin: 'admin', kaprodi: 'kaprodi', dosen: 'dosen', mahasiswa: 'mahasiswa' };
 
 /**
- * Pastikan halaman ini untuk peran aktif pengguna. Kalau ya: tidak menulis
- * apa pun dan mengembalikan true. Kalau tidak: menulis pemberitahuan ramah ke
- * `wadah` (bawaan #isi) dan mengembalikan false — pemanggil berhenti merender
- * form. Bila pengguna memegang peran yang diizinkan tapi sedang memakai peran
- * lain, pemberitahuan memuat tombol "Pakai peran …".
+ * Pastikan halaman ini untuk salah satu peran yang dipegang pengguna (tanpa
+ * pemilih peran sejak 2026-09-26). Kalau ya: tidak menulis apa pun dan
+ * mengembalikan true. Kalau tidak: menulis pemberitahuan ramah ke `wadah`
+ * (bawaan #isi) dan mengembalikan false — pemanggil berhenti merender form.
  *
  *   const saya = await sayaSekarang;
  *   if (!halamanUntuk(saya, ['dosen', 'kaprodi'], { judul: 'Kelola Materi' })) return;
@@ -69,7 +63,7 @@ const NAMA_PERAN = { admin: 'admin', kaprodi: 'kaprodi', dosen: 'dosen', mahasis
 export function halamanUntuk(saya, peranDiizinkan, { judul = 'Halaman ini', pesan = '', wadah = null } = {}) {
   const tempat = wadah || document.getElementById('isi') || document.querySelector('main.halaman');
   const izin = (peranDiizinkan || []).filter(p => NAMA_PERAN[p]);
-  if (saya && izin.includes(peranAktif(saya))) return true;
+  if (saya && peranDipegang(saya).some(p => izin.includes(p))) return true;
   if (!tempat) return false;
 
   const daftarIzin = izin.map(p => NAMA_PERAN[p]).join(' atau ');
@@ -83,21 +77,13 @@ export function halamanUntuk(saya, peranDiizinkan, { judul = 'Halaman ini', pesa
     return false;
   }
 
-  const dipegang = peranDipegang(saya).filter(p => izin.includes(p));
-  const aktif = NAMA_PERAN[peranAktif(saya)] || 'tamu';
-  const tombol = dipegang.map(p =>
-    `<button type="button" data-ui-peran="${esc(p)}">Pakai peran ${esc(NAMA_PERAN[p])}</button>`).join('');
-  const penjelasan = dipegang.length
-    ? `Anda sedang memakai peran <b>${esc(aktif)}</b>. Halaman ini untuk ${esc(daftarIzin)} — ganti peran di pojok kanan atas, atau tekan tombol di bawah.`
-    : `Halaman ini untuk ${esc(daftarIzin)}, sedangkan nomor Anda terdaftar sebagai <b>${esc(aktif)}</b>.`;
+  const dipegang = peranDipegang(saya).map(p => NAMA_PERAN[p]).join(' dan ') || 'tamu';
   tempat.innerHTML = `<div class="kartu pemberitahuan-peran">
     <h3>${esc(judul)} untuk ${esc(daftarIzin)}</h3>
-    <p>${penjelasan}</p>
+    <p>Halaman ini untuk ${esc(daftarIzin)}, sedangkan nomor Anda terdaftar sebagai <b>${esc(dipegang)}</b>.</p>
     ${pesan ? `<p class="meta">${esc(pesan)}</p>` : ''}
-    <p class="cta-row">${tombol}<a class="aksi sekunder" href="./">Kembali ke Beranda</a></p>
+    <p class="cta-row"><a class="aksi sekunder" href="./">Kembali ke Beranda</a></p>
   </div>`;
-  tempat.querySelectorAll('[data-ui-peran]').forEach(b =>
-    b.addEventListener('click', () => gantiPeranAktif(b.dataset.uiPeran)));
   return false;
 }
 
@@ -110,8 +96,8 @@ export function halamanUntuk(saya, peranDiizinkan, { judul = 'Halaman ini', pesa
  *
  *   wadah.innerHTML = keadaanKosong({
  *     judul: 'Belum ada materi minggu 2',
- *     keterangan: 'Dosen pengampu belum menambahkannya.',
- *     siapa: 'dosen pengampu PAI',
+ *     keterangan: 'Pengajar kelas belum menambahkannya.',
+ *     siapa: 'pengajar kelas PAI',
  *     aksi: { href: 'kalender.html', label: 'Lihat kalender' },
  *   });
  */
@@ -133,7 +119,7 @@ export function keadaanKosong({ judul = '', keterangan = '', siapa = '', aksi = 
 export const GLOSARIUM = {
   rumpun: 'Kelompok beberapa mata kuliah yang dipelajari bersama lewat satu proyek. Nilai proyeknya dibagi ke tiap mata kuliah di rumpun itu.',
   blok: 'Nama lain rumpun: beberapa mata kuliah dikerjakan sekaligus dalam satu proyek selama beberapa minggu.',
-  'proyek blok': 'Proyek kelompok yang mengikat satu rumpun; dinilai dosen pembimbing per mahasiswa per mata kuliah.',
+  'proyek blok': 'Proyek yang mengikat satu rumpun; dinilai di buku nilai kelas rumpun itu.',
   'proyek kerja': 'Pekerjaan di tempat kerja mahasiswa yang diakui sebagai proyek kuliah setelah disetujui dosen.',
   cpl: 'Capaian Pembelajaran Lulusan: kemampuan yang harus terbukti dimiliki lulusan program studi.',
   sks: 'Satuan Kredit Semester: ukuran beban belajar. Di platform ini 1 SKS dihitung 85 menit kegiatan per minggu.',
@@ -144,7 +130,6 @@ export const GLOSARIUM = {
   sla: 'Target waktu respons dosen: pertanyaan forum dijawab paling lambat 1×24 jam (dihitung Senin–Rabu).',
   rpl: 'Rekognisi Pembelajaran Lampau: pengalaman kerja sebelum kuliah yang diajukan untuk diakui sebagai kredit satu rumpun.',
   'ritme mingguan': 'Pola kegiatan per hari dalam seminggu (menit dan moda) yang dipakai untuk menyusun kalender semester.',
-  pengampu: 'Dosen yang dicentang kaprodi sebagai dosen prodi itu; kaprodi memilih pengajar tiap kelas dari daftar ini.',
   kelas: 'Satu rumpun (atau satu mata kuliah lepas) untuk satu periode semester: berisi peserta, pengajar, materi, kuis, tugas, dan buku nilai.',
   'pengajar kelas': 'Dosen yang ditunjuk kaprodi untuk sebuah kelas; hanya pengajar kelas (dan kaprodinya) yang menyusun materi, kuis, tugas, dan nilai kelas itu.',
   kepatuhan: 'Laporan menit kegiatan per mata kuliah dibanding tuntutan SKS, sebagai bukti untuk akreditasi.',

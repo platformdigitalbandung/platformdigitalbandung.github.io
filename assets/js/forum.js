@@ -58,7 +58,7 @@ function formTanya() {
       judul: 'Nomor ini belum tercatat di roster mahasiswa',
       keterangan: 'Pertanyaan dikirim atas nama NIM dan prodi Anda di roster, jadi nomor WhatsApp Anda perlu didaftarkan dulu.',
       siapa: 'dosen atau kaprodi prodi Anda (halaman Roster Mahasiswa)',
-      aksi: { href: 'saya.html', label: 'Kembali ke Beranda Saya' },
+      aksi: { href: './', label: 'Kembali ke Beranda' },
     });
   }
   return `

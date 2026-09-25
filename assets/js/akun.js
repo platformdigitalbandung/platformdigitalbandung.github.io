@@ -1,6 +1,6 @@
 import { getCookie } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/cookie.min.js';
 import { apiGet, logout, arahkanKeLogin } from './api.js';
-import { pasangNavigasi, buatLembar, bukaLembar, tutupLembar } from './menu.js';
+import { pasangNavigasi, buatLembar, bukaLembar } from './menu.js';
 
 // Status akun di pojok kanan bilah atas, dipakai semua halaman: sedang masuk
 // sebagai siapa, atau belum masuk. Diisi ke elemen .akun di header.appbar.
@@ -61,8 +61,9 @@ export function terdaftar(saya) {
 // Bilah atas dan navigasi (keputusan pemilik produk 2026-09-15):
 // - tamu, sesi berakhir, backend tak terjangkau, nomor belum terdaftar: TANPA menu
 //   aplikasi — hanya merek, "Tentang program", dan Masuk (atau akun + Keluar);
-// - terdaftar: menu dari menu.js menurut peran aktif, di nav atas (layar lebar)
-//   dan di bilah bawah + lembar "Lainnya"/"Laporan" (HP <= 720px).
+// - terdaftar: menu dari menu.js menurut peran yang dipegang (menu utama +
+//   bagian Prodi/Admin), di nav atas (layar lebar) dan di bilah bawah +
+//   lembar "Menu" (HP <= 720px).
 // Di HP baris akun diganti satu tombol akun yang membuka lembar Akun.
 function render(hasil) {
   const wadah = document.querySelector('.appbar .akun');
@@ -85,16 +86,15 @@ function render(hasil) {
     const nama = isi.alias || isi.id || 'Pengguna';
     const sah = terdaftar(saya);
     const peran = sah ? labelPeran(saya) : (hasil.status === 'tak-terjangkau' ? 'peran belum pasti' : 'belum terdaftar');
-    const bisaPilih = sah && pilihanPeran(saya).length > 1;
     // Dosen dikenali lewat email kampus (pengganti NIP sejak 2026-09-14), mahasiswa lewat NIM.
     const nomorInduk = saya && saya.peran === 'dosen' ? (saya.email || '') : (saya && saya.nim ? `NIM ${saya.nim}` : '');
     const judul = [`Masuk sebagai ${nama}`, isi.id ? `nomor ${isi.id}` : '', nomorInduk, isi.exp ? `berlaku sampai ${waktu(isi.exp)}` : '',
       hasil.status === 'tak-terjangkau' ? 'backend tidak terjangkau, peran belum bisa dipastikan' : ''].filter(Boolean).join(' · ');
     wadah.innerHTML = `
-      <a class="status-akun masuk" href="${sah ? 'saya.html' : './'}" title="${esc(judul)}">
+      <a class="status-akun masuk" href="./" title="${esc(judul)}">
         <span class="titik aktif"></span><span class="nama-akun">${esc(nama)}</span>
       </a>
-      ${bisaPilih ? pemilihPeran(saya) : `<span class="peran">${esc(peran)}</span>`}
+      <span class="peran${sah && (saya.jabatan || []).length ? ' peran-jabatan' : ''}">${esc(peran)}</span>
       ${nomorInduk ? `<span class="nomor-induk">${esc(nomorInduk)}</span>` : ''}
       <a class="tautan-tentang" href="${tautanPanduan(sah ? saya : null)}" title="Panduan pemakaian untuk peran Anda">Panduan</a>
       ${sah ? '<a class="tautan-tentang" href="sandi.html" title="Ganti kata sandi untuk masuk dengan NIM atau email">Kata sandi</a>' : ''}
@@ -105,8 +105,6 @@ function render(hasil) {
       <span class="inisial" aria-hidden="true">${esc(String(nama).trim().charAt(0).toUpperCase() || '?')}</span>${peranPendek ? `<span class="tombol-akun-peran">${esc(peranPendek)}</span>` : ''}</button>`;
 
     lembarAkun = buatLembar('lembar-akun', 'Akun');
-    const aktif = sah ? peranAktif(saya) : '';
-    const pilihan = bisaPilih ? pilihanPeran(saya) : [];
     lembarAkun.querySelector('.lembar-isi').innerHTML = `
       <div class="akun-identitas">
         <span class="inisial besar" aria-hidden="true">${esc(String(nama).trim().charAt(0).toUpperCase() || '?')}</span>
@@ -114,26 +112,14 @@ function render(hasil) {
       </div>
       ${!sah && hasil.status !== 'tak-terjangkau' ? '<p class="akun-catatan">Nomor WhatsApp ini belum terdaftar sebagai mahasiswa atau dosen. Hubungi pengelola program studi (kaprodi) untuk didaftarkan.</p>' : ''}
       ${hasil.status === 'tak-terjangkau' ? '<p class="akun-catatan">Server belum terjangkau, jadi peran Anda belum bisa dipastikan. Coba muat ulang sebentar lagi.</p>' : ''}
-      ${pilihan.length ? `<fieldset class="pilih-peran-lembar"><legend>Peran aktif</legend>
-        ${pilihan.map(([nilai, label]) => `<button type="button" class="opsi-peran${nilai === aktif ? ' aktif' : ''}" data-peran="${nilai}" aria-pressed="${nilai === aktif}">${esc(label)}</button>`).join('')}
-        <small>Mengubah menu yang tampil. Hak akses tetap mengikuti jabatan Anda.</small></fieldset>` : ''}
       <div class="akun-aksi">
-        ${sah ? '<a class="tautan-tombol" href="saya.html">Beranda Saya</a>' : ''}
         ${sah ? '<a class="tautan-tombol" href="sandi.html">Kata sandi</a>' : ''}
         <a class="tautan-tombol" href="${tautanPanduan(sah ? saya : null)}">Panduan</a>
         <button type="button" class="tautan-tombol bahaya" data-keluar>Keluar</button>
       </div>`;
-    lembarAkun.querySelectorAll('[data-peran]').forEach(b => b.addEventListener('click', () => {
-      if (b.dataset.peran !== aktif) gantiPeranAktif(b.dataset.peran); else tutupLembar();
-    }));
-
-    pasangNavigasi({
-      peran: sah ? peranAktif(saya) : '',
-      gantiPeran: gantiPeranAktif,
-      bisaGantiDosen: sah && pilihanPeran(saya).some(([nilai]) => nilai === 'dosen'),
-    });
+    pasangNavigasi(sah ? saya : null);
   }
-  if (hasil.status === 'belum' || hasil.status === 'berakhir') pasangNavigasi({ peran: '' });
+  if (hasil.status === 'belum' || hasil.status === 'berakhir') pasangNavigasi(null);
 
   // Tombol akun ringkas (HP), disisipkan sesudah .akun di bilah atas.
   let wadahRingkas = dalam.querySelector('.akun-ringkas');
@@ -146,8 +132,6 @@ function render(hasil) {
   const tombolAkun = wadahRingkas.querySelector('.tombol-akun');
   if (tombolAkun && lembarAkun) tombolAkun.addEventListener('click', () => bukaLembar(lembarAkun, tombolAkun));
 
-  document.querySelectorAll('.appbar [data-pilih-peran]').forEach(pilih =>
-    pilih.addEventListener('change', () => { simpanPeranAktif(pilih.value); location.reload(); }));
   document.querySelectorAll('.appbar [data-keluar], #lembar-akun [data-keluar]').forEach(b =>
     b.addEventListener('click', () => { logout(); location.href = './'; }));
   document.querySelectorAll('.appbar [data-masuk]').forEach(b => b.addEventListener('click', () => arahkanKeLogin()));
@@ -160,80 +144,56 @@ function render(hasil) {
 // pemilik produk 2026-09-14; super admin sempat bernama direktur). Jabatan
 // (admin, kaprodi) dan prodi yang dipimpin datang dari GET /api/proyekblok/saya.
 //
-// Dosen berjabatan memilih peran aktif lewat pemilih di bilah atas: admin,
-// kaprodi, atau dosen — hanya yang benar-benar ia pegang. Pilihan itu hanya
-// menampilkan atau menyembunyikan menu di peramban ini; kewenangan tetap
-// diputuskan backend, jadi tidak perlu keluar-masuk lagi.
-const KUNCI_PERAN = 'pdb_peran_aktif';
+// TANPA pemilih peran sejak 2026-09-26 (keputusan developer Arfan, membalik
+// pemilih peran 2026-09-15): semua peran yang dipegang berlaku bersamaan.
+// Menu menampilkan bagian Prodi (kaprodi) dan Admin di samping menu dosen,
+// dan halaman memeriksa peran yang DIPEGANG, bukan peran yang "dipakai".
+// Kewenangan tetap diputuskan backend.
 
-function jabatanDipegang(saya) { return (saya && saya.jabatan) || []; }
+// Pilihan peran lama di peramban tidak dipakai lagi; dibersihkan sekali.
+try { localStorage.removeItem('pdb_peran_aktif'); } catch { /* penyimpanan ditolak */ }
 
-/** Peran yang bisa dipilih, urut dari yang tertinggi. Kosong untuk dosen biasa dan mahasiswa. */
-function pilihanPeran(saya) {
-  const jab = jabatanDipegang(saya);
-  if (!jab.length) return [];
-  return [
-    jab.includes('admin') ? ['admin', 'admin'] : null,
-    jab.includes('kaprodi') ? ['kaprodi', `kaprodi ${(saya.kaprodi_prodi || []).join('/').toUpperCase()}`.trim()] : null,
-    ['dosen', 'dosen'],
-  ].filter(Boolean);
+/** Semua peran yang dipegang, urut dari yang tertinggi: admin, kaprodi, dosen — atau mahasiswa. */
+export function peranDipegang(saya) {
+  if (!saya) return [];
+  if (saya.peran !== 'dosen') return [saya.peran].filter(Boolean);
+  const jab = saya.jabatan || [];
+  return [jab.includes('admin') ? 'admin' : null, jab.includes('kaprodi') ? 'kaprodi' : null, 'dosen'].filter(Boolean);
 }
 
-/** Tautan panduan pengguna (repo `panduan`, di-serve di /panduan/) untuk peran aktif. */
+/** Pemegang token memegang peran itu (admin, kaprodi, dosen, atau mahasiswa). */
+export function punyaPeran(saya, peran) { return peranDipegang(saya).includes(peran); }
+
+/**
+ * Peran tertinggi yang dipegang. Hanya untuk pilihan bawaan (panduan, prodi
+ * bawaan); jangan dipakai menyembunyikan hak — pakai punyaPeran.
+ */
+export function peranAktif(saya) { return peranDipegang(saya)[0] || ''; }
+
+/** Tautan panduan pengguna (repo `panduan`, di-serve di /panduan/) untuk peran tertinggi. */
 export function tautanPanduan(saya) {
   const p = saya ? peranAktif(saya) : '';
   return ['mahasiswa', 'dosen', 'kaprodi', 'admin'].includes(p) ? `panduan/${p}/` : 'panduan/';
 }
 
-/** Peran aktif untuk menentukan isi beranda: admin, kaprodi, dosen, atau mahasiswa. */
-export function peranAktif(saya) {
-  const pilihan = pilihanPeran(saya).map(([nilai]) => nilai);
-  if (!pilihan.length) return saya ? saya.peran : '';
-  let simpan = '';
-  try { simpan = localStorage.getItem(KUNCI_PERAN) || ''; } catch { /* penyimpanan ditolak: pakai bawaan */ }
-  // Pilihan tersimpan yang tidak lagi dipegang (mis. jabatan dicabut) jatuh ke peran tertinggi.
-  return pilihan.includes(simpan) ? simpan : pilihan[0];
-}
-function simpanPeranAktif(nilai) {
-  try { localStorage.setItem(KUNCI_PERAN, nilai); } catch { /* peramban menolak penyimpanan: tetap peran bawaan */ }
-}
-
-/** Semua peran yang dipegang (admin, kaprodi, dosen, atau mahasiswa), urut dari yang tertinggi. */
-export function peranDipegang(saya) {
-  if (!saya) return [];
-  const pilihan = pilihanPeran(saya).map(([nilai]) => nilai);
-  return pilihan.length ? pilihan : [saya.peran].filter(Boolean);
-}
-/** Ganti peran aktif lalu muat ulang halaman (dipakai tombol "Pakai peran …" di ui.js). */
-export function gantiPeranAktif(nilai) {
-  simpanPeranAktif(nilai);
-  location.reload();
-}
-
-/** Menu khusus kaprodi (Dosen Pengampu Prodi) ditampilkan: peran aktif kaprodi. */
-export function adalahKaprodiAktif(saya) { return peranAktif(saya) === 'kaprodi'; }
-/** Menu super admin (Kelola Kaprodi, laporan semua prodi) ditampilkan. */
-export function adalahAdmin(saya) { return peranAktif(saya) === 'admin'; }
-/** Menu laporan tingkat prodi ditampilkan: admin, atau kaprodi yang memakai peran kaprodi. */
-export function adalahPimpinan(saya) { return ['admin', 'kaprodi'].includes(peranAktif(saya)); }
+/** Memimpin prodi (kaprodi). */
+export function adalahKaprodiAktif(saya) { return punyaPeran(saya, 'kaprodi'); }
+/** Super admin. */
+export function adalahAdmin(saya) { return punyaPeran(saya, 'admin'); }
+/** Boleh membuka laporan tingkat prodi: admin atau kaprodi. */
+export function adalahPimpinan(saya) { return adalahAdmin(saya) || adalahKaprodiAktif(saya); }
 /** Kode prodi yang boleh dilaporkan: null berarti semua prodi (admin). */
 export function prodiPimpinan(saya) {
   if (adalahAdmin(saya)) return null;
   return (saya && saya.kaprodi_prodi) || [];
 }
 
-/** Label peran aktif untuk ditampilkan, mis. "kaprodi PAI". */
+/** Label semua peran yang dipegang, mis. "kaprodi TRPL · dosen". */
 export function labelPeran(saya) {
   if (!saya) return '';
-  const aktif = pilihanPeran(saya).find(([nilai]) => nilai === peranAktif(saya));
-  return aktif ? aktif[1] : saya.peran;
-}
-
-function pemilihPeran(saya) {
-  const aktif = peranAktif(saya);
-  const opsi = pilihanPeran(saya)
-    .map(([nilai, label]) => `<option value="${nilai}"${nilai === aktif ? ' selected' : ''}>${esc(label)}</option>`).join('');
-  return `<select class="peran pilih-peran" data-pilih-peran aria-label="Pilih peran" title="Pilih peran aktif — hanya mengubah menu yang tampil">${opsi}</select>`;
+  return peranDipegang(saya).map(p => (p === 'kaprodi'
+    ? `kaprodi ${(saya.kaprodi_prodi || []).join('/').toUpperCase()}`.trim()
+    : p)).join(' · ');
 }
 
 // Diekspor supaya halaman yang juga butuh peran (mis. beranda) tidak memanggil

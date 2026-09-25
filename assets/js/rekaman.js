@@ -8,8 +8,8 @@ import { sayaHalaman, sedangMengajar } from './hal-dosen.js';
 // Kewenangannya dicek backend (403).
 //
 // Mahasiswa hanya melihat kalender prodinya; dosen/kaprodi mulai dari kalender
-// prodinya dan hanya mereka yang melihat formulir terbit (peran aktif admin
-// hanya membaca rekap). Tabel sesi menjadi kartu di HP supaya tombol Terbitkan
+// prodinya dan hanya mereka yang melihat formulir terbit (admin yang tidak
+// mengajar hanya membaca rekap). Tabel sesi menjadi kartu di HP supaya tombol Terbitkan
 // tidak tersembunyi di area gulir.
 
 const isi = document.getElementById('isi');
@@ -42,9 +42,9 @@ let saya = null;
 let dosen = false;
 let pimpinan = false;
 let kalenderAktif = '';
-// Boleh menerbitkan/menghapus rekaman kalender yang sedang dibuka: peran aktif
-// mengajar DAN prodi kalender termasuk prodi mengajar (pengampu atau kaprodi) —
-// keputusan pemilik produk 2026-09-15. Backend tetap menolak 403.
+// Boleh menerbitkan/menghapus rekaman kalender yang sedang dibuka: memegang
+// peran dosen DAN prodi kalender termasuk prodi mengajar (kelas yang diajar atau
+// prodi yang dipimpin). Backend memeriksa per kelas dan tetap menolak 403.
 let bolehTulis = false;
 
 function bolehTerbitkan(prodiKalender) {
@@ -91,7 +91,7 @@ async function muatKalender(id) {
     bolehTulis = bolehTerbitkan(d.prodi_kode);
     const P = esc(d.prodi_kode.toUpperCase());
     const catatanTulis = dosen && !bolehTulis
-      ? `<div class="pesan info">Rekaman kalender ${P} hanya diterbitkan atau dihapus dosen pengampu ${P} atau kaprodi ${P}. Anda bisa melihatnya saja.</div>`
+      ? `<div class="pesan info">Rekaman kalender ${P} hanya diterbitkan atau dihapus pengajar kelas ${P} pada kalender ini atau kaprodi ${P}. Anda bisa melihatnya saja.</div>`
       : '';
     wadah.innerHTML = `<div class="kartu">
       <h3>${P} · angkatan ${esc(d.angkatan)} · semester ${esc(d.semester)}</h3>
@@ -145,7 +145,7 @@ async function hapus(id) {
 
 // Rekap tingkat prodi: admin semua prodi (tanpa query); kaprodi per prodi yang
 // dipimpin, dikirim eksplisit karena backend memberi pemegang jabatan admin
-// semua prodi walau peran aktifnya kaprodi.
+// semua prodi.
 async function ambilRekap() {
   const boleh = prodiPimpinan(saya);
   if (!boleh) return (await apiGet('/api/rekaman/rekap', { auth: true })).kalender || [];
@@ -187,7 +187,7 @@ function labelKalender(k) {
 
 async function muat() {
   const mahasiswa = saya.peran !== 'dosen';
-  // Formulir terbit hanya untuk peran aktif dosen/kaprodi; admin membaca rekap.
+  // Formulir terbit untuk pemegang peran dosen (kaprodi dan admin juga dosen).
   dosen = sedangMengajar(saya);
   // Rekap keterlambatan adalah laporan tingkat prodi: kaprodi (prodinya) dan admin.
   pimpinan = adalahPimpinan(saya);
@@ -201,7 +201,7 @@ async function muat() {
         judul: 'Nomor ini belum tercatat di roster mahasiswa',
         keterangan: 'Rekaman ditampilkan per kalender prodi Anda, jadi prodi Anda perlu tercatat di roster dulu.',
         siapa: 'dosen atau kaprodi prodi Anda (halaman Roster Mahasiswa)',
-        aksi: { href: 'saya.html', label: 'Kembali ke Beranda Saya' },
+        aksi: { href: './', label: 'Kembali ke Beranda' },
       });
       return;
     }
@@ -242,7 +242,7 @@ async function muat() {
     <div class="kartu">
       <h3>${mahasiswa ? `Rekaman Kelas ${esc(saya.prodi_kode.toUpperCase())}` : 'Pilih Kalender'}</h3>
       ${mahasiswa ? '<p class="meta">Hanya kalender prodi Anda yang ditampilkan.</p>' : ''}
-      ${prodiTanpaKalender ? `<div class="pesan info">Kalender ${esc(prodiSaya.toUpperCase())} belum diterbitkan kaprodinya, jadi belum ada sesi untuk diberi rekaman. Kalender prodi lain di bawah hanya bisa dilihat; rekamannya diterbitkan dosen pengampu prodi itu.</div>` : ''}
+      ${prodiTanpaKalender ? `<div class="pesan info">Kalender ${esc(prodiSaya.toUpperCase())} belum diterbitkan kaprodinya, jadi belum ada sesi untuk diberi rekaman. Kalender prodi lain di bawah hanya bisa dilihat; rekamannya diterbitkan pengajar kelas prodi itu.</div>` : ''}
       <form id="form-kalender">
         <label>Kalender terbit
           <select name="kalender">${pilihan}</select></label>

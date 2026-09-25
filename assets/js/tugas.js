@@ -109,6 +109,38 @@ async function tampilMahasiswa() {
 
 // ===================== Pengajar =====================
 
+// Laporan kemiripan antar kiriman (dulu di halaman Tugas Prodi & Laporan
+// Kemiripan; pindah ke halaman tugas sejak 2026-09-26).
+async function tampilKemiripan() {
+  const lap = document.getElementById('laporan-kemiripan');
+  lap.innerHTML = '<p class="redup">Memuat laporan…</p>';
+  try {
+    const d = await apiGet(`/api/tugas/${encodeURIComponent(id)}/laporan`, { auth: true });
+    const lencana = (band) => band === '-' ? '<span class="redup">–</span>' : `<span class="lencana ${esc(band)}">${esc(band)}</span>`;
+    // Nomor urut kiriman menggantikan ObjectID mentah di tampilan.
+    const perKiriman = d.per_kiriman || [];
+    const pasangan = d.pasangan || [];
+    const nomor = new Map(perKiriman.map((r, i) => [r.id, i + 1]));
+    const noKiriman = kid => `#${nomor.get(kid) ?? '?'}`;
+    const baris = perKiriman.map(r => `
+      <tr class="band-${esc(r.band)}"><td class="num">${noKiriman(r.id)}</td>
+        <td>${esc(r.nama)} <span class="redup">(${esc(r.nim)})</span></td>
+        <td class="num">${r.max_score ?? '–'}</td>
+        <td>${r.pasangan_id ? noKiriman(r.pasangan_id) + ' ' + esc(r.pasangan_nama || '') : '–'}</td>
+        <td>${lencana(r.band)}</td></tr>`).join('');
+    const pas = pasangan.slice(0, 20).map(p => `
+      <tr class="band-${esc(p.band)}"><td class="num">${noKiriman(p.a_id)} <span class="redup">${esc(p.a_nama)}</span></td>
+        <td class="num">${noKiriman(p.b_id)} <span class="redup">${esc(p.b_nama)}</span></td>
+        <td class="num">${esc(p.score)}</td><td>${lencana(p.band)}</td></tr>`).join('');
+    lap.innerHTML = `
+      <h4>Per kiriman</h4>
+      <div class="gulir"><table><thead><tr><th>Kiriman</th><th>Mahasiswa</th><th class="num">Skor maks</th>
+        <th>Paling mirip dengan</th><th>Band</th></tr></thead><tbody>${baris || '<tr><td colspan="5">Belum ada kiriman</td></tr>'}</tbody></table></div>
+      <h4>Pasangan paling mirip (top 20)</h4>
+      <div class="gulir"><table><thead><tr><th>A</th><th>B</th><th class="num">Skor</th><th>Band</th></tr></thead><tbody>${pas || '<tr><td colspan="4">–</td></tr>'}</tbody></table></div>`;
+  } catch (err) { lap.innerHTML = `<div class="pesan gagal">Gagal memuat laporan: ${esc(err.message)}</div>`; }
+}
+
 let kiriman = [];
 
 function barisKiriman(b) {
@@ -171,15 +203,26 @@ async function tampilPengajar() {
       <p class="meta"><b>Simpan draf</b> menyimpan nilai tanpa memperlihatkannya; <b>Kembalikan</b> memperlihatkan nilai dan komentar kepada mahasiswa dan memasukkannya ke buku nilai kelas.</p>
       <div id="hasil-nilai"></div>
       <div id="daftar-kiriman"><p class="redup">Memuat…</p></div>
-      <p class="cta-row"><a class="aksi sekunder" href="dosen.html?laporan=${encodeURIComponent(id)}">Laporan Kemiripan</a>${tugas.kelas_id ? `<a class="aksi sekunder" href="kelas.html?id=${encodeURIComponent(tugas.kelas_id)}#nilai">Buku nilai kelas</a>` : ''}</p>
+      <p class="cta-row">${tugas.kelas_id ? `<a class="aksi sekunder" href="kelas.html?id=${encodeURIComponent(tugas.kelas_id)}#nilai">Buku nilai kelas</a>` : ''}</p>
+    </div>
+    <div class="kartu" id="kemiripan"><h3>Laporan Kemiripan</h3>
+      <p class="meta">Skor kemiripan antar kiriman (tinggi ≥ 0,85 · sedang ≥ 0,60 · rendah &lt; 0,60) adalah alat bantu prioritas pemeriksaan, bukan vonis plagiat — periksa kirimannya sebelum memutuskan.</p>
+      <p class="cta-row"><button type="button" class="sekunder" data-aksi="kemiripan">Tampilkan Laporan</button></p>
+      <div id="laporan-kemiripan"></div>
     </div>`;
   await muatKiriman();
+  // Tautan bot "laporan tugas <id>" dan tautan lama dosen.html?laporan= membuka #kemiripan.
+  if (location.hash === '#kemiripan') {
+    document.getElementById('kemiripan').scrollIntoView({ block: 'start' });
+    tampilKemiripan();
+  }
 
   isi.addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-aksi]');
     if (!b) return;
     const aksi = b.dataset.aksi;
     if (aksi === 'unduh-lampiran') return unduhLampiran(b);
+    if (aksi === 'kemiripan') return tampilKemiripan();
     if (aksi === 'hapus-tugas') {
       if (!window.confirm(`Hapus tugas "${tugas.judul}"?`)) return;
       try {
@@ -191,7 +234,7 @@ async function tampilPengajar() {
         }
         await apiDeleteJson(`/api/tugas/${encodeURIComponent(id)}?konfirmasi=hapus`);
       }
-      location.href = tugas.kelas_id ? `kelas.html?id=${encodeURIComponent(tugas.kelas_id)}#tugas` : 'dosen.html';
+      location.href = tugas.kelas_id ? `kelas.html?id=${encodeURIComponent(tugas.kelas_id)}#tugas` : 'portal.html';
       return;
     }
     const tr = b.closest('tr[data-kid]');

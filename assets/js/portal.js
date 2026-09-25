@@ -1,5 +1,5 @@
 import { apiGet, isLoggedIn, arahkanKeLogin } from './api.js';
-import { sayaSekarang, peranAktif } from './akun.js';
+import { sayaSekarang } from './akun.js';
 import { esc, keadaanKosong, prodiBawaan } from './ui.js';
 
 // Daftar tugas — gabungan semua kelas (sejak 2026-09-25, keputusan #8: menu
@@ -14,11 +14,8 @@ const labelProdi = (kode) => kode ? String(kode).toUpperCase() : 'tanpa prodi';
 function tulisPengantar(saya) {
   const p = document.querySelector('.kepala-halaman p:not(.remah)');
   if (!p || !saya) return;
-  const peran = peranAktif(saya);
-  if (peran === 'dosen' || peran === 'kaprodi') {
-    p.innerHTML = 'Tugas yang perlu dinilai dan semua tugas — tugas bertenggat dibuat di halaman <a href="kelas.html">Kelas</a>';
-  } else if (peran === 'admin') {
-    p.textContent = 'Ringkasan tugas semua prodi beserta jumlah kiriman (hanya baca)';
+  if (saya.peran === 'dosen') {
+    p.innerHTML = 'Tugas yang perlu dinilai dan semua tugas — tugas dibuat di halaman <a href="kelas.html">Kelas</a>';
   } else {
     p.textContent = 'Tugas dari semua kelas Anda: yang perlu dikerjakan dan yang sudah diserahkan';
   }
@@ -55,7 +52,7 @@ function kartuStaf(t, admin, namaKelas) {
     <div class="tugas-kepala"><h3>${esc(t.judul)}</h3><span class="meta">${esc(t.n_kiriman)} kiriman</span></div>
     <p class="meta">${asal(t, namaKelas)}${t.tenggat ? ` · tenggat ${esc(waktu(t.tenggat))}` : ''}</p>
     ${t.deskripsi ? `<p class="meta tugas-deskripsi">${esc(t.deskripsi)}</p>` : ''}
-    ${admin ? '' : `<p class="cta-row"><a class="aksi sekunder" href="tugas.html?id=${encodeURIComponent(t.id)}">Buka &amp; Nilai</a><a class="aksi sekunder" href="dosen.html?laporan=${encodeURIComponent(t.id)}">Laporan Kemiripan</a></p>`}
+    ${admin ? '' : `<p class="cta-row"><a class="aksi sekunder" href="tugas.html?id=${encodeURIComponent(t.id)}">Buka &amp; Nilai</a><a class="aksi sekunder" href="tugas.html?id=${encodeURIComponent(t.id)}#kemiripan">Laporan Kemiripan</a></p>`}
   </div>`;
 }
 
@@ -81,7 +78,9 @@ if (!isLoggedIn()) {
   const kelas = kelasSaya.kelas || [];
   const namaKelas = Object.fromEntries(kelas.map(k => [k.id, k.nama]));
   const dosen = Boolean(saya && saya.peran === 'dosen');
-  const admin = Boolean(saya && peranAktif(saya) === 'admin');
+  // Tanpa pemilih peran (2026-09-26): semua dosen (termasuk admin) melihat
+  // tampilan pengajar; hak menilai tetap diperiksa backend per kelas.
+  const admin = false;
   tulisPengantar(saya);
   if (dosen) {
     const perlu = admin ? [] : await perluDinilai(kelas);

@@ -7,7 +7,7 @@ import { esc, keadaanKosong, istilah, labelModa, opsiModa, labelTabel, prodiBawa
 //
 // Pembuatan draft, penyuntingan sesi, penerbitan, dan penghapusan hanya untuk
 // kaprodi prodi kalender itu (keputusan pemilik produk 2026-09-14): tombolnya
-// muncul selagi peran aktif kaprodi, dan hanya pada kalender prodi yang ia
+// muncul bagi pemegang jabatan kaprodi, dan hanya pada kalender prodi yang ia
 // pimpin. Kewenangannya tetap dicek server (403 untuk yang lain).
 //
 // Tampilan baca (audit UX 2026-09-14, U04/U05/U11): kalender disaring ke prodi
@@ -49,8 +49,8 @@ function hariDari(ymd) {
   return isNaN(d) ? '' : HARI[d.getUTCDay()];
 }
 
-// Prodi yang kalendernya boleh disusun pengguna ini: prodi yang ia pimpin,
-// selagi peran aktifnya kaprodi. Kosong = hanya membaca.
+// Prodi yang kalendernya boleh disusun pengguna ini: prodi yang ia pimpin
+// sebagai kaprodi. Kosong = hanya membaca.
 let prodiSusun = [];
 let daftarKalender = [];
 function bolehSusun(k) { return prodiSusun.includes(k.prodi_kode); }
@@ -471,9 +471,7 @@ if (!isLoggedIn()) {
   const kodeSaya = prodiPengguna.toUpperCase();
   const catatan = prodiSusun.length
     ? `<p class="pesan info">Anda menyusun kalender ${esc(prodiSusun.join(', ').toUpperCase())} sebagai kaprodi. Kalender prodi lain hanya bisa dibaca.</p>`
-    : dipimpin.length
-      ? `<p class="pesan info">Kalender disusun kaprodi program studi. Untuk menyusun kalender ${esc(dipimpin.join(', ').toUpperCase())}, pilih peran <b>kaprodi</b> di pojok kanan atas.</p>`
-      : peran === 'mahasiswa' && kodeSaya
+    : peran === 'mahasiswa' && kodeSaya
         ? `<p class="pesan info">Jadwal kuliah per minggu untuk prodi Anda, <b>${esc(kodeSaya)}</b>. Kalender disusun dan diterbitkan kaprodi ${esc(kodeSaya)}.</p>`
         : '<p class="pesan info">Kalender semester disusun dan diterbitkan kaprodi program studi masing-masing. Halaman ini menampilkan kalender yang sudah terbit.</p>';
   isi.innerHTML = catatan + (prodi.length ? formBuat(prodi, daftarRitme) : '')

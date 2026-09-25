@@ -1,139 +1,101 @@
-// Menu navigasi per peran aktif — SATU sumber untuk:
-//   - nav atas di layar lebar (header nav.navutama, diisi di sini),
-//   - bilah navigasi bawah + lembar "Lainnya"/"Laporan" di HP (<= 720px),
-//   - daftar Layanan di Beranda (LAYANAN, dipakai index.js).
+// Menu navigasi — SATU sumber untuk nav atas di layar lebar (header
+// nav.navutama) dan bilah navigasi bawah + lembar "Menu" di HP (<= 720px).
+//
+// Sejak 2026-09-26 (keputusan developer Arfan; membalik menu per peran aktif
+// dan pemilih peran 2026-09-15): TIDAK ada pemilih peran. Menu utama
+// ditentukan peran dasar (mahasiswa atau dosen), lalu ditambah bagian sesuai
+// jabatan yang DIPEGANG — "Prodi" untuk kaprodi, "Admin" untuk admin — dan
+// "Lainnya" untuk pekerjaan yang jarang dibuka. Materi, kuis, dan tugas tidak
+// punya menu sendiri lagi: semuanya dibuka dari dalam kelas.
+//
 // Tamu, sesi berakhir, dan nomor yang belum terdaftar TIDAK mendapat menu
-// aplikasi: semua halaman di dalamnya butuh masuk (keputusan pemilik produk
-// 2026-09-15). Peran dan kewenangan tetap diputuskan backend; menu hanya
-// memilih tautan yang relevan untuk peran aktif (pemilih peran di akun.js).
+// aplikasi (keputusan pemilik produk 2026-09-15). Kewenangan tetap diputuskan
+// backend; menu hanya memilih tautan yang relevan.
 //
 // Modul ini sengaja tidak meng-import akun.js/ui.js (akun.js yang memanggil
 // modul ini), supaya tidak ada import melingkar.
 
 function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
-// Menu layanan per peran aktif (Beranda). Laporan tingkat prodi (kaprodi.html,
-// kepatuhan.html, rekap rapor, rekap rekaman) hanya untuk kaprodi
-// dan admin — halamannya sendiri berganti ke tampilan laporan untuk peran itu,
-// dan backend tetap menolak 403 untuk yang lain.
-export const LAYANAN = {
-  mahasiswa: [
-    ['Pembelajaran', [
-      ['kelas.html', 'Kelas saya', 'Materi, kuis, tugas, dan nilai per kelas'],
-      ['materi.html', 'Materi pekan ini', 'Video dan bacaan asinkron'],
-      ['kuis.html', 'Kuis gerbang', 'Syarat sebelum sesi Jumat'],
-      ['rekaman.html', 'Rekaman sesi', 'Kelas daring yang terlewat'],
-      ['portal.html', 'Tugas', 'Perlu dikerjakan dan sudah diserahkan'],
-      ['kalender.html', 'Kalender akademik', 'Jadwal semester'],
-    ]],
-    ['Nilai dan kemajuan', [
-      ['dasbor.html', 'Dasbor belajar', 'Beban belajar dan capaian CPL'],
-      ['nilai.html', 'Nilai proyek', 'Rincian per mata kuliah'],
-      ['rapor.html', 'Rapor', 'IP per semester dan IPK'],
-      ['autograder.html', 'Hasil autograder', 'Tes otomatis kode praktikum'],
-    ]],
-    ['Administrasi', [
-      ['kerja.html', 'Proyek kerja / magang', 'Konversi pekerjaan jadi kredit'],
-      ['rpl.html', 'Rekognisi pembelajaran lampau', 'Pengakuan pengalaman kerja'],
-    ]],
-  ],
-  dosen: [
-    ['Pengajaran', [
-      ['kelas.html', 'Kelas saya', 'Tugas bertenggat, nilai, dan anggota tiap kelas yang Anda ajar'],
-      ['portal.html', 'Perlu dinilai', 'Kiriman tugas yang menunggu nilai'],
-      ['kelola-materi.html', 'Kelola materi', 'Video dan bacaan per minggu'],
-      ['kuis.html', 'Kuis gerbang', 'Susun soal dan cek kelulusan'],
-      ['dosen.html', 'Tugas prodi & kemiripan', 'Tugas tanpa kelas dan laporan kemiripan'],
-      ['rekaman.html', 'Rekaman sesi', 'Terbitkan sebelum tenggat'],
-    ]],
-    ['Penilaian', [
-      ['proyek.html', 'Proyek blok', 'Anggota dan nilai per mata kuliah'],
-      ['ujian.html', 'Pengawas ujian', 'Jadwal dan kehadiran'],
-      ['autograder.html', 'Autograder', 'Hasil tes otomatis dan bobot'],
-      ['rapor.html', 'Rapor mahasiswa', 'Rapor per NIM'],
-      ['rpl.html', 'Tinjau RPL', 'Pengajuan yang menunggu'],
-      ['kerja.html', 'Proyek kerja bimbingan', 'Putusan dan tinjauan'],
-    ]],
-    ['Akademik', [
-      ['kalender.html', 'Kalender akademik', 'Jadwal semester'],
-      ['akademik.html', 'Roster dan email dosen', 'Data mahasiswa dan email kampus Anda'],
-      ['kurikulum.html', 'Kurikulum', 'Program studi dan data kurikulumnya'],
-    ]],
-  ],
-  kaprodi: [
-    ['Kurikulum dan pengajar', [
-      ['kelas.html', 'Kelas prodi', 'Buka kelas, tunjuk pengajar, atur peserta'],
-      ['kurikulum.html', 'Kurikulum program studi', 'Rumpun, mata kuliah, CPL, dan ritme'],
-      ['pengampu.html', 'Dosen pengampu prodi', 'Centang dosen yang mengajar di prodi Anda'],
-      ['kalender.html', 'Kalender akademik', 'Susun dan terbitkan kalender prodi Anda'],
-      ['pengguna.html', 'Pengguna prodi', 'Mahasiswa dan dosen prodi, reset kata sandi'],
-    ]],
-    ['Laporan prodi', [
-      ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
-      ['kepatuhan.html', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi'],
-      ['rapor.html', 'Rekap rapor angkatan', 'Nilai huruf dan IP per semester'],
-      ['rekaman.html', 'Rekap rekaman', 'Sesi daring yang terlambat direkam'],
-    ]],
-  ],
-  admin: [
-    ['Penyiapan', [
-      ['pengguna.html', 'Kelola pengguna', 'Dosen, mahasiswa, admin, dan reset kata sandi'],
-      ['jabatan.html', 'Kelola kaprodi', 'Tetapkan atau ganti kaprodi tiap prodi'],
-      ['kurikulum.html', 'Program studi baru', 'Buat prodi, lalu serahkan ke kaprodinya'],
-    ]],
-    ['Laporan semua prodi', [
-      ['kaprodi.html', 'Pantau proyek kerja', 'Tinjauan tengah semester'],
-      ['kepatuhan.html', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi'],
-      ['rapor.html', 'Rekap rapor angkatan', 'Nilai huruf dan IP per semester'],
-      ['rekaman.html', 'Rekap rekaman', 'Sesi daring yang terlambat direkam'],
-    ]],
-  ],
+// Butir menu: [href, label pendek, label lengkap, keterangan, ikon].
+const B = {
+  beranda: ['./', 'Beranda', 'Beranda', 'Yang perlu dikerjakan hari ini', 'beranda'],
+  kelas: ['kelas.html', 'Kelas', 'Kelas', 'Materi, kuis, tugas, pengumuman, dan nilai per kelas', 'kelas'],
+  jadwal: ['kalender.html', 'Jadwal', 'Jadwal', 'Kalender semester', 'kalender'],
+  nilai: ['rapor.html', 'Nilai', 'Nilai', 'Rapor per semester dan IPK', 'nilai'],
+  dasbor: ['dasbor.html', 'Dasbor', 'Dasbor belajar', 'Beban belajar dan capaian CPL', 'dasbor'],
+  rekaman: ['rekaman.html', 'Rekaman', 'Rekaman sesi', 'Kelas daring yang terekam', 'rekaman'],
+  kerja: ['kerja.html', 'Proyek kerja', 'Proyek kerja / magang', 'Pekerjaan di tempat kerja yang diakui sebagai proyek', 'kerja'],
+  rpl: ['rpl.html', 'RPL', 'Rekognisi pembelajaran lampau', 'Pengakuan pengalaman kerja', 'rpl'],
+  autograder: ['autograder.html', 'Autograder', 'Hasil autograder', 'Tes otomatis kode praktikum', 'kode'],
+  semuaTugas: ['portal.html', 'Tugas', 'Semua tugas', 'Tugas dari semua kelas', 'tugas'],
+  // Dosen
+  ujian: ['ujian.html', 'Ujian', 'Pengawas ujian', 'Jadwal dan kehadiran ujian', 'ujian'],
+  kerjaDosen: ['kerja.html', 'Proyek kerja', 'Proyek kerja bimbingan', 'Putusan dan tinjauan', 'kerja'],
+  rplDosen: ['rpl.html', 'RPL', 'Tinjau RPL', 'Pengajuan yang menunggu', 'rpl'],
+  roster: ['akademik.html', 'Roster', 'Roster dan email dosen', 'Data mahasiswa dan email kampus Anda', 'roster'],
+  raporDosen: ['rapor.html', 'Rapor', 'Rapor mahasiswa', 'Rapor per NIM', 'nilai'],
+  rekamanDosen: ['rekaman.html', 'Rekaman', 'Rekaman sesi', 'Terbitkan sebelum tenggat', 'rekaman'],
+  autograderDosen: ['autograder.html', 'Autograder', 'Autograder', 'Hasil tes otomatis dan bobot', 'kode'],
+  kurikulumBaca: ['kurikulum.html', 'Kurikulum', 'Kurikulum', 'Program studi dan data kurikulumnya', 'kurikulum'],
+  // Kaprodi (bagian Prodi)
+  kurikulum: ['kurikulum.html', 'Kurikulum', 'Kurikulum program studi', 'Rumpun, mata kuliah, CPL, dan ritme', 'kurikulum'],
+  pengguna: ['pengguna.html', 'Pengguna', 'Pengguna', 'Mahasiswa dan dosen, reset kata sandi', 'pengguna'],
+  pantauKerja: ['kaprodi.html', 'Proyek kerja', 'Pantau proyek kerja', 'Tinjauan tengah semester', 'laporan'],
+  kepatuhan: ['kepatuhan.html', 'Kepatuhan', 'Laporan kepatuhan', 'Menit per mata kuliah untuk akreditasi', 'kepatuhan'],
+  rekapRapor: ['rapor.html', 'Rapor', 'Rekap rapor angkatan', 'Nilai huruf dan IP per semester', 'nilai'],
+  rekapRekaman: ['rekaman.html', 'Rekaman', 'Rekap rekaman', 'Sesi daring yang terlambat direkam', 'rekaman'],
+  // Admin
+  kaprodiAdmin: ['jabatan.html', 'Kaprodi', 'Kelola kaprodi', 'Tetapkan atau ganti kaprodi tiap prodi', 'kaprodi'],
+  prodiBaru: ['kurikulum.html?baru=1', 'Prodi baru', 'Program studi baru', 'Buat prodi, lalu serahkan ke kaprodinya', 'prodi'],
 };
 
-// Navigasi per peran:
-//   bar  — bilah bawah HP (maks. 4, ditambah tombol grup),
-//   atas — nav atas layar lebar (ditambah tombol grup berisi sisa `grup`),
-//   grup — lembar "Lainnya"/"Laporan": pekerjaan yang lebih jarang dibuka.
-// Alasan pemilihan: bar berisi pekerjaan mingguan tiap peran (mahasiswa belajar
-// dan mengumpulkan; dosen menyiapkan materi, tugas, dan kuis; kaprodi
-// menyiapkan kurikulum, pengampu, kalender; admin menyiapkan kaprodi dan prodi).
-// Laporan dikumpulkan dalam satu grup karena dibuka berkala, bukan harian.
-// Forum web disembunyikan sejak 2026-09-18 (keputusan pemilik produk):
-// diskusi mata kuliah pindah ke grup WhatsApp per mata kuliah. forum.html
-// tetap ada tetapi tidak ditautkan dari menu mana pun.
-export const NAV = {
-  mahasiswa: {
-    bar: ['./', 'kelas.html', 'materi.html', 'portal.html'],
-    atas: ['./', 'kelas.html', 'kalender.html', 'materi.html', 'kuis.html', 'portal.html'],
-    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['kalender.html', 'kuis.html', 'rekaman.html', 'nilai.html', 'rapor.html', 'dasbor.html', 'kerja.html', 'rpl.html', 'autograder.html'] },
-  },
-  dosen: {
-    bar: ['./', 'kelas.html', 'kelola-materi.html', 'portal.html'],
-    atas: ['./', 'kelas.html', 'kelola-materi.html', 'portal.html', 'kuis.html', 'kalender.html'],
-    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['kuis.html', 'kalender.html', 'dosen.html', 'proyek.html', 'rekaman.html', 'ujian.html', 'akademik.html', 'rapor.html', 'rpl.html', 'kerja.html', 'autograder.html', 'kurikulum.html'] },
-  },
-  kaprodi: {
-    bar: ['./', 'kelas.html', 'kurikulum.html', 'kalender.html'],
-    atas: ['./', 'kelas.html', 'kurikulum.html', 'pengampu.html', 'kalender.html', 'pengguna.html'],
-    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['pengampu.html', 'pengguna.html', 'kaprodi.html', 'kepatuhan.html', 'rapor.html', 'rekaman.html'] },
-    catatan: 'Menu mengajar — materi, kuis, tugas, dan penilaian — ada di peran dosen.',
-  },
-  admin: {
-    bar: ['./', 'pengguna.html', 'jabatan.html', 'kurikulum.html'],
-    atas: ['./', 'pengguna.html', 'jabatan.html', 'kurikulum.html'],
-    grup: { label: 'Laporan', ikon: 'laporan', href: ['kaprodi.html', 'kepatuhan.html', 'rapor.html', 'rekaman.html'] },
-    catatan: 'Admin hanya menyiapkan prodi dan kaprodinya. Menu mengajar ada di peran dosen.',
-  },
-};
+/** Butir khusus prodi: Kelola Kelas dan kalender prodi yang dipimpin. */
+function butirProdi(kode) {
+  const K = String(kode).toUpperCase();
+  return [
+    [`kelas.html?kelola=${encodeURIComponent(kode)}`, 'Kelola kelas', `Kelola kelas ${K}`, 'Tunjuk pengajar, atur peserta, buka kelas tiap periode', 'kelas'],
+    [`kalender.html?prodi=${encodeURIComponent(kode)}`, 'Kalender', `Kalender ${K}`, 'Susun dan terbitkan kalender semester', 'kalender'],
+  ];
+}
 
-// Label pendek untuk nav (layar lebar dan bilah bawah).
-const PENDEK = {
-  './': 'Beranda', 'kalender.html': 'Kalender', 'materi.html': 'Materi', 'portal.html': 'Tugas',
-  'kuis.html': 'Kuis', 'forum.html': 'Forum', 'kelola-materi.html': 'Materi', 'dosen.html': 'Tugas',
-  'kurikulum.html': 'Kurikulum', 'pengampu.html': 'Pengampu', 'jabatan.html': 'Kaprodi',
-  'pengguna.html': 'Pengguna', 'sandi.html': 'Kata sandi', 'kelas.html': 'Kelas',
-};
-const PENDEK_PERAN = { admin: { 'kurikulum.html': 'Prodi baru' } };
+/**
+ * Menu untuk data GET /api/proyekblok/saya: { utama: [butir], bagian:
+ * [{ judul, butir }] }. Bagian urut Prodi, Admin, Lainnya; href yang sudah
+ * tampil di bagian sebelumnya (atau di menu utama) tidak diulang.
+ */
+export function menuUntuk(saya) {
+  if (!saya) return null;
+  if (saya.peran !== 'dosen') {
+    return {
+      utama: [B.beranda, B.kelas, B.jadwal, B.nilai],
+      bagian: [{ judul: 'Lainnya', butir: [B.semuaTugas, B.dasbor, B.rekaman, B.kerja, B.rpl, B.autograder] }],
+    };
+  }
+  const jab = saya.jabatan || [];
+  const bagian = [];
+  const dipimpin = saya.kaprodi_prodi || [];
+  if (jab.includes('kaprodi') && dipimpin.length) {
+    bagian.push({
+      judul: `Prodi ${dipimpin.join('/').toUpperCase()}`,
+      butir: [...dipimpin.flatMap(butirProdi), B.kurikulum, B.pengguna, B.pantauKerja, B.kepatuhan, B.rekapRapor, B.rekapRekaman],
+    });
+  }
+  if (jab.includes('admin')) {
+    bagian.push({ judul: 'Admin', butir: [B.pengguna, B.kaprodiAdmin, B.prodiBaru, B.pantauKerja, B.kepatuhan, B.rekapRapor, B.rekapRekaman] });
+  }
+  bagian.push({
+    judul: 'Lainnya',
+    butir: [B.semuaTugas, B.rekamanDosen, B.ujian, B.kerjaDosen, B.rplDosen, B.roster, B.raporDosen, B.autograderDosen, B.kurikulumBaca],
+  });
+  const utama = [B.beranda, B.kelas, B.jadwal];
+  const ada = new Set(utama.map(b => b[0]));
+  for (const bg of bagian) {
+    bg.butir = bg.butir.filter(b => !ada.has(b[0]));
+    bg.butir.forEach(b => ada.add(b[0]));
+  }
+  return { utama, bagian: bagian.filter(bg => bg.butir.length) };
+}
 
 // Ikon garis 24px, digambar sendiri (stroke = currentColor).
 const IKON = {
@@ -166,16 +128,6 @@ const IKON = {
   tutup: '<path d="M6 6l12 12M18 6 6 18"/>',
   panah: '<path d="m9 6 6 6-6 6"/>',
 };
-const IKON_HALAMAN = {
-  './': 'beranda', 'kalender.html': 'kalender', 'materi.html': 'materi', 'kelola-materi.html': 'materi',
-  'portal.html': 'tugas', 'dosen.html': 'tugas', 'kuis.html': 'kuis', 'forum.html': 'forum',
-  'kurikulum.html': 'kurikulum', 'pengampu.html': 'pengampu', 'jabatan.html': 'kaprodi',
-  'rekaman.html': 'rekaman', 'nilai.html': 'nilai', 'rapor.html': 'nilai', 'kaprodi.html': 'laporan',
-  'kepatuhan.html': 'kepatuhan', 'dasbor.html': 'dasbor', 'kerja.html': 'kerja', 'rpl.html': 'rpl',
-  'autograder.html': 'kode', 'proyek.html': 'proyek', 'ujian.html': 'ujian', 'akademik.html': 'roster',
-  'pengguna.html': 'pengguna', 'sandi.html': 'sandi', 'kelas.html': 'kelas',
-};
-const IKON_PERAN = { admin: { 'kurikulum.html': 'prodi' } };
 
 export function svgIkon(nama) {
   return `<svg class="ikon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${IKON[nama] || IKON.dokumen}</svg>`;
@@ -187,14 +139,17 @@ export function halamanIni() {
   return !akhir || akhir === 'index.html' ? './' : akhir;
 }
 
-function labelPendek(peran, href) { return (PENDEK_PERAN[peran] || {})[href] || PENDEK[href] || href; }
-function ikonHalaman(peran, href) { return (IKON_PERAN[peran] || {})[href] || IKON_HALAMAN[href] || 'dokumen'; }
-function layananUntuk(peran, href) {
-  for (const [, butir] of LAYANAN[peran] || []) {
-    const b = butir.find(([h]) => h === href);
-    if (b) return { label: b[1], ket: b[2] };
-  }
-  return { label: labelPendek(peran, href), ket: '' };
+/**
+ * Butir menu cocok dengan halaman ini. Href berquery (mis. kelas.html?kelola=trpl)
+ * hanya cocok bila query-nya sama; href tanpa query tidak cocok dengan halaman
+ * yang dibuka lewat butir berquery (Kelas vs Kelola kelas).
+ */
+function cocok(href) {
+  const [berkas, query = ''] = href.split('?');
+  if (berkas !== halamanIni()) return false;
+  const kini = new URLSearchParams(location.search);
+  if (!query) return !kini.has('kelola') && !kini.has('baru');
+  return [...new URLSearchParams(query)].every(([k, v]) => kini.get(k) === v);
 }
 
 // ===== Lembar (bottom sheet) =====
@@ -268,93 +223,85 @@ export function tutupLembar(kembalikanFokus = true) {
 }
 
 // ===== Navigasi =====
-function htmlDaftarMenu(peran, hrefs, ini) {
-  return `<ul class="daftar-menu">${hrefs.map(href => {
-    const { label, ket } = layananUntuk(peran, href);
-    const aktif = href === ini;
-    return `<li><a href="${href}"${aktif ? ' class="aktif" aria-current="page"' : ''}>${svgIkon(ikonHalaman(peran, href))}
+function htmlDaftarMenu(butir) {
+  return `<ul class="daftar-menu">${butir.map(([href, , label, ket, ikon]) => {
+    const aktif = cocok(href);
+    return `<li><a href="${esc(href)}"${aktif ? ' class="aktif" aria-current="page"' : ''}>${svgIkon(ikon)}
       <span class="daftar-menu-teks"><b>${esc(label)}</b>${ket ? `<small>${esc(ket)}</small>` : ''}</span>${svgIkon('panah')}</a></li>`;
   }).join('')}</ul>`;
 }
 
-function htmlCatatanGrup(cfg, bisaGantiDosen) {
-  if (!cfg.catatan) return '';
-  return `<div class="menu-catatan"><p>${esc(cfg.catatan)}</p>${bisaGantiDosen ? '<button type="button" class="tautan-tombol" data-ganti-peran="dosen">Pakai peran dosen</button>' : ''}</div>`;
-}
-
-function pasangGantiPeran(wadah, gantiPeran) {
-  wadah.querySelectorAll('[data-ganti-peran]').forEach(b => b.addEventListener('click', () => gantiPeran(b.dataset.gantiPeran)));
+function htmlBagian(bagian, berjudul) {
+  return bagian.map(bg => `${berjudul ? `<h3 class="menu-bagian-judul">${esc(bg.judul)}</h3>` : ''}${htmlDaftarMenu(bg.butir)}`).join('');
 }
 
 let klikLuarTerpasang = false;
 
 /**
- * Mengisi nav atas dan membuat bilah bawah + lembar grup untuk peran aktif.
- * `peran` null/kosong (tamu, sesi berakhir, nomor belum terdaftar, backend
- * tak terjangkau): nav dikosongkan dan bilah bawah tidak dibuat.
+ * Mengisi nav atas (menu utama + satu tombol turun per bagian) dan membuat
+ * bilah bawah + lembar "Menu" untuk HP. `saya` null (tamu, sesi berakhir,
+ * nomor belum terdaftar, backend tak terjangkau): nav dikosongkan dan bilah
+ * bawah tidak dibuat.
  */
-export function pasangNavigasi({ peran, gantiPeran, bisaGantiDosen = false }) {
+export function pasangNavigasi(saya) {
   const navAtas = document.querySelector('.appbar .navutama');
-  const cfg = NAV[peran];
+  const menu = menuUntuk(saya);
   document.querySelectorAll('.navbawah').forEach(el => el.remove());
   document.body.classList.remove('ada-navbawah');
-  if (!navAtas || !cfg) {
+  if (!navAtas || !menu) {
     if (navAtas) navAtas.innerHTML = '';
     return;
   }
-  const ini = halamanIni();
-  const diGrup = cfg.grup.href.includes(ini);
 
-  // Nav atas: item utama + tombol grup (dropdown) berisi sisanya.
-  const sisaAtas = cfg.grup.href.filter(h => !cfg.atas.includes(h));
-  const grupAtasAktif = sisaAtas.includes(ini) && !cfg.atas.includes(ini);
-  navAtas.innerHTML = cfg.atas.map(href => {
-    const aktif = href === ini;
-    return `<a href="${href}"${aktif ? ' class="aktif" aria-current="page"' : ''}>${esc(labelPendek(peran, href))}</a>`;
-  }).join('') + (sisaAtas.length ? `<div class="nav-grup">
-      <button type="button" class="nav-grup-tombol${grupAtasAktif ? ' aktif' : ''}" aria-expanded="false" aria-controls="nav-turun">${esc(cfg.grup.label)}<svg class="ikon-kecil" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-      <div class="nav-turun" id="nav-turun" hidden>${htmlDaftarMenu(peran, sisaAtas, ini)}${htmlCatatanGrup(cfg, bisaGantiDosen)}</div>
-    </div>` : '');
-  const tombolTurun = navAtas.querySelector('.nav-grup-tombol');
-  if (tombolTurun) {
-    const turun = navAtas.querySelector('.nav-turun');
-    const tutupTurun = () => { turun.hidden = true; tombolTurun.setAttribute('aria-expanded', 'false'); };
-    tombolTurun.addEventListener('click', e => {
+  // Nav atas: menu utama + tombol turun tiap bagian.
+  navAtas.innerHTML = menu.utama.map(([href, pendek]) =>
+    `<a href="${esc(href)}"${cocok(href) ? ' class="aktif" aria-current="page"' : ''}>${esc(pendek)}</a>`).join('')
+    + menu.bagian.map((bg, i) => {
+      const aktif = bg.butir.some(([href]) => cocok(href));
+      return `<div class="nav-grup">
+        <button type="button" class="nav-grup-tombol${aktif ? ' aktif' : ''}" aria-expanded="false" aria-controls="nav-turun-${i}">${esc(bg.judul)}<svg class="ikon-kecil" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="nav-turun" id="nav-turun-${i}" hidden>${htmlDaftarMenu(bg.butir)}</div>
+      </div>`;
+    }).join('');
+  navAtas.querySelectorAll('.nav-grup').forEach(grup => {
+    const tombol = grup.querySelector('.nav-grup-tombol');
+    const turun = grup.querySelector('.nav-turun');
+    tombol.addEventListener('click', e => {
       e.stopPropagation();
       const buka = turun.hidden;
+      navAtas.querySelectorAll('.nav-turun').forEach(t => { t.hidden = true; });
+      navAtas.querySelectorAll('.nav-grup-tombol').forEach(b => b.setAttribute('aria-expanded', 'false'));
       turun.hidden = !buka;
-      tombolTurun.setAttribute('aria-expanded', String(buka));
+      tombol.setAttribute('aria-expanded', String(buka));
     });
-    turun.addEventListener('keydown', e => { if (e.key === 'Escape') { tutupTurun(); tombolTurun.focus(); } });
-    pasangGantiPeran(turun, gantiPeran);
-    if (!klikLuarTerpasang) {
-      klikLuarTerpasang = true;
-      document.addEventListener('click', e => {
-        document.querySelectorAll('.nav-grup').forEach(g => {
-          if (g.contains(e.target)) return;
-          const t = g.querySelector('.nav-turun'); const b = g.querySelector('.nav-grup-tombol');
-          if (t && !t.hidden) { t.hidden = true; b.setAttribute('aria-expanded', 'false'); }
-        });
+    turun.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { turun.hidden = true; tombol.setAttribute('aria-expanded', 'false'); tombol.focus(); }
+    });
+  });
+  if (!klikLuarTerpasang) {
+    klikLuarTerpasang = true;
+    document.addEventListener('click', e => {
+      document.querySelectorAll('.nav-grup').forEach(g => {
+        if (g.contains(e.target)) return;
+        const t = g.querySelector('.nav-turun'); const b = g.querySelector('.nav-grup-tombol');
+        if (t && !t.hidden) { t.hidden = true; b.setAttribute('aria-expanded', 'false'); }
       });
-    }
+    });
   }
 
-  // Bilah bawah (HP): item bar + tombol grup yang membuka lembar.
+  // Bilah bawah (HP): menu utama + tombol "Menu" yang membuka semua bagian.
+  const diBagian = menu.bagian.some(bg => bg.butir.some(([href]) => cocok(href)));
   const bar = document.createElement('nav');
-  bar.className = `navbawah kolom-${cfg.bar.length + 1}`;
+  bar.className = `navbawah kolom-${menu.utama.length + 1}`;
   bar.setAttribute('aria-label', 'Navigasi utama');
-  bar.innerHTML = cfg.bar.map(href => {
-    const aktif = href === ini;
-    return `<a href="${href}"${aktif ? ' class="aktif" aria-current="page"' : ''}>${svgIkon(ikonHalaman(peran, href))}<span>${esc(labelPendek(peran, href))}</span></a>`;
-  }).join('') + `<button type="button" class="${diGrup && !cfg.bar.includes(ini) ? 'aktif' : ''}" aria-haspopup="dialog" aria-expanded="false" aria-controls="lembar-grup">${svgIkon(cfg.grup.ikon)}<span>${esc(cfg.grup.label)}</span></button>`;
+  bar.innerHTML = menu.utama.map(([href, pendek, , , ikon]) =>
+    `<a href="${esc(href)}"${cocok(href) ? ' class="aktif" aria-current="page"' : ''}>${svgIkon(ikon)}<span>${esc(pendek)}</span></a>`).join('')
+    + `<button type="button" class="${diBagian ? 'aktif' : ''}" aria-haspopup="dialog" aria-expanded="false" aria-controls="lembar-grup">${svgIkon('lainnya')}<span>Menu</span></button>`;
   document.body.appendChild(bar);
   document.body.classList.add('ada-navbawah');
 
-  const lembar = buatLembar('lembar-grup', cfg.grup.label);
-  lembar.querySelector('h2').textContent = cfg.grup.label;
-  const isiLembar = lembar.querySelector('.lembar-isi');
-  isiLembar.innerHTML = htmlDaftarMenu(peran, cfg.grup.href, ini) + htmlCatatanGrup(cfg, bisaGantiDosen);
-  pasangGantiPeran(isiLembar, gantiPeran);
+  const lembar = buatLembar('lembar-grup', 'Menu');
+  lembar.querySelector('.lembar-isi').innerHTML = htmlBagian(menu.bagian, true);
   const tombolGrup = bar.querySelector('button');
   tombolGrup.addEventListener('click', () => bukaLembar(lembar, tombolGrup));
 }

@@ -181,7 +181,7 @@ async function mulai() {
   if (!halamanMengajar(s, isi, {
     judul: 'Pengawas Ujian',
     pesan: 'Penjadwalan ujian dan pencatatan kehadiran dikerjakan dosen pengawas di peran dosen atau kaprodi.',
-    untukMahasiswa: { href: 'saya.html', label: 'Beranda Saya', pesan: 'Kehadiran ujian Anda dicatat dosen pengawas saat ujian berlangsung.' },
+    untukMahasiswa: { href: './', label: 'Beranda', pesan: 'Kehadiran ujian Anda dicatat dosen pengawas saat ujian berlangsung.' },
   })) return;
   saya = s;
   try {

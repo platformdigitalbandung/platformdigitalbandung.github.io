@@ -101,8 +101,6 @@ code { font-family: var(--mono); font-size: .82rem; background: var(--latar); pa
   background: var(--aksen-muda); color: var(--aksen-tua);
   padding: .15rem .5rem; border-radius: 3px; font-size: .75rem; font-weight: 500;
 }
-.akun select.pilih-peran { border: 1px solid transparent; margin: 0; width: auto; font-family: inherit; cursor: pointer; }
-.akun select.pilih-peran:hover, .akun select.pilih-peran:focus { border-color: var(--aksen); }
 .tautan-tentang { font-size: .85rem; color: var(--redup); font-weight: 500; white-space: nowrap; }
 .tautan-tentang:hover { color: var(--aksen); }
 .tautan-tombol, button.tautan-tombol {
@@ -131,8 +129,9 @@ a.status-akun.masuk:hover { color: var(--aksen); text-decoration: none; }
   max-width: 16em; overflow: hidden; text-overflow: ellipsis;
 }
 @media (min-width: 1280px) { .nomor-induk { display: inline-block; } }
-/* Pemegang jabatan (ada pemilih peran) tidak muat email di satu baris dengan nav. */
-.akun:has(select.pilih-peran) .nomor-induk { display: none; }
+/* Pemegang jabatan (label peran panjang, mis. "kaprodi TRPL · dosen") tidak
+   muat email di satu baris dengan nav. */
+.akun:has(.peran-jabatan) .nomor-induk { display: none; }
 
 /* Tombol akun ringkas (hanya HP). */
 .akun-ringkas { order: 4; display: none; align-items: center; gap: .75rem; flex: none; margin-left: auto; }
@@ -197,29 +196,15 @@ body.lembar-terbuka { overflow: hidden; }
 .daftar-menu-teks b { font-weight: 500; font-size: .92rem; }
 .daftar-menu-teks small { color: var(--redup); font-size: .78rem; }
 .nav-turun .daftar-menu a { min-height: 44px; }
-.menu-catatan { margin: .5rem 0 0; padding: .65rem .5rem 0; border-top: 1px solid var(--garis-halus); }
-.menu-catatan p { margin: 0 0 .5rem; color: var(--redup); font-size: .82rem; }
+/* Judul bagian di lembar "Menu" (HP): Prodi, Admin, Lainnya. */
+.menu-bagian-judul { margin: .9rem .5rem .3rem; font-size: .78rem; font-weight: 600; color: var(--redup); text-transform: uppercase; letter-spacing: .04em; }
+.menu-bagian-judul:first-child { margin-top: .2rem; }
 
 .akun-identitas { display: flex; align-items: center; gap: .75rem; padding: .5rem 0 .75rem; }
 .akun-identitas > div { display: flex; flex-direction: column; align-items: flex-start; gap: .2rem; min-width: 0; }
 .akun-identitas b { font-size: 1rem; }
 .akun-identitas small { font-family: var(--mono); font-size: .78rem; color: var(--redup); overflow-wrap: anywhere; }
 .akun-catatan { margin: 0 0 .75rem; padding: .6rem .75rem; background: var(--latar); border-radius: var(--radius); font-size: .85rem; }
-.pilih-peran-lembar { margin: 0 0 .9rem; padding: 0; border: 0; display: grid; gap: .4rem; }
-.pilih-peran-lembar legend { padding: 0; margin-bottom: .4rem; font-size: .8rem; font-weight: 600; color: var(--redup); text-transform: uppercase; letter-spacing: .03em; }
-.pilih-peran-lembar small { color: var(--redup); font-size: .78rem; }
-.opsi-peran {
-  display: flex; align-items: center; min-height: 48px; margin: 0; padding: .5rem .85rem; text-align: left;
-  border: 1px solid var(--garis); border-radius: var(--radius); background: var(--permukaan); color: var(--tinta);
-  font: inherit; font-weight: 500; cursor: pointer;
-}
-.opsi-peran::before {
-  content: ""; width: 18px; height: 18px; margin-right: .65rem; flex: none; border-radius: 50%;
-  border: 2px solid var(--garis-kuat); box-sizing: border-box;
-}
-.opsi-peran:hover { background: var(--latar); border-color: var(--garis-kuat); color: var(--tinta); }
-.opsi-peran.aktif, .opsi-peran.aktif:hover { border-color: var(--aksen); background: var(--aksen-muda); color: var(--aksen-tua); }
-.opsi-peran.aktif::before { border: 5px solid var(--aksen); }
 .akun-aksi { display: flex; flex-wrap: wrap; gap: .5rem; }
 .akun-aksi > * { flex: 1 1 10rem; text-align: center; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
 
@@ -623,7 +608,7 @@ td.kecil { font-size: .8rem; }
   label:has(> input[type="checkbox"]), label:has(> input[type="radio"]) {
     display: flex; align-items: center; min-height: 44px; margin-top: .2rem; margin-bottom: .2rem;
   }
-  button, a.aksi, .tautan-tombol, button.tautan-tombol, .akun select.pilih-peran { min-height: 44px; }
+  button, a.aksi, .tautan-tombol, button.tautan-tombol { min-height: 44px; }
   select { min-height: 44px; }
   /* Istilah: area ketuk 44px tanpa menambah tinggi baris. */
   .istilah .istilah-tombol { min-height: 0; }

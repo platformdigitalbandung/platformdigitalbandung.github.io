@@ -1,5 +1,5 @@
 import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, apiPostBerkasToken, isLoggedIn, arahkanKeLogin } from './api.js';
-import { sayaSekarang, peranAktif } from './akun.js';
+import { sayaSekarang, punyaPeran } from './akun.js';
 import { esc, halamanUntuk, keadaanKosong, labelTabel, istilah } from './ui.js';
 
 // Kelas (model Google Classroom) — keputusan developer Arfan 2026-09-25.
@@ -70,8 +70,12 @@ function gridPerPeriode(daftar) {
 }
 
 async function tampilDaftar(saya) {
-  const aktif = peranAktif(saya);
-  if (aktif === 'admin') {
+  // Tanpa pemilih peran (2026-09-26): admin yang tidak mengajar dan tidak
+  // memimpin prodi melihat pilihan prodi (hanya baca); selain itu semua kelas
+  // yang diikuti, diajar, dan kelas prodi yang dipimpin.
+  const kaprodi = punyaPeran(saya, 'kaprodi');
+  const { kelas = [], kaprodi_prodi: kaprodiProdi = [] } = await apiGet('/api/kelas/saya');
+  if (punyaPeran(saya, 'admin') && !kaprodi && !kelas.length) {
     const { prodi = [] } = await apiGet('/api/kurikulum/prodi');
     setKepala('Kelas', 'Kelas semua prodi (hanya baca untuk admin)', '<a href="./">Beranda</a> / Kelas');
     isi.innerHTML = `<div class="kartu"><h3>Pilih program studi</h3>
@@ -79,14 +83,12 @@ async function tampilDaftar(saya) {
       <p class="cta-row">${(prodi || []).map(p => `<a class="aksi sekunder" href="kelas.html?kelola=${encodeURIComponent(p.kode)}">${esc(p.nama)}</a>`).join('')}</p></div>`;
     return;
   }
-  const { kelas = [], kaprodi_prodi: kaprodiProdi = [] } = await apiGet('/api/kelas/saya');
-  let daftar = kelas;
-  if (aktif === 'dosen') daftar = kelas.filter(k => k.peran === 'pengajar');
-  if (aktif === 'kaprodi') daftar = kelas.filter(k => k.peran === 'kaprodi' || k.peran === 'pengajar');
-  const kelola = aktif === 'kaprodi' && kaprodiProdi.length
+  const daftar = kelas;
+  const mahasiswa = punyaPeran(saya, 'mahasiswa');
+  const kelola = kaprodi && kaprodiProdi.length
     ? `<p class="cta-row">${kaprodiProdi.map(p => `<a class="aksi" href="kelas.html?kelola=${encodeURIComponent(p)}">Kelola kelas ${esc(p.toUpperCase())}</a>`).join('')}</p>` : '';
   if (!daftar.length) {
-    isi.innerHTML = kelola + (aktif === 'mahasiswa'
+    isi.innerHTML = kelola + (mahasiswa
       ? keadaanKosong({
         judul: 'Belum ada kelas',
         keterangan: 'Kelas dibuka otomatis setelah kaprodi menerbitkan kalender semester prodi, angkatan, dan semester Anda di roster.',
@@ -94,12 +96,12 @@ async function tampilDaftar(saya) {
         aksi: { href: 'kalender.html', label: 'Lihat kalender' },
       })
       : keadaanKosong({
-        judul: aktif === 'kaprodi' ? 'Belum ada kelas di prodi Anda' : 'Anda belum menjadi pengajar kelas mana pun',
-        keterangan: aktif === 'kaprodi'
+        judul: kaprodi ? 'Belum ada kelas di prodi Anda' : 'Anda belum menjadi pengajar kelas mana pun',
+        keterangan: kaprodi
           ? 'Kelas dibuat otomatis saat kalender semester diterbitkan. Terbitkan kalendernya, atau buka Kelola Kelas untuk membuat kelas.'
           : 'Kaprodi menunjuk pengajar tiap kelas. Hubungi kaprodi prodi tempat Anda mengajar.',
         siapa: 'kaprodi',
-        aksi: aktif === 'kaprodi' ? { href: 'kalender.html', label: 'Buka kalender' } : null,
+        aksi: kaprodi ? { href: 'kalender.html', label: 'Buka kalender' } : null,
       }));
     return;
   }
@@ -110,11 +112,16 @@ async function tampilDaftar(saya) {
 
 let kelolaData = { kelas: [], kalender: [], pilihan: [], prodi: '' };
 
+// Pilihan pengajar: semua dosen aktif yang sudah mengisi email kampus (sejak
+// 2026-09-26 tanpa centang pengampu). Yang sudah terpilih di atas; kolom cari
+// menyaring daftar yang panjang.
 function opsiPengajar(terpilih) {
   if (!kelolaData.pilihan.length) {
-    return '<p class="redup">Belum ada dosen pilihan. Centang dosen prodi di <a href="pengampu.html">Dosen Pengampu Prodi</a> (dosennya harus sudah mengisi email kampus).</p>';
+    return '<p class="redup">Belum ada dosen aktif yang mengisi email kampus. Dosen mengisinya sendiri di halaman Roster &amp; Email Dosen.</p>';
   }
-  return `<div class="pilih-pengajar">${kelolaData.pilihan.map(d => `<label><input type="checkbox" name="pengajar" value="${escAttr(d.email)}"${terpilih.includes(d.email) ? ' checked' : ''}>${esc(d.nama || d.email)} <span class="redup">&nbsp;${esc(d.email)}</span></label>`).join('')}</div>`;
+  const urut = [...kelolaData.pilihan].sort((a, b) => Number(terpilih.includes(b.email)) - Number(terpilih.includes(a.email)));
+  return `<input type="search" class="cari-pengajar" placeholder="Cari nama atau email dosen…" aria-label="Cari dosen">
+    <div class="pilih-pengajar">${urut.map(d => `<label data-cari="${escAttr(`${d.nama || ''} ${d.email}`.toLowerCase())}"><input type="checkbox" name="pengajar" value="${escAttr(d.email)}"${terpilih.includes(d.email) ? ' checked' : ''}>${esc(d.nama || d.email)} <span class="redup">&nbsp;${esc(d.email)}</span></label>`).join('')}</div>`;
 }
 
 function formKelas(k, boleh) {
@@ -192,10 +199,10 @@ async function muatKelola() {
 let kelolaBoleh = false;
 
 async function tampilKelola(saya) {
-  const aktif = peranAktif(saya);
+  const admin = punyaPeran(saya, 'admin');
   const dipimpin = (saya.kaprodi_prodi || []).map(p => p.toLowerCase());
-  kelolaBoleh = aktif === 'kaprodi' && dipimpin.includes(kelolaProdi);
-  if (!kelolaBoleh && aktif !== 'admin') {
+  kelolaBoleh = punyaPeran(saya, 'kaprodi') && dipimpin.includes(kelolaProdi);
+  if (!kelolaBoleh && !admin) {
     if (!halamanUntuk(saya, ['kaprodi', 'admin'], { judul: 'Kelola Kelas', pesan: 'Kelas prodi disusun kaprodinya.' })) return;
     if (!dipimpin.includes(kelolaProdi)) {
       isi.innerHTML = '<div class="pesan gagal">Kaprodi hanya mengelola kelas prodinya sendiri.</div>';
@@ -257,6 +264,13 @@ async function tampilKelola(saya) {
       renderKelola(true, '<div class="pesan sukses">Kelas dihapus. Tombol "Buat kelas yang belum ada" membuatnya lagi bila perlu.</div>');
       await isiPilihanTambah();
     }
+  });
+  isi.addEventListener('input', (e) => {
+    if (!e.target.classList.contains('cari-pengajar')) return;
+    const q = e.target.value.trim().toLowerCase();
+    e.target.nextElementSibling.querySelectorAll('label').forEach(l => {
+      l.hidden = Boolean(q) && !l.dataset.cari.includes(q) && !l.querySelector('input').checked;
+    });
   });
   isi.addEventListener('submit', async (e) => {
     if (e.target.id !== 'form-tambah-kelas') return;

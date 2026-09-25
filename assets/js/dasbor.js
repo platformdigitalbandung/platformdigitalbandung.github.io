@@ -92,9 +92,9 @@ function kartuCPL(r) {
         <div class="stat"><span class="angka">${esc(r.tercapai)} / ${esc(r.dapat_dinilai)}</span><span class="label">CPL tercapai dari yang dinilai lewat proyek</span></div>
         <div class="stat"><span class="angka">${esc(r.ditopang_jalur_lain)}</span><span class="label">ditopang jalur lain</span></div>
       </div>
-      <p class="meta">Penyebutnya ${esc(r.dapat_dinilai)}, bukan ${esc(r.total)}: ${esc(r.ditopang_jalur_lain)} CPL sengaja tidak dipetakan ke rumpun mana pun dan dinilai di luar proyek blok, jadi tidak adil dihitung "belum tercapai".</p>
-      ${!r.tercapai ? '<p class="redup">Belum ada CPL tercapai. CPL dihitung tercapai setelah dosen pembimbing memasukkan nilai proyek blok yang lulus untuk rumpun buktinya, atau setelah pengajuan RPL Anda disetujui. Lihat <a href="nilai.html">Nilai Proyek</a> dan <a href="rapor.html">Rapor</a>.</p>' : ''}
-      ${r.tercapai_hanya_rpl ? `<p class="redup">${esc(r.tercapai_hanya_rpl)} dari yang tercapai buktinya hanya RPL (pengakuan pengalaman kerja), tanpa nilai proyek blok.</p>` : ''}
+      <p class="meta">Penyebutnya ${esc(r.dapat_dinilai)}, bukan ${esc(r.total)}: ${esc(r.ditopang_jalur_lain)} CPL sengaja tidak dipetakan ke rumpun mana pun dan dinilai di luar kelas rumpun, jadi tidak adil dihitung "belum tercapai".</p>
+      ${!r.tercapai ? '<p class="redup">Belum ada CPL tercapai. CPL dihitung tercapai setelah nilai akhir kelas rumpun buktinya lengkap dan lulus, atau setelah pengajuan RPL Anda disetujui. Lihat tab Nilai tiap <a href="kelas.html">kelas</a> dan <a href="rapor.html">Rapor</a>.</p>' : ''}
+      ${r.tercapai_hanya_rpl ? `<p class="redup">${esc(r.tercapai_hanya_rpl)} dari yang tercapai buktinya hanya RPL (pengakuan pengalaman kerja), tanpa nilai kelas.</p>` : ''}
       ${daftar.length ? `<div class="gulir"><table>
           <tr><th>CPL</th><th>Domain</th><th>Status</th><th>Bukti</th></tr>
           ${daftar.map(c => {

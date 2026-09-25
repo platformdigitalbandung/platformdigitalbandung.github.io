@@ -2,7 +2,8 @@ import { apiGet } from './api.js';
 import { esc } from './ui.js';
 
 // Bantuan bersama Beranda (index.js) dan Beranda Saya (saya.js): checklist
-// "Mulai di sini" per peran aktif — audit UX 2026-09-14 (U09, §3.3).
+// langkah yang belum selesai per peran yang dipegang — audit UX 2026-09-14
+// (U09, §3.3); sejak 2026-09-26 tampil di Beranda "Hari ini".
 //
 // Status tiap langkah dihitung dari data yang sudah ada: GET /api/proyekblok/saya
 // (email, prodi_mengajar, kaprodi_prodi, prodi_kode) dan butir GET
@@ -51,10 +52,10 @@ export function langkahMulai(peran, saya, agenda, tugas = null) {
         href: 'akademik.html', label: 'Isi email kampus', selesai: !!(saya && saya.email), jenis: ['email_belum_diisi'],
       },
       {
-        kunci: 'pengampu', judul: 'Ditunjuk sebagai pengajar kelas',
+        kunci: 'pengajar', judul: 'Ditunjuk sebagai pengajar kelas',
         keterangan: 'Kaprodi menunjuk pengajar tiap kelas. Hanya pengajar kelas (dan kaprodinya) yang bisa menyusun materi, kuis, tugas, dan nilai kelas itu.',
         status: jumlahKelas ? `Mengajar ${jumlahKelas} kelas.` : (kaprodi ? 'Sebagai kaprodi Anda bisa mengisi semua kelas prodi Anda.' : 'Belum menjadi pengajar kelas mana pun — minta kaprodi menunjuk Anda.'),
-        href: 'kelas.html', label: 'Lihat kelas', selesai: mengajar.length > 0, jenis: ['belum_pengampu', 'belum_mengajar_kelas'],
+        href: 'kelas.html', label: 'Lihat kelas', selesai: mengajar.length > 0, jenis: ['belum_mengajar_kelas'],
       },
       {
         kunci: 'katalog', judul: 'Siapkan materi dan kuis minggu ini',
@@ -70,7 +71,6 @@ export function langkahMulai(peran, saya, agenda, tugas = null) {
   if (peran === 'kaprodi') {
     const prodi = besar(((saya && saya.kaprodi_prodi) || []).join(', '));
     const kur = ada(butir, 'kurikulum_belum_lengkap');
-    const amp = ada(butir, 'pengampu_kosong');
     const kal = ada(butir, 'kalender_belum_terbit');
     const tanpaPengajar = ada(butir, 'kelas_tanpa_pengajar');
     return [
@@ -81,12 +81,6 @@ export function langkahMulai(peran, saya, agenda, tugas = null) {
         href: 'kurikulum.html', label: 'Buka kurikulum', selesai: cek(!kur), jenis: ['kurikulum_belum_lengkap'],
       },
       {
-        kunci: 'pengampu', judul: 'Centang dosen pengampu',
-        keterangan: 'Dosen yang Anda centang menjadi daftar pilihan pengajar kelas prodi Anda.',
-        status: amp ? 'Belum ada dosen pengampu selain Anda.' : 'Sudah ada dosen pengampu.',
-        href: 'pengampu.html', label: 'Atur pengampu', selesai: cek(!amp), jenis: ['pengampu_kosong'],
-      },
-      {
         kunci: 'kalender', judul: 'Susun dan terbitkan kalender',
         keterangan: 'Kalender semester disusun dari ritme mingguan. Setelah terbit, jadwal dan agenda mingguan muncul untuk dosen dan mahasiswa.',
         status: kal ? kal.keterangan : 'Kalender sudah terbit.',
@@ -94,7 +88,7 @@ export function langkahMulai(peran, saya, agenda, tugas = null) {
       },
       {
         kunci: 'kelas', judul: 'Tunjuk pengajar tiap kelas',
-        keterangan: 'Kelas dibuat otomatis saat kalender terbit — satu per rumpun, atau per mata kuliah untuk mata kuliah lepas. Tunjuk pengajarnya, dan sesuaikan peserta bila perlu.',
+        keterangan: 'Kelas dibuat otomatis saat kalender terbit — satu per rumpun, atau per mata kuliah untuk mata kuliah lepas. Tunjuk pengajarnya dari dosen aktif, dan sesuaikan peserta bila perlu.',
         status: tanpaPengajar ? tanpaPengajar.judul + '.' : (kal ? 'Menunggu kalender terbit.' : 'Semua kelas yang berjalan sudah punya pengajar.'),
         href: `kelas.html?kelola=${encodeURIComponent(((saya && saya.kaprodi_prodi) || [])[0] || '')}`, label: 'Kelola kelas',
         selesai: cek(!tanpaPengajar && !kal), jenis: ['kelas_tanpa_pengajar'],
@@ -113,7 +107,7 @@ export function langkahMulai(peran, saya, agenda, tugas = null) {
     return [
       {
         kunci: 'kaprodi', judul: 'Tetapkan kaprodi tiap prodi',
-        keterangan: 'Kaprodi yang mengisi kurikulum, mencentang dosen pengampu, dan menerbitkan kalender prodinya.',
+        keterangan: 'Kaprodi yang mengisi kurikulum, menerbitkan kalender, dan menunjuk pengajar kelas prodinya.',
         status: tanpa ? `${tanpa.judul}: ${tanpa.keterangan}` : 'Semua prodi sudah punya kaprodi.',
         href: 'jabatan.html', label: 'Kelola kaprodi', selesai: cek(!tanpa), jenis: ['prodi_tanpa_kaprodi'],
       },

@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="assets/css/hal-beranda.css">
+  <link rel="stylesheet" href="assets/css/hal-kelas.css">
 </head>
 <body>
   <header class="appbar">
@@ -45,7 +46,7 @@
           <li><b>Jadwal mingguan</b><span>Kalender semester tiap prodi: belajar mandiri, kelas daring, dan hari praktik.</span></li>
           <li><b>Materi &amp; kuis gerbang</b><span>Materi per minggu dan kuis singkat sebelum sesi praktik Jumat.</span></li>
           <li><b>Tugas &amp; nilai</b><span>Kumpulkan tugas, lihat hasil autograder, rekap nilai, dan rapor.</span></li>
-          <li><b>Grup mata kuliah</b><span>Diskusi dengan dosen pengampu di grup WhatsApp tiap mata kuliah.</span></li>
+          <li><b>Kelas</b><span>Satu tempat untuk materi, kuis, tugas, pengumuman, dan nilai tiap kelas — plus grup WhatsApp kelas untuk berdiskusi dengan pengajar.</span></li>
           <li><b>Lewat WhatsApp</b><span>Jadwal, tugas, dan nilai bisa diminta lewat pesan ke bot Admin.</span></li>
         </ul>
       </div>
@@ -77,7 +78,7 @@
       <div class="kolom-utama">
         <section class="panel" id="panel-mulai" aria-labelledby="judul-mulai" hidden>
           <div class="panel-kepala">
-            <h2 id="judul-mulai">Mulai di sini</h2>
+            <h2 id="judul-mulai">Langkah yang belum selesai</h2>
             <span class="kecil redup" id="ringkas-mulai"></span>
           </div>
           <div id="mulai"></div>
@@ -87,14 +88,15 @@
             <h2 id="judul-perlu">Perlu dikerjakan</h2>
             <span class="kecil redup" id="jumlah-perlu"></span>
           </div>
-          <div id="agenda-perlu"><p class="pesan-kosong">Memuat agenda…</p></div>
+          <div id="agenda-perlu"><p class="pesan-kosong">Memuat…</p></div>
         </section>
-
-        <section class="panel" id="panel-akan" aria-labelledby="judul-akan" hidden>
-          <div class="panel-kepala"><h2 id="judul-akan">Akan datang</h2></div>
-          <div id="agenda-akan"><p class="pesan-kosong">Memuat agenda…</p></div>
+        <section class="panel" id="panel-kelas" aria-labelledby="judul-kelas-saya" hidden>
+          <div class="panel-kepala">
+            <h2 id="judul-kelas-saya">Kelas saya</h2>
+            <a href="kelas.html">Semua kelas</a>
+          </div>
+          <div class="panel-isi" id="kelas-saya"><p class="pesan-kosong">Memuat kelas…</p></div>
         </section>
-
         <section class="panel" id="panel-jadwal" aria-labelledby="judul-jadwal" hidden>
           <div class="panel-kepala">
             <h2 id="judul-jadwal">Jadwal minggu ini</h2>
@@ -102,17 +104,11 @@
           </div>
           <div class="panel-isi rapat" id="jadwal"><p class="pesan-kosong">Memuat jadwal…</p></div>
         </section>
-
-        <section class="panel" id="panel-layanan" aria-labelledby="judul-layanan" hidden>
-          <div class="panel-kepala">
-            <h2 id="judul-layanan">Layanan</h2>
-            <a href="saya.html">Semua tugas saya</a>
-          </div>
-          <div id="layanan"></div>
-          <p class="catatan-peran" id="catatan-peran" hidden></p>
+        <section class="panel" id="panel-akan" aria-labelledby="judul-akan" hidden>
+          <div class="panel-kepala"><h2 id="judul-akan">Akan datang</h2></div>
+          <div id="agenda-akan"><p class="pesan-kosong">Memuat…</p></div>
         </section>
       </div>
-
       <aside class="kolom-samping">
         <section class="panel" id="panel-prodi" aria-labelledby="judul-prodi" hidden>
           <div class="panel-kepala">

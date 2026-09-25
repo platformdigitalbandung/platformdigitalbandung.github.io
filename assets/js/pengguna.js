@@ -274,8 +274,8 @@ function tabelDosen() {
   if (!dosen.length) {
     return keadaanKosong({
       judul: admin ? 'Belum ada dosen' : 'Belum ada dosen yang mengajar di prodi Anda',
-      keterangan: admin ? 'Tambahkan dosen lewat formulir di atas.' : 'Dosen tampil di sini setelah dicentang di halaman Dosen Pengampu Prodi.',
-      aksi: admin ? null : { href: 'pengampu.html', label: 'Buka Dosen Pengampu Prodi' },
+      keterangan: admin ? 'Tambahkan dosen lewat formulir di atas.' : 'Dosen tampil di sini setelah Anda menambahkannya atau menunjuknya sebagai pengajar kelas prodi Anda.',
+      aksi: admin ? null : { href: 'kelas.html', label: 'Buka Kelas' },
     });
   }
   return `<p class="meta">${daftar.length} dari ${dosen.length} dosen${admin ? ` · ${dosen.filter(d => !d.aktif).length} nonaktif` : ''} · ${dosen.filter(d => !d.sandi_sendiri).length} masih memakai kata sandi awal</p>
@@ -302,7 +302,7 @@ function kartuTambahDosen() {
   return `
     <div class="kartu">
       <h3>Tambah Dosen</h3>
-      <p class="meta">Dosen baru langsung aktif. Email kampusnya diisi dosen sendiri (lewat WhatsApp <code>daftar dosen | email</code> atau halaman Roster &amp; Email Dosen); setelah itu ia bisa masuk dengan email + kata sandi awal.${admin ? '' : ' Dosen baru tampil di daftar prodi Anda setelah Anda mencentangnya di Dosen Pengampu Prodi.'} Nomor yang pernah dinonaktifkan hanya bisa diaktifkan kembali admin.</p>
+      <p class="meta">Dosen baru langsung aktif. Email kampusnya diisi dosen sendiri (lewat WhatsApp <code>daftar dosen | email</code> atau halaman Roster &amp; Email Dosen); setelah itu ia bisa masuk dengan email + kata sandi awal.${admin ? '' : ' Dosen yang Anda tambahkan langsung tercatat di prodi Anda dan bisa ditunjuk sebagai pengajar kelas.'} Nomor yang pernah dinonaktifkan hanya bisa diaktifkan kembali admin.</p>
       <form id="form-tambah-dosen" class="saringan">
         <label>Nomor WhatsApp <input name="nohp" required maxlength="20" inputmode="tel" placeholder="081234567890"></label>
         <label>Nama lengkap <input name="nama" required maxlength="120"></label>

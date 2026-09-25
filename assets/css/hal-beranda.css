@@ -103,3 +103,8 @@
 .kartu-langkah .cta-row { margin-top: auto; margin-bottom: 0; }
 .saya-ringkas { margin: 0 0 .6rem; }
 #isi > .kosong-langkah { margin: .6rem 0 1rem; }
+
+/* Beranda "Hari ini": satu blok langkah per peran yang dipegang (penyiapan
+   admin, semester kaprodi, syarat mengajar dosen). */
+.blok-langkah h3 { margin: 0; padding: .8rem 1rem .1rem; font-size: .8rem; font-weight: 600; color: var(--redup); text-transform: uppercase; letter-spacing: .04em; }
+.blok-langkah + .blok-langkah { border-top: 1px solid var(--garis-halus); }

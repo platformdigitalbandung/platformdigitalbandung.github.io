@@ -1,16 +1,17 @@
 import { isLoggedIn, arahkanKeLogin } from './api.js';
-import { statusAkun, peranAktif, peranDipegang } from './akun.js';
+import { statusAkun, peranAktif, peranDipegang, punyaPeran } from './akun.js';
 import { esc, halamanUntuk, keadaanKosong } from './ui.js';
 
 // Bantuan bersama halaman kelompok dosen (dosen, kelola-materi, proyek, ujian,
 // akademik, forum, rekaman, autograder, rapor) — audit UX 2026-09-14.
 // Hanya tampilan: kewenangan tetap diputuskan backend.
 
-/** Peran aktif yang mengajar: dosen atau kaprodi (kaprodi juga dosen prodinya). */
+/** Peran yang mengajar: dosen atau kaprodi (kaprodi juga dosen prodinya). */
 export const PERAN_MENGAJAR = ['dosen', 'kaprodi'];
 
+/** Memegang peran dosen (admin dan kaprodi juga dosen). Tanpa pemilih peran sejak 2026-09-26. */
 export function sedangMengajar(saya) {
-  return PERAN_MENGAJAR.includes(peranAktif(saya));
+  return punyaPeran(saya, 'dosen');
 }
 
 /**
@@ -47,7 +48,7 @@ export function halamanMengajar(saya, isi, { judul, pesan = '', untukMahasiswa =
 /**
  * Rantai prasyarat kerja dosen, dari data GET /api/proyekblok/saya:
  *   1. email kampus terisi (dosen sendiri, halaman Roster & Email Dosen),
- *   2. dicentang sebagai pengampu prodi (kaprodi prodi itu) — bila `pengampu`.
+ *   2. ditunjuk kaprodi sebagai pengajar kelas — bila `pengampu` (nama opsi warisan).
  * Mengembalikan HTML kartu berisi daftar langkah bertanda selesai/belum dan
  * keadaan kosong untuk langkah pertama yang belum selesai; "" bila semua selesai.
  */
@@ -71,7 +72,7 @@ export function kartuPrasyarat(saya, { judul, untuk, pengampu = false, catatan =
       label: 'Ditunjuk kaprodi sebagai pengajar kelas',
       kosong: {
         judul: 'Anda belum menjadi pengajar kelas mana pun',
-        keterangan: 'Kaprodi menunjuk pengajar tiap kelas di halaman Kelas, memilih dari dosen yang dicentang di Dosen Pengampu Prodi. Hubungi kaprodi prodi tempat Anda mengajar; nama Anda baru bisa dipilih setelah email kampus terisi.',
+        keterangan: 'Kaprodi menunjuk pengajar tiap kelas di halaman Kelola Kelas, dari semua dosen aktif. Hubungi kaprodi prodi tempat Anda mengajar; nama Anda baru bisa dipilih setelah email kampus terisi.',
         siapa: 'kaprodi prodi tempat Anda mengajar',
         aksi: { href: 'kelas.html', label: 'Lihat Kelas Saya' },
       },

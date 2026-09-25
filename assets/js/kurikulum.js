@@ -1,5 +1,5 @@
 import { apiGet, apiPostJson, isLoggedIn, arahkanKeLogin } from './api.js';
-import { sayaSekarang, adalahAdmin, prodiPimpinan } from './akun.js';
+import { sayaSekarang, adalahAdmin } from './akun.js';
 import { esc, halamanUntuk, keadaanKosong, istilah, labelTabel, opsiModa, pilihProdiBawaan } from './ui.js';
 
 // Pengisian kurikulum program studi. Kaprodi mengisi kurikulum prodinya; admin
@@ -582,8 +582,12 @@ async function muat() {
     labelSemuaTabel(isi);
     return;
   }
-  admin = adalahAdmin(saya);
-  const boleh = admin ? [] : (prodiPimpinan(saya) || []);
+  // Tanpa pemilih peran (2026-09-26): admin yang juga kaprodi mengisi
+  // kurikulum prodinya di sini; formulir program studi baru dibuka lewat menu
+  // Admin → Program studi baru (kurikulum.html?baru=1).
+  const dipimpin = (saya && saya.kaprodi_prodi) || [];
+  admin = adalahAdmin(saya) && (new URLSearchParams(location.search).has('baru') || !dipimpin.length);
+  const boleh = admin ? [] : dipimpin;
   prodiDikelola = prodi.filter(p => boleh.includes(p.kode));
   try {
     ({ ritme = [] } = await apiGet('/api/kurikulum/ritme'));

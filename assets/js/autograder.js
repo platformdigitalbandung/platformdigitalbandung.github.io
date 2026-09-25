@@ -22,7 +22,7 @@ function waktuWIB(iso) {
 function persen(n) { return typeof n === 'number' ? `${angka(n * 100, 0)}%` : '–'; }
 
 let dosen = false; // staf: dosen, termasuk pemegang jabatan (melihat semua kiriman)
-let aturBobot = false; // peran aktif dosen/kaprodi; admin hanya membaca
+let aturBobot = false; // pemegang peran dosen (termasuk kaprodi dan admin)
 let bobot = { tes_dosen: 0.7, coverage: 0.3 };
 
 function lencanaHasil(h) {

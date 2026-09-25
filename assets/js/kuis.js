@@ -1,6 +1,6 @@
 import { apiGet, apiPostJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
-import { sayaSekarang, peranAktif } from './akun.js';
-import { esc, keadaanKosong, istilah, halamanUntuk, pilihProdiBawaan, labelTabel } from './ui.js';
+import { sayaSekarang } from './akun.js';
+import { esc, keadaanKosong, istilah, pilihProdiBawaan, labelTabel } from './ui.js';
 import { pekanMahasiswa, isiDatalistNIM } from './hal-mahasiswa.js';
 
 // Kuis Gerbang. Mahasiswa mengerjakan kuis rumpun/minggu prodinya; NIM dan
@@ -439,11 +439,6 @@ async function muat() {
     return;
   }
   if (saya.peran === 'dosen') {
-    // Admin hanya menyiapkan: kuis disusun di peran dosen/kaprodi.
-    if (peranAktif(saya) === 'admin' && !halamanUntuk(saya, ['dosen', 'kaprodi'], {
-      judul: 'Kuis Gerbang',
-      pesan: 'Kuis gerbang disusun pengajar kelas dan kaprodi prodinya, bukan di peran admin.',
-    })) return;
     sayaDosen = saya;
     const [{ prodi = [] }, agenda] = await Promise.all([
       apiGet('/api/kurikulum/prodi'),

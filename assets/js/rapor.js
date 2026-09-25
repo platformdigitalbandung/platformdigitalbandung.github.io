@@ -64,9 +64,9 @@ function htmlRapor(r) {
     </div>
     ${r.semester.length ? r.semester.map(kartuSemester).join('') : keadaanKosong({
       judul: 'Belum ada nilai yang tercatat',
-      keterangan: 'Nilai mata kuliah masuk rapor setelah dosen pembimbing proyek blok menginputnya.',
-      siapa: 'dosen pembimbing proyek blok',
-      aksi: { href: 'nilai.html', label: 'Lihat Nilai Proyek' },
+      keterangan: 'Nilai mata kuliah masuk rapor setelah nilai akhir kelasnya lengkap (semua komponen di buku nilai kelas terisi).',
+      siapa: 'pengajar kelas',
+      aksi: { href: 'kelas.html', label: 'Buka Kelas' },
     })}
     ${(r.rumpun_diakui_rpl || []).length ? `<div class="kartu"><h3>Diakui lewat ${istilah('rpl', 'RPL')}</h3><p>${r.rumpun_diakui_rpl.map(esc).join(', ')}</p><p class="redup">Tanpa nilai angka; tidak masuk IP maupun IPK.</p></div>` : ''}
     ${tak.length ? `<div class="kartu"><h3>Nilai Tidak Terpetakan</h3>
@@ -199,7 +199,7 @@ async function muat(saya) {
       judul: 'Nomor ini belum tercatat di roster mahasiswa',
       keterangan: 'Rapor disusun dari NIM Anda di roster, jadi NIM dan nomor WhatsApp Anda perlu didaftarkan dulu.',
       siapa: 'dosen atau kaprodi prodi Anda (halaman Roster Mahasiswa)',
-      aksi: { href: 'saya.html', label: 'Kembali ke Beranda Saya' },
+      aksi: { href: './', label: 'Kembali ke Beranda' },
     });
     return;
   }

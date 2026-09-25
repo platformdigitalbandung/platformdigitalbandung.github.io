@@ -1,7 +1,6 @@
 import { apiGet, apiPostJson, apiPutJson, apiDeleteJson } from './api.js';
-import { esc, halamanUntuk, keadaanKosong, labelTabel, prodiBawaan } from './ui.js';
-import { peranAktif } from './akun.js';
-import { sayaHalaman, halamanMengajar, PERAN_MENGAJAR } from './hal-dosen.js';
+import { esc, keadaanKosong, labelTabel, prodiBawaan } from './ui.js';
+import { sayaHalaman, halamanMengajar } from './hal-dosen.js';
 
 // Roster Mahasiswa & Email Dosen (dosen). Kewenangan tetap dicek backend — halaman
 // ini hanya menyiapkan formulir. Peran dan email kampus datang dari
@@ -14,7 +13,7 @@ const STATUS = ['aktif', 'cuti', 'lulus', 'keluar'];
 let saya = null;
 let prodi = [];
 
-// Pilihan awal = prodi bawaan peran aktif (prodi mengajar / prodi yang dipimpin), bukan TRPL.
+// Pilihan awal = prodi bawaan pengguna (prodi yang dipimpin / prodi mengajar), bukan TRPL.
 function opsiProdi(terpilih = prodiBawaan(saya)) {
   return prodi.map(p => `<option value="${esc(p.kode)}"${p.kode === terpilih ? ' selected' : ''}>${esc(p.nama)}</option>`).join('');
 }
@@ -33,7 +32,7 @@ function kartuEmail() {
     <div class="kartu">
       <h3>Email Kampus Anda</h3>
       <p class="meta">Email kampus menentukan proyek mana yang boleh Anda nilai, pengajuan mana yang boleh Anda putuskan, dan sesi ujian yang Anda awasi. Anda hanya bisa mengisi email nomor Anda sendiri; boleh email institusi asal atau email pribadi, asal aktif dan tidak dipakai dosen lain.</p>
-      ${saya.email ? `<p>Email kampus tercatat: <b>${esc(saya.email)}</b></p>` : '<div class="pesan gagal">Email kampus belum diisi — Anda belum bisa dicentang sebagai dosen pengampu, dipilih sebagai kaprodi, membuat dan menilai proyek blok, atau memutus proyek kerja.</div>'}
+      ${saya.email ? `<p>Email kampus tercatat: <b>${esc(saya.email)}</b></p>` : '<div class="pesan gagal">Email kampus belum diisi — Anda belum bisa ditunjuk sebagai pengajar kelas, dipilih sebagai kaprodi, atau memutus proyek kerja.</div>'}
       <form id="form-email">
         <label>Email kampus <input type="email" name="email" required maxlength="120" value="${esc(saya.email || '')}" placeholder="nama@kampus.ac.id"></label>
         <button>${saya.email ? 'Perbarui Email' : 'Simpan Email'}</button>
@@ -123,7 +122,7 @@ async function simpanEmail(e) {
     const d = await apiPutJson('/api/dosen/email', { email });
     saya.email = d.email || email;
     const berikut = (saya.prodi_mengajar || []).length ? ''
-      : ' Langkah berikutnya: kaprodi prodi tempat Anda mengajar mencentang nama Anda di halaman Dosen Pengampu Prodi, supaya Anda bisa mengelola materi dan kuis prodi itu.';
+      : ' Langkah berikutnya: kaprodi prodi tempat Anda mengajar menunjuk Anda sebagai pengajar kelas di halaman Kelola Kelas, supaya Anda bisa menyusun materi, kuis, dan tugas kelas itu.';
     hasil.innerHTML = `<div class="pesan sukses">Email kampus ${esc(d.nama)} tersimpan: <b>${esc(saya.email)}</b>.${esc(berikut)}</div>`;
   } catch (err) {
     hasil.innerHTML = `<div class="pesan gagal">Gagal menyimpan email kampus: ${esc(err.message)}</div>`;
@@ -261,22 +260,10 @@ async function muat() {
 async function mulai() {
   const s = await sayaHalaman(isi);
   if (s === undefined) return;
-  // Admin tetap dosen: email kampusnya sendiri boleh diisi di sini (syarat
-  // dipilih sebagai kaprodi), tetapi form roster hanya di peran dosen/kaprodi.
-  if (s && s.peran === 'dosen' && peranAktif(s) === 'admin') {
-    saya = s;
-    isi.innerHTML = kartuEmail() + '<div id="roster-peran"></div>';
-    document.getElementById('form-email').addEventListener('submit', simpanEmail);
-    halamanUntuk(s, PERAN_MENGAJAR, {
-      judul: 'Roster mahasiswa', wadah: document.getElementById('roster-peran'),
-      pesan: 'Mendaftarkan dan mengubah roster mahasiswa dikerjakan di peran dosen atau kaprodi.',
-    });
-    return;
-  }
   if (!halamanMengajar(s, isi, {
     judul: 'Roster Mahasiswa & Email Dosen',
     pesan: 'Roster memuat nomor WhatsApp dan surel mahasiswa, jadi hanya dikelola dosen.',
-    untukMahasiswa: { href: 'saya.html', label: 'Beranda Saya', pesan: 'Data roster Anda dikelola dosen. Bila ada yang keliru, sampaikan ke dosen atau kaprodi prodi Anda.' },
+    untukMahasiswa: { href: './', label: 'Beranda', pesan: 'Data roster Anda dikelola dosen. Bila ada yang keliru, sampaikan ke dosen atau kaprodi prodi Anda.' },
   })) return;
   saya = s;
   try {
