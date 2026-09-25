@@ -50,3 +50,12 @@ table.tabel-bobot input[type="number"] { width: 6rem; }
 .teks-jawaban { max-height: 24rem; overflow: auto; background: #fafbfc; border: 1px solid var(--garis-halus); border-radius: 4px; padding: .5rem .8rem; }
 table.tabel-kiriman textarea { min-width: 12rem; }
 table.tabel-kiriman input[type="number"] { width: 5.5rem; }
+
+/* Pengumuman di Beranda kelas. */
+.butir-pengumuman { padding: .6rem 0; border-top: 1px solid var(--garis-halus); }
+.butir-pengumuman .meta { margin: 0 0 .2rem; }
+.butir-pengumuman .teks-panjang { margin: 0; }
+.butir-pengumuman .cta-row { margin: .3rem 0 0; }
+#form-pengumuman { margin-bottom: .6rem; }
+label.pilihan-sebaris { display: flex; align-items: center; gap: .4rem; font-weight: 400; }
+label.pilihan-sebaris input { margin: 0; }

@@ -157,10 +157,12 @@ export function langkahMulai(peran, saya, agenda, tugas = null) {
       href: 'kuis.html', label: 'Kerjakan kuis', selesai: mingguan(kuis), jenis: ['kuis_belum_lulus'],
     },
     {
-      kunci: 'tugas', judul: 'Kumpulkan tugas',
-      keterangan: 'Periksa tugas yang masih terbuka dan kumpulkan sebelum tenggatnya.',
-      status: tugasBelum === null ? '' : tugasBelum ? `${tugasBelum} tugas belum dikumpulkan.` : (tugas.length ? 'Semua tugas sudah dikumpulkan.' : 'Belum ada tugas dari dosen.'),
-      href: 'portal.html', label: 'Buka daftar tugas', selesai: tugasBelum === null ? null : tugasBelum === 0,
+      // Tanpa tugas sama sekali langkah ini tidak berstatus (bukan "selesai"),
+      // supaya tanda centang tidak menyiratkan ada yang sudah dikerjakan.
+      kunci: 'tugas', judul: 'Serahkan tugas',
+      keterangan: 'Tugas dari kelas Anda dan dari prodi; serahkan sebelum tenggatnya.',
+      status: tugasBelum === null ? '' : tugasBelum ? `${tugasBelum} tugas belum diserahkan.` : (tugas.length ? 'Semua tugas sudah diserahkan.' : 'Belum ada tugas dari pengajar kelas.'),
+      href: 'portal.html', label: 'Buka daftar tugas', selesai: tugasBelum === null || !tugas.length ? null : tugasBelum === 0,
     },
   ];
 }

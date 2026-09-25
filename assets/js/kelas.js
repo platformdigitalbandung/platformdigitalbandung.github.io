@@ -5,7 +5,8 @@ import { esc, halamanUntuk, keadaanKosong, labelTabel, istilah } from './ui.js';
 // Kelas (model Google Classroom) — keputusan developer Arfan 2026-09-25.
 // Satu halaman, tiga tampilan:
 //   kelas.html              → Kelas Saya (kartu kelas per periode)
-//   kelas.html?id=<kelas>   → isi kelas: Beranda · Tugas Kelas · Anggota · Nilai
+//   kelas.html?id=<kelas>   → isi kelas: Beranda (pengumuman, grup WhatsApp,
+//                             minggu berjalan) · Tugas Kelas · Anggota · Nilai
 //   kelas.html?kelola=<prodi> → Kelola Kelas (kaprodi; admin hanya membaca)
 // Peran di kelas (peserta/pengajar/kaprodi/admin) dihitung backend; halaman ini
 // hanya tidak menawarkan aksi yang pasti ditolak.
@@ -275,6 +276,7 @@ async function tampilKelola(saya) {
 let detail = null;
 let isiKelas = null;
 let buku = null;
+let pengumuman = null;
 const mengajar = () => detail && (detail.peran === 'pengajar' || detail.peran === 'kaprodi');
 
 function tautanMateri(m) {
@@ -332,6 +334,44 @@ function butirMateri(m) {
     <div class="aksi-sel"><a class="aksi sekunder" href="${escAttr(tautanMateri(m))}">${mengajar() ? 'Kelola' : 'Buka'}</a></div></div>`;
 }
 
+// Grup WhatsApp kelas: tautan undangan untuk semua anggota; tautan pembuatan
+// (wa.me ke bot dengan pesan terisi) untuk pengajar selama grupnya belum ada.
+function kartuGrup() {
+  const g = detail.grup_wa || {};
+  if (g.ada) {
+    return `<div class="kartu"><h3>Grup WhatsApp kelas</h3>
+      <p class="meta">Diskusi kelas, pengumuman, dan pengingat tenggat tugas dikirim ke grup ini.</p>
+      ${g.tautan_undangan ? `<p class="cta-row"><a class="aksi" href="${escAttr(g.tautan_undangan)}" target="_blank" rel="noopener">Gabung grup WhatsApp kelas</a></p>`
+        : '<p class="redup">Tautan undangan belum tersedia; minta pengajar mengirimkannya.</p>'}
+    </div>`;
+  }
+  if (g.tautan_buat) {
+    return `<div class="kartu"><h3>Grup WhatsApp kelas</h3>
+      <p class="meta">Kelas ini belum punya grup WhatsApp. Tombol di bawah membuka WhatsApp ke bot dengan pesan yang sudah terisi — tekan Kirim. Bot membuat grup bernama kelas ini, menjadikan Anda admin, dan membalas tautan undangannya. Pengumuman dan pengingat tenggat tugas kemudian dikirim bot ke grup itu.</p>
+      <p class="cta-row"><a class="aksi sekunder" href="${escAttr(g.tautan_buat)}" target="_blank" rel="noopener">Buat grup WhatsApp kelas</a></p>
+    </div>`;
+  }
+  return `<div class="kartu"><h3>Grup WhatsApp kelas</h3><p class="redup">Grup WhatsApp kelas ini belum dibuat pengajar.</p></div>`;
+}
+
+function kartuPengumuman() {
+  const bisa = mengajar();
+  const adaGrup = Boolean(detail.grup_wa && detail.grup_wa.ada);
+  const form = bisa ? `<form id="form-pengumuman">
+      <label>Pengumuman baru <textarea name="isi" rows="3" maxlength="3000" required></textarea></label>
+      <label class="pilihan-sebaris"><input type="checkbox" name="kirim_grup"${adaGrup ? ' checked' : ' disabled'}> Kirim juga ke grup WhatsApp kelas${adaGrup ? '' : ' (grup belum dibuat)'}</label>
+      <div class="cta-row"><button>Umumkan</button></div>
+    </form>` : '';
+  const daftar = (pengumuman || []).length
+    ? pengumuman.map(p => `<div class="butir-pengumuman">
+        <p class="meta">${esc(p.oleh_nama || 'Pengajar')} · ${esc(tanggal(p.dibuat, true))}${p.ke_grup ? ' · terkirim ke grup WhatsApp' : ''}</p>
+        <p class="teks-panjang">${esc(p.isi)}</p>
+        ${bisa ? `<p class="cta-row"><button type="button" class="sekunder" data-aksi="hapus-pengumuman" data-id="${escAttr(p.id)}">Hapus</button></p>` : ''}
+      </div>`).join('')
+    : '<p class="redup">Belum ada pengumuman.</p>';
+  return `<div class="kartu"><h3>Pengumuman</h3>${form}<div id="hasil-pengumuman"></div>${daftar}</div>`;
+}
+
 function tabBeranda() {
   const semuaTugas = [...(isiKelas.minggu || []).flatMap(w => w.tugas), ...(isiKelas.tugas_tanpa_minggu || [])];
   const sekarang = new Date();
@@ -361,7 +401,7 @@ function tabBeranda() {
     <p>${detail.mk_kode ? 'Mata kuliah' : `${istilah('rumpun', 'Rumpun')} ${esc(detail.rumpun_kode)} — ${esc(detail.rumpun_nama || '')}. Mata kuliah`}: ${mk || '—'}</p>
     <p>Pengajar: ${esc(namaPengajar(detail)) || '<span class="lencana sedang">belum ditunjuk kaprodi</span>'}</p>
   </div>`;
-  return minggu + utama + tentang;
+  return kartuPengumuman() + minggu + utama + kartuGrup() + tentang;
 }
 
 function formTugasBaru() {
@@ -509,6 +549,7 @@ async function renderDetail() {
     <div id="panel-kelas" role="tabpanel" aria-labelledby="tab-${tab}">${badan}</div>`;
   try {
     if ((tab === 'beranda' || tab === 'tugas') && !isiKelas) isiKelas = await apiGet(`/api/kelas/${encodeURIComponent(idKelas)}/isi`);
+    if (tab === 'beranda' && pengumuman === null) ({ pengumuman = [] } = await apiGet(`/api/kelas/${encodeURIComponent(idKelas)}/pengumuman`));
     if (tab === 'nilai' && !buku) buku = await apiGet(`/api/kelas/${encodeURIComponent(idKelas)}/nilai`);
     badan = { beranda: tabBeranda, tugas: tabTugasKelas, anggota: tabAnggota, nilai: tabNilai }[tab]();
   } catch (err) {
@@ -549,6 +590,13 @@ async function tampilDetail() {
       const kartu = document.getElementById('kartu-tugas-baru');
       kartu.hidden = false;
       kartu.querySelector('input[name=judul]').focus();
+    } else if (aksi === 'hapus-pengumuman') {
+      if (!window.confirm('Hapus pengumuman ini? Pesan yang sudah terkirim ke grup WhatsApp tidak ikut ditarik.')) return;
+      try {
+        await apiDeleteJson(`/api/kelas/${encodeURIComponent(idKelas)}/pengumuman/${encodeURIComponent(b.dataset.id)}`);
+        pengumuman = null;
+        await renderDetail();
+      } catch (err) { pesan('hasil-pengumuman', 'gagal', esc(err.message)); }
     } else if (aksi === 'batal-tugas') {
       document.getElementById('kartu-tugas-baru').hidden = true;
     } else if (aksi === 'tambah-komponen') {
@@ -589,6 +637,23 @@ async function tampilDetail() {
     const i = TAB.findIndex(([k]) => k === tabAktif());
     const j = (i + (e.key === 'ArrowRight' ? 1 : TAB.length - 1)) % TAB.length;
     document.getElementById(`tab-${TAB[j][0]}`).click();
+  });
+  isi.addEventListener('submit', async (e) => {
+    if (e.target.id !== 'form-pengumuman') return;
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const tombol = e.target.querySelector('button');
+    tombol.disabled = true;
+    try {
+      const r = await apiPostJson(`/api/kelas/${encodeURIComponent(idKelas)}/pengumuman`, { isi: fd.get('isi'), kirim_grup: fd.get('kirim_grup') === 'on' });
+      pengumuman = null;
+      await renderDetail();
+      if (r.grup && r.grup !== 'terkirim') pesan('hasil-pengumuman', 'gagal', `Pengumuman terbit di halaman kelas. ${esc(r.grup)}`);
+      else pesan('hasil-pengumuman', 'sukses', r.grup === 'terkirim' ? 'Pengumuman terbit dan terkirim ke grup WhatsApp kelas.' : 'Pengumuman terbit.');
+    } catch (err) {
+      pesan('hasil-pengumuman', 'gagal', esc(err.message));
+      tombol.disabled = false;
+    }
   });
   isi.addEventListener('submit', async (e) => {
     if (e.target.id !== 'form-tugas-baru') return;
