@@ -374,8 +374,8 @@ async function muat() {
   }
   if (saya.peran === 'dosen') {
     isi.innerHTML = `<div class="kartu"><h3>Halaman ini untuk mahasiswa</h3>
-      <p class="meta">Katalog materi dikelola dosen lewat halaman Kelola Materi.</p>
-      <a class="aksi" href="kelola-materi.html">Kelola Materi</a></div>`;
+      <p class="meta">Pengajar menambah dan mengubah materi dari dalam kelas: tab Tugas Kelas → + Buat → Materi.</p>
+      <a class="aksi" href="kelas.html">Buka kelas saya</a></div>`;
     return;
   }
   if (!saya.nim) {

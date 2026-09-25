@@ -59,9 +59,9 @@ export function langkahMulai(peran, saya, agenda, tugas = null) {
       },
       {
         kunci: 'katalog', judul: 'Siapkan materi dan kuis minggu ini',
-        keterangan: 'Mahasiswa belajar mandiri dari katalog materi, lalu mengerjakan kuis gerbang sebelum sesi Jumat.',
+        keterangan: 'Mahasiswa belajar mandiri dari katalog materi, lalu mengerjakan kuis gerbang sebelum sesi Jumat. Buka kelasnya, lalu tab Tugas Kelas → + Buat → Materi atau Kuis.',
         status: statusKatalog,
-        href: 'kelola-materi.html', label: 'Kelola materi', href2: 'kuis.html', label2: 'Susun kuis',
+        href: 'kelas.html', label: 'Buka kelas saya',
         selesai: cek(mengajar.length > 0 && !kal && !celah.length),
         jenis: ['kalender_belum_terbit', 'materi_minggu_depan_kosong', 'kuis_minggu_depan_kosong'],
       },

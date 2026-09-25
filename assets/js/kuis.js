@@ -2,6 +2,7 @@ import { apiGet, apiPostJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from '
 import { sayaSekarang } from './akun.js';
 import { esc, keadaanKosong, istilah, pilihProdiBawaan, labelTabel } from './ui.js';
 import { pekanMahasiswa, isiDatalistNIM } from './hal-mahasiswa.js';
+import { tambahSoal, bacaSoal, aksiSoal } from './panel-isi.js';
 
 // Kuis Gerbang. Mahasiswa mengerjakan kuis rumpun/minggu prodinya; NIM dan
 // prodinya diambil server dari roster lewat token, bukan dikirim dari sini.
@@ -226,37 +227,8 @@ function kartuKelola() {
     </div>`;
 }
 
-let nomorSoal = 0;
-
-function htmlPilihan(namaRadio, teks, benar) {
-  return `<div class="pilihan-kuis">
-    <label class="tanda-benar" title="Tandai sebagai jawaban benar"><input type="radio" name="${namaRadio}"${benar ? ' checked' : ''} aria-label="Tandai sebagai jawaban benar"></label>
-    <input type="text" class="teks-pilihan" required maxlength="500" placeholder="Teks pilihan" value="${esc(teks)}">
-    <button type="button" class="sekunder" data-aksi="hapus-pilihan" aria-label="Hapus pilihan">×</button>
-  </div>`;
-}
-
-function htmlSoal(soal = { pertanyaan: '', pilihan: ['', '', '', ''], indeks_benar: -1 }) {
-  nomorSoal += 1;
-  const nama = `benar-${nomorSoal}`;
-  return `<fieldset class="soal-kuis">
-    <legend>Soal</legend>
-    <label>Pertanyaan <textarea class="teks-pertanyaan" rows="2" required maxlength="2000">${esc(soal.pertanyaan)}</textarea></label>
-    <p class="redup">Tulis pilihan jawaban, lalu tandai bulatan di depan jawaban yang benar.</p>
-    <div class="daftar-pilihan">${soal.pilihan.map((p, j) => htmlPilihan(nama, p, j === soal.indeks_benar)).join('')}</div>
-    <p><button type="button" class="sekunder" data-aksi="tambah-pilihan" data-radio="${nama}">+ Pilihan</button>
-      <button type="button" class="sekunder" data-aksi="hapus-soal">Hapus Soal</button></p>
-  </fieldset>`;
-}
-
-function nomoriSoal() {
-  document.querySelectorAll('#daftar-soal .soal-kuis legend').forEach((l, i) => { l.textContent = `Soal ${i + 1}`; });
-}
-
-function tambahSoal(soal) {
-  document.getElementById('daftar-soal').insertAdjacentHTML('beforeend', htmlSoal(soal));
-  nomoriSoal();
-}
+// Penyusun soal bersama panel kuis di halaman Kelas (panel-isi.js).
+function daftarSoal() { return document.getElementById('daftar-soal'); }
 
 async function isiRumpunSusun(terpilih, mkTerpilih = '') {
   const form = document.getElementById('form-susun');
@@ -287,7 +259,7 @@ async function kosongkanFormulir() {
   document.getElementById('judul-susun').textContent = 'Susun Kuis';
   document.getElementById('daftar-soal').innerHTML = '';
   document.getElementById('hasil-susun').innerHTML = '';
-  tambahSoal();
+  tambahSoal(daftarSoal());
   await isiRumpunSusun();
 }
 
@@ -295,14 +267,7 @@ async function kosongkanFormulir() {
 // (kuisgerbang.NormalkanKuis) dan pesannya ditampilkan.
 function bacaFormulir(form) {
   const fd = new FormData(form);
-  const soal = [...document.querySelectorAll('#daftar-soal .soal-kuis')].map(f => {
-    const baris = [...f.querySelectorAll('.pilihan-kuis')];
-    return {
-      pertanyaan: f.querySelector('.teks-pertanyaan').value,
-      pilihan: baris.map(b => b.querySelector('.teks-pilihan').value),
-      indeks_benar: baris.findIndex(b => b.querySelector('input[type=radio]').checked),
-    };
-  });
+  const soal = bacaSoal(daftarSoal());
   return {
     prodi_kode: fd.get('prodi_kode'), rumpun_kode: fd.get('rumpun_kode'), mk_kode: fd.get('mk_kode') || '',
     minggu: Number(fd.get('minggu')), ambang_lulus: Number(fd.get('ambang_lulus')) || 0, soal,
@@ -365,7 +330,7 @@ async function suntingKuis(id) {
   form.elements.minggu.value = k.minggu;
   form.elements.ambang_lulus.value = k.ambang_lulus || 0;
   document.getElementById('daftar-soal').innerHTML = '';
-  k.soal.forEach(s => tambahSoal(s));
+  k.soal.forEach(s => tambahSoal(daftarSoal(), s));
   document.getElementById('judul-susun').textContent = `Sunting Kuis ${k.prodi_kode.toUpperCase()} · ${k.rumpun_kode} · minggu ${k.minggu}`;
   document.getElementById('hasil-susun').innerHTML = '';
   form.scrollIntoView({ behavior: 'smooth' });
@@ -407,22 +372,15 @@ async function pasangPenyusun() {
     const b = e.target.closest('button[data-aksi]');
     if (!b) return;
     const aksi = b.dataset.aksi;
-    if (aksi === 'tambah-soal') tambahSoal();
-    else if (aksi === 'hapus-soal') { b.closest('.soal-kuis').remove(); nomoriSoal(); }
-    else if (aksi === 'tambah-pilihan') {
-      const daftar = b.closest('.soal-kuis').querySelector('.daftar-pilihan');
-      if (daftar.children.length < 6) daftar.insertAdjacentHTML('beforeend', htmlPilihan(b.dataset.radio, '', false));
-    } else if (aksi === 'hapus-pilihan') {
-      const daftar = b.closest('.daftar-pilihan');
-      if (daftar.children.length > 2) b.closest('.pilihan-kuis').remove();
-    } else if (aksi === 'kosongkan') kosongkanFormulir();
+    if (aksiSoal(b, daftarSoal())) return;
+    if (aksi === 'kosongkan') kosongkanFormulir();
     else if (aksi === 'sunting') suntingKuis(b.dataset.id);
     else if (aksi === 'hapus') hapusKuis(b.dataset.id);
     else if (aksi === 'tetap-hapus') hapusKuis(b.dataset.id, true);
   });
 
   pilihProdiBawaan(susun.elements.prodi_kode, sayaDosen);
-  tambahSoal();
+  tambahSoal(daftarSoal());
   // Tautan "+ Kuis" dari halaman Kelas: ?prodi=&rumpun=&mk=&minggu= mengisi formulir.
   const prodiQ = paramURL.get('prodi') || '';
   if (prodiQ && [...susun.elements.prodi_kode.options].some(o => o.value === prodiQ)) susun.elements.prodi_kode.value = prodiQ;

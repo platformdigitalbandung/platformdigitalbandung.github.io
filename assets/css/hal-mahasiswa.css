@@ -33,12 +33,5 @@ fieldset.soal-jawab label input { flex: none; margin: 0; }
   .kartu-tugas .cta-row a.aksi { width: 100%; text-align: center; }
 }
 
-/* Penyusun kuis (dosen): bulatan jawaban benar dibungkus label supaya
-   area ketuknya 44px di layar sentuh (kuis.js htmlPilihan) */
-.pilihan-kuis label.tanda-benar { margin: 0; display: flex; align-items: center; justify-content: center; min-width: 2.25rem; min-height: 2.25rem; flex: none; cursor: pointer; }
-@media (pointer: coarse) {
-  .pilihan-kuis label.tanda-benar { min-width: 44px; min-height: 44px; }
-}
-
 /* Baris keterangan yang memuat istilah (details tidak boleh di dalam <p>) */
 .kartu > div.meta, .halaman > #isi > div.redup { margin: 0 0 .6rem; max-width: 72ch; }

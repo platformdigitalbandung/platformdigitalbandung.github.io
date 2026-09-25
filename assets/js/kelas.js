@@ -1,12 +1,16 @@
 import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, apiPostBerkasToken, isLoggedIn, arahkanKeLogin } from './api.js';
 import { sayaSekarang, punyaPeran } from './akun.js';
 import { esc, halamanUntuk, keadaanKosong, labelTabel, istilah } from './ui.js';
+import { pasangPanelMateri, pasangPanelKuis, ambilMateri, ambilKuis } from './panel-isi.js';
 
 // Kelas (model Google Classroom) — keputusan developer Arfan 2026-09-25.
 // Satu halaman, tiga tampilan:
 //   kelas.html              → Kelas Saya (kartu kelas per periode)
 //   kelas.html?id=<kelas>   → isi kelas: Beranda (pengumuman, grup WhatsApp,
 //                             minggu berjalan) · Tugas Kelas · Anggota · Nilai
+//                             Pengajar membuat tugas, materi, dan kuis lewat
+//                             panel di tab Tugas Kelas (panel-isi.js), tanpa
+//                             pindah halaman — keputusan developer Arfan 2026-09-26.
 //   kelas.html?kelola=<prodi> → Kelola Kelas (kaprodi; admin hanya membaca)
 // Peran di kelas (peserta/pengajar/kaprodi/admin) dihitung backend; halaman ini
 // hanya tidak menawarkan aksi yang pasti ditolak.
@@ -291,10 +295,11 @@ let detail = null;
 let isiKelas = null;
 let buku = null;
 let pengumuman = null;
+// Minggu yang ikut dibuka di Tugas Kelas: minggu isi yang baru disimpan lewat panel.
+let mingguSorot = 0;
 const mengajar = () => detail && (detail.peran === 'pengajar' || detail.peran === 'kaprodi');
 
 function tautanMateri(m) {
-  if (mengajar()) return 'kelola-materi.html';
   const q = new URLSearchParams({ rumpun: m.rumpun_kode, minggu: String(m.minggu) });
   if (detail.mk_kode) q.set('mk', detail.mk_kode);
   return `materi.html?${q}`;
@@ -302,13 +307,7 @@ function tautanMateri(m) {
 function tautanKuis(minggu) {
   const q = new URLSearchParams({ rumpun: detail.rumpun_kode, minggu: String(minggu) });
   if (detail.mk_kode) q.set('mk', detail.mk_kode);
-  if (mengajar()) q.set('prodi', detail.prodi_kode);
   return `kuis.html?${q}`;
-}
-function tautanBuatMateri(minggu) {
-  const q = new URLSearchParams({ prodi: detail.prodi_kode, rumpun: detail.rumpun_kode, minggu: String(minggu || 1) });
-  if (detail.mk_kode) q.set('mk', detail.mk_kode);
-  return `kelola-materi.html?${q}`;
 }
 
 function lencanaTugas(t) {
@@ -335,7 +334,7 @@ function butirTugas(t) {
 
 function butirKuis(q) {
   const kanan = mengajar()
-    ? `<span class="butir-ket">${esc(q.dikerjakan)} sudah mengerjakan</span><a class="aksi sekunder" href="${escAttr(tautanKuis(q.minggu))}">Susun</a>`
+    ? `<span class="butir-ket">${esc(q.dikerjakan)} sudah mengerjakan</span><button type="button" class="sekunder" data-aksi="susun-kuis" data-minggu="${escAttr(q.minggu)}">${q.dikerjakan ? 'Lihat' : 'Susun'}</button>`
     : `${q.skor !== undefined && q.skor !== null
       ? (q.lulus ? `<span class="lencana rendah">lulus ${esc(angka(q.skor))}%</span>` : `<span class="lencana tinggi">belum lulus ${esc(angka(q.skor))}%</span>`)
       : '<span class="lencana">belum dikerjakan</span>'} <a class="aksi${q.skor !== undefined && q.skor !== null ? ' sekunder' : ''}" href="${escAttr(tautanKuis(q.minggu))}">${q.skor !== undefined && q.skor !== null ? 'Ulangi' : 'Kerjakan'}</a>`;
@@ -345,7 +344,9 @@ function butirKuis(q) {
 function butirMateri(m) {
   const jenis = { video: 'Video', bacaan: 'Bacaan', berkas: 'PDF' }[m.jenis] || m.jenis;
   return `<div class="butir-isi"><div><div class="butir-judul">${esc(m.judul)}</div><div class="butir-ket">${esc(jenis)}${m.deskripsi ? ` · ${esc(m.deskripsi)}` : ''}</div></div>
-    <div class="aksi-sel"><a class="aksi sekunder" href="${escAttr(tautanMateri(m))}">${mengajar() ? 'Kelola' : 'Buka'}</a></div></div>`;
+    <div class="aksi-sel">${mengajar()
+      ? `<button type="button" class="sekunder" data-aksi="ubah-materi" data-id="${escAttr(m.id)}" data-minggu="${escAttr(m.minggu)}">Kelola</button>`
+      : `<a class="aksi sekunder" href="${escAttr(tautanMateri(m))}">Buka</a>`}</div></div>`;
 }
 
 // Grup WhatsApp kelas: tautan undangan untuk semua anggota; tautan pembuatan
@@ -441,26 +442,29 @@ function tabTugasKelas() {
   const buat = mengajar() ? `<div class="bilah-buat">
       <b>+ Buat</b>
       <button type="button" data-aksi="buka-tugas">Tugas</button>
-      <a class="aksi sekunder" href="${escAttr(tautanBuatMateri(detail.minggu_ini))}">Materi</a>
-      <a class="aksi sekunder" href="${escAttr(tautanKuis(detail.minggu_ini || 1))}">Kuis</a>
-    </div>${formTugasBaru()}` : '';
+      <button type="button" class="sekunder" data-aksi="buka-materi">Materi</button>
+      <button type="button" class="sekunder" data-aksi="buka-kuis">Kuis</button>
+    </div>${formTugasBaru()}<div id="panel-isi"></div>` : '';
   const minggu = (isiKelas.minggu || []).map(w => {
     const jumlah = w.materi.length + w.kuis.length + w.tugas.length;
-    const buka = w.minggu === detail.minggu_ini || (!detail.minggu_ini && w.minggu === 1);
-    return `<details class="minggu-kelas"${buka ? ' open' : ''}>
+    const buka = w.minggu === detail.minggu_ini || w.minggu === mingguSorot || (!detail.minggu_ini && w.minggu === 1);
+    return `<details class="minggu-kelas" id="minggu-${esc(w.minggu)}"${buka ? ' open' : ''}>
       <summary>Minggu ${esc(w.minggu)}${w.minggu === detail.minggu_ini ? ' <span class="lencana">minggu ini</span>' : ''}
         <span class="redup">${w.mulai ? `mulai ${esc(tanggal(w.mulai))} · ` : ''}${jumlah ? `${w.materi.length} materi · ${w.kuis.length} kuis · ${w.tugas.length} tugas` : 'kosong'}</span></summary>
       <div class="isi-minggu">
         ${w.materi.length ? `<h4>Materi</h4>${w.materi.map(butirMateri).join('')}` : ''}
         ${w.kuis.length ? `<h4>Kuis</h4>${w.kuis.map(butirKuis).join('')}` : ''}
         ${w.tugas.length ? `<h4>Tugas</h4>${w.tugas.map(butirTugas).join('')}` : ''}
-        ${jumlah ? '' : `<p class="redup">Belum ada isi.${mengajar() ? ` <a href="${escAttr(tautanBuatMateri(w.minggu))}">Tambah materi minggu ini</a>` : ''}</p>`}
+        ${jumlah ? '' : '<p class="redup">Belum ada isi.</p>'}
+        ${mengajar() ? `<p class="cta-row"><button type="button" class="sekunder" data-aksi="buka-materi" data-minggu="${escAttr(w.minggu)}">+ Materi</button>${w.kuis.length ? '' : ` <button type="button" class="sekunder" data-aksi="buka-kuis" data-minggu="${escAttr(w.minggu)}">+ Kuis</button>`}</p>` : ''}
       </div>
     </details>`;
   }).join('');
   const lepas = (isiKelas.tugas_tanpa_minggu || []).length
     ? `<div class="kartu"><h3>Tugas tanpa minggu</h3>${isiKelas.tugas_tanpa_minggu.map(butirTugas).join('')}</div>` : '';
-  return buat + (minggu || keadaanKosong({ judul: 'Belum ada isi kelas', keterangan: 'Materi, kuis, dan tugas kelas ini tampil per minggu kalender.' })) + lepas;
+  // Halaman katalog lama tetap untuk melihat seluruh katalog prodi dan status kuis per mahasiswa.
+  const lain = mengajar() ? `<p class="meta">Seluruh katalog prodi: <a href="kelola-materi.html">Katalog materi</a> · <a href="kuis.html">Kuis gerbang &amp; status kuis per mahasiswa</a></p>` : '';
+  return buat + (minggu || keadaanKosong({ judul: 'Belum ada isi kelas', keterangan: 'Materi, kuis, dan tugas kelas ini tampil per minggu kalender.' })) + lepas + lain;
 }
 
 function tabAnggota() {
@@ -574,6 +578,48 @@ async function renderDetail() {
   panel.querySelectorAll('table').forEach(t => { if (!t.classList.contains('tabel-bobot') && !t.classList.contains('buku-nilai')) labelTabel(t); });
 }
 
+// Panel materi/kuis selalu dibuka di tab Tugas Kelas; tombol Kelola/Susun di
+// tab Beranda (minggu berjalan) pindah ke tab itu dulu.
+async function bukaPanelIsi(aksi, data) {
+  if (tabAktif() !== 'tugas') {
+    history.replaceState(null, '', '#tugas');
+    await renderDetail();
+  }
+  const wadah = document.getElementById('panel-isi');
+  if (!wadah) return;
+  const kartuTugas = document.getElementById('kartu-tugas-baru');
+  if (kartuTugas) kartuTugas.hidden = true;
+  const minggu = Number(data.minggu) || detail.minggu_ini || 1;
+  const konteks = { namaKelas: detail.nama, prodi_kode: detail.prodi_kode, rumpun_kode: detail.rumpun_kode, mk_kode: detail.mk_kode || '', minggu };
+  const opsi = {
+    selesai: async (teks, { gagal = false, minggu: mingguIsi = 0 } = {}) => {
+      isiKelas = null;
+      mingguSorot = Number(mingguIsi) || 0;
+      await renderDetail();
+      const kotak = document.getElementById(`minggu-${mingguSorot}`);
+      // Pesan hasil diletakkan tepat di minggu isinya, supaya hasilnya langsung terlihat.
+      const tempat = kotak ? kotak.querySelector('.isi-minggu') : document.getElementById('panel-kelas');
+      tempat.insertAdjacentHTML('afterbegin', `<div class="pesan ${gagal ? 'gagal' : 'sukses'}">${teks}</div>`);
+      (kotak || tempat).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+  };
+  wadah.innerHTML = '<p class="redup">Memuat…</p>';
+  try {
+    if (aksi === 'buka-materi') pasangPanelMateri(wadah, konteks, null, opsi);
+    else if (aksi === 'ubah-materi') {
+      const m = await ambilMateri(konteks, data.id, minggu);
+      if (!m) throw new Error('Materi ini tidak ditemukan lagi di katalog; muat ulang halaman.');
+      pasangPanelMateri(wadah, konteks, m, opsi);
+    } else {
+      // "+ Kuis" untuk minggu yang sudah punya kuis membuka kuis itu, bukan menimpanya diam-diam.
+      pasangPanelKuis(wadah, konteks, await ambilKuis(konteks, minggu), opsi);
+    }
+  } catch (err) {
+    wadah.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
+  }
+  wadah.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function hitungTotalBobot() {
   const total = [...document.querySelectorAll('#isi-bobot input[name=bobot]')].reduce((a, i) => a + (Number(i.value) || 0), 0);
   const el = document.getElementById('total-bobot');
@@ -601,9 +647,12 @@ async function tampilDetail() {
     if (!b) return;
     const aksi = b.dataset.aksi;
     if (aksi === 'buka-tugas') {
+      document.getElementById('panel-isi').innerHTML = '';
       const kartu = document.getElementById('kartu-tugas-baru');
       kartu.hidden = false;
       kartu.querySelector('input[name=judul]').focus();
+    } else if (aksi === 'buka-materi' || aksi === 'ubah-materi' || aksi === 'buka-kuis' || aksi === 'susun-kuis') {
+      await bukaPanelIsi(aksi, b.dataset);
     } else if (aksi === 'hapus-pengumuman') {
       if (!window.confirm('Hapus pengumuman ini? Pesan yang sudah terkirim ke grup WhatsApp tidak ikut ditarik.')) return;
       try {

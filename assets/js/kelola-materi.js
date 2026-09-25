@@ -2,6 +2,7 @@ import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, apiPostBerkasToken } fr
 import { hitungHalaman } from './pdfmateri.js';
 import { esc, istilah, keadaanKosong, labelTabel, pilihProdiBawaan } from './ui.js';
 import { sayaHalaman, halamanMengajar, kartuPrasyarat } from './hal-dosen.js';
+import { periksaBerkas, UKURAN_MAKS_LABEL } from './panel-isi.js';
 
 // Kelola Materi (dosen). Kewenangan tetap dicek backend. Prodi dan rumpun dibaca
 // dari data kurikulum, tidak diketik ulang. YouTube ID diurai server dari
@@ -14,11 +15,6 @@ import { sayaHalaman, halamanMengajar, kartuPrasyarat } from './hal-dosen.js';
 // Materi jenis "berkas": PDF diunggah ke repo storage GitHub privat lewat
 // backend, yang menghitung jumlah halamannya dari berkas itu. Hitungan pdf.js
 // di sini hanya ikut dikirim sebagai cadangan kalau server gagal mengurai PDF.
-
-// Batas yang sama dengan yang dijaga backend; diperiksa di sini juga supaya
-// dosen tidak menunggu unggahan 30 MiB cuma untuk ditolak di ujung.
-const UKURAN_MAKS = 20 * 1024 * 1024; // 20 MiB
-const UKURAN_MAKS_LABEL = '20 MiB';
 
 const isi = document.getElementById('isi');
 // Tautan "+ Materi" dari halaman Kelas: ?prodi=&rumpun=&mk=&minggu= mengisi formulir.
@@ -158,14 +154,7 @@ async function pasangForm(m = {}) {
 // Alasan berkasnya tidak ikut satu permintaan dengan datanya: path simpanannya
 // memakai id materi, jadi materinya harus ada dulu. Simpan data -> dapat id ->
 // unggah berkas ke /api/materi/<id>/berkas.
-function periksaBerkas(berkas) {
-  if (berkas.size > UKURAN_MAKS) {
-    return `Berkas ${Math.round(berkas.size / (1024 * 1024))} MiB melebihi batas ${UKURAN_MAKS_LABEL}.`;
-  }
-  const namaPDF = /\.pdf$/i.test(berkas.name);
-  if (berkas.type !== 'application/pdf' && !namaPDF) return 'Hanya berkas PDF yang bisa diunggah.';
-  return '';
-}
+// Batas dan pemeriksaan berkasnya bersama panel materi di halaman Kelas (panel-isi.js).
 
 async function simpan(e) {
   e.preventDefault();
