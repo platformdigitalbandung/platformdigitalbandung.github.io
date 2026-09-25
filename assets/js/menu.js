@@ -19,10 +19,11 @@ function esc(s) { const d = document.createElement('div'); d.textContent = s ?? 
 export const LAYANAN = {
   mahasiswa: [
     ['Pembelajaran', [
+      ['kelas.html', 'Kelas saya', 'Materi, kuis, tugas, dan nilai per kelas'],
       ['materi.html', 'Materi pekan ini', 'Video dan bacaan asinkron'],
       ['kuis.html', 'Kuis gerbang', 'Syarat sebelum sesi Jumat'],
       ['rekaman.html', 'Rekaman sesi', 'Kelas daring yang terlewat'],
-      ['portal.html', 'Tugas', 'Kumpulkan dan pantau tugas'],
+      ['portal.html', 'Tugas', 'Perlu dikerjakan dan sudah diserahkan'],
       ['kalender.html', 'Kalender akademik', 'Jadwal semester'],
     ]],
     ['Nilai dan kemajuan', [
@@ -38,9 +39,11 @@ export const LAYANAN = {
   ],
   dosen: [
     ['Pengajaran', [
+      ['kelas.html', 'Kelas saya', 'Tugas bertenggat, nilai, dan anggota tiap kelas yang Anda ajar'],
+      ['portal.html', 'Perlu dinilai', 'Kiriman tugas yang menunggu nilai'],
       ['kelola-materi.html', 'Kelola materi', 'Video dan bacaan per minggu'],
       ['kuis.html', 'Kuis gerbang', 'Susun soal dan cek kelulusan'],
-      ['dosen.html', 'Buat tugas', 'Termasuk laporan kemiripan'],
+      ['dosen.html', 'Tugas prodi & kemiripan', 'Tugas tanpa kelas dan laporan kemiripan'],
       ['rekaman.html', 'Rekaman sesi', 'Terbitkan sebelum tenggat'],
     ]],
     ['Penilaian', [
@@ -59,6 +62,7 @@ export const LAYANAN = {
   ],
   kaprodi: [
     ['Kurikulum dan pengajar', [
+      ['kelas.html', 'Kelas prodi', 'Buka kelas, tunjuk pengajar, atur peserta'],
       ['kurikulum.html', 'Kurikulum program studi', 'Rumpun, mata kuliah, CPL, dan ritme'],
       ['pengampu.html', 'Dosen pengampu prodi', 'Centang dosen yang mengajar di prodi Anda'],
       ['kalender.html', 'Kalender akademik', 'Susun dan terbitkan kalender prodi Anda'],
@@ -99,19 +103,19 @@ export const LAYANAN = {
 // tetap ada tetapi tidak ditautkan dari menu mana pun.
 export const NAV = {
   mahasiswa: {
-    bar: ['./', 'kalender.html', 'materi.html', 'portal.html'],
-    atas: ['./', 'kalender.html', 'materi.html', 'kuis.html', 'portal.html'],
-    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['kuis.html', 'rekaman.html', 'nilai.html', 'rapor.html', 'dasbor.html', 'kerja.html', 'rpl.html', 'autograder.html'] },
+    bar: ['./', 'kelas.html', 'materi.html', 'portal.html'],
+    atas: ['./', 'kelas.html', 'kalender.html', 'materi.html', 'kuis.html', 'portal.html'],
+    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['kalender.html', 'kuis.html', 'rekaman.html', 'nilai.html', 'rapor.html', 'dasbor.html', 'kerja.html', 'rpl.html', 'autograder.html'] },
   },
   dosen: {
-    bar: ['./', 'kelola-materi.html', 'dosen.html', 'kuis.html'],
-    atas: ['./', 'kelola-materi.html', 'dosen.html', 'kuis.html', 'kalender.html'],
-    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['kuis.html', 'kalender.html', 'proyek.html', 'rekaman.html', 'ujian.html', 'akademik.html', 'rapor.html', 'rpl.html', 'kerja.html', 'autograder.html', 'kurikulum.html'] },
+    bar: ['./', 'kelas.html', 'kelola-materi.html', 'portal.html'],
+    atas: ['./', 'kelas.html', 'kelola-materi.html', 'portal.html', 'kuis.html', 'kalender.html'],
+    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['kuis.html', 'kalender.html', 'dosen.html', 'proyek.html', 'rekaman.html', 'ujian.html', 'akademik.html', 'rapor.html', 'rpl.html', 'kerja.html', 'autograder.html', 'kurikulum.html'] },
   },
   kaprodi: {
-    bar: ['./', 'kurikulum.html', 'pengampu.html', 'kalender.html'],
-    atas: ['./', 'kurikulum.html', 'pengampu.html', 'kalender.html', 'pengguna.html'],
-    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['pengguna.html', 'kaprodi.html', 'kepatuhan.html', 'rapor.html', 'rekaman.html'] },
+    bar: ['./', 'kelas.html', 'kurikulum.html', 'kalender.html'],
+    atas: ['./', 'kelas.html', 'kurikulum.html', 'pengampu.html', 'kalender.html', 'pengguna.html'],
+    grup: { label: 'Lainnya', ikon: 'lainnya', href: ['pengampu.html', 'pengguna.html', 'kaprodi.html', 'kepatuhan.html', 'rapor.html', 'rekaman.html'] },
     catatan: 'Menu mengajar — materi, kuis, tugas, dan penilaian — ada di peran dosen.',
   },
   admin: {
@@ -127,7 +131,7 @@ const PENDEK = {
   './': 'Beranda', 'kalender.html': 'Kalender', 'materi.html': 'Materi', 'portal.html': 'Tugas',
   'kuis.html': 'Kuis', 'forum.html': 'Forum', 'kelola-materi.html': 'Materi', 'dosen.html': 'Tugas',
   'kurikulum.html': 'Kurikulum', 'pengampu.html': 'Pengampu', 'jabatan.html': 'Kaprodi',
-  'pengguna.html': 'Pengguna', 'sandi.html': 'Kata sandi',
+  'pengguna.html': 'Pengguna', 'sandi.html': 'Kata sandi', 'kelas.html': 'Kelas',
 };
 const PENDEK_PERAN = { admin: { 'kurikulum.html': 'Prodi baru' } };
 
@@ -156,6 +160,7 @@ const IKON = {
   ujian: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v2.5H9z"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/>',
   roster: '<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
   kepatuhan: '<path d="M12 3.5 19.5 6v6c0 4.5-3.2 7.6-7.5 8.5-4.3-.9-7.5-4-7.5-8.5V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
+  kelas: '<rect x="3.5" y="4.5" width="17" height="11" rx="1.5"/><path d="M8 20.5h8M12 15.5v5"/><path d="M7 9h6M7 12h4"/>',
   pengguna: '<circle cx="8.5" cy="8" r="3.5"/><path d="M2.5 20a6 6 0 0 1 12 0"/><path d="M15.5 8.5h6M15.5 12.5h6M17.5 16.5h4"/>',
   sandi: '<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2.5"/>',
   tutup: '<path d="M6 6l12 12M18 6 6 18"/>',
@@ -168,7 +173,7 @@ const IKON_HALAMAN = {
   'rekaman.html': 'rekaman', 'nilai.html': 'nilai', 'rapor.html': 'nilai', 'kaprodi.html': 'laporan',
   'kepatuhan.html': 'kepatuhan', 'dasbor.html': 'dasbor', 'kerja.html': 'kerja', 'rpl.html': 'rpl',
   'autograder.html': 'kode', 'proyek.html': 'proyek', 'ujian.html': 'ujian', 'akademik.html': 'roster',
-  'pengguna.html': 'pengguna', 'sandi.html': 'sandi',
+  'pengguna.html': 'pengguna', 'sandi.html': 'sandi', 'kelas.html': 'kelas',
 };
 const IKON_PERAN = { admin: { 'kurikulum.html': 'prodi' } };
 

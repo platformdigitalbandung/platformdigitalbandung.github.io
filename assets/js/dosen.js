@@ -8,19 +8,18 @@ const isi = document.getElementById('isi');
 // ditandai supaya dosen tahu tugas itu tidak tampil untuk mahasiswa.
 const labelProdi = (kode) => kode ? String(kode).toUpperCase() : 'tanpa prodi';
 
-// Form buat tugas: tugas wajib milik satu prodi, dan hanya prodi tempat dosen
-// mengajar atau yang dipimpinnya yang bisa dipilih (keputusan pemilik produk
-// 2026-09-15; backend tetap memeriksa lewat jabatan.BolehBuatTugas).
-function kartuBuat(saya) {
-  const mengajar = (saya && saya.prodi_mengajar) || [];
+// Form buat tugas prodi: tugas wajib milik satu prodi, dan hanya prodi yang
+// dipimpin atau prodi kelas yang diajar yang bisa dipilih (hak per kelas
+// sejak 2026-09-25; backend tetap memeriksa lewat kelas.Lingkup.BolehTugasProdi).
+function kartuBuat(saya, mengajar) {
   const prasyarat = kartuPrasyarat(saya, { judul: 'Buat Tugas Baru', untuk: 'Membuat tugas', pengampu: true });
   if (prasyarat || !mengajar.length) {
-    return prasyarat || '<div class="kartu"><h3>Buat Tugas Baru</h3><p class="redup">Anda belum tercatat mengajar di prodi mana pun.</p></div>';
+    return prasyarat || '<div class="kartu"><h3>Buat Tugas Prodi</h3><p class="redup">Anda belum menjadi pengajar kelas di prodi mana pun. Kaprodi menunjuk pengajar tiap kelas di halaman <a href="kelas.html">Kelas</a>.</p></div>';
   }
   return `
     <div class="kartu">
-      <h3>Buat Tugas Baru</h3>
-      <p class="meta">Tugas hanya tampil dan bisa dikumpulkan mahasiswa prodi yang dipilih.</p>
+      <h3>Buat Tugas Prodi</h3>
+      <p class="meta">Tugas prodi tampil untuk semua mahasiswa prodi yang dipilih, tanpa tenggat, dan nilainya tidak masuk buku nilai kelas. Untuk tugas satu kelas yang bertenggat dan masuk buku nilai, buat dari tab <b>Tugas Kelas</b> di halaman <a href="kelas.html">Kelas</a>.</p>
       <form id="buat">
         <label>Prodi
           <select name="prodi_kode" id="prodi-tugas" required>
@@ -35,9 +34,15 @@ function kartuBuat(saya) {
 }
 
 async function tampilPanel(saya) {
-  const { tugas } = await apiGet('/api/tugas');
+  const [{ tugas }, { kelas = [] }] = await Promise.all([
+    apiGet('/api/tugas'), apiGet('/api/kelas/saya').catch(() => ({ kelas: [] })),
+  ]);
+  const prodiTugas = [...new Set([
+    ...((saya && saya.kaprodi_prodi) || []),
+    ...kelas.filter(k => k.peran === 'pengajar').map(k => k.prodi_kode),
+  ].map(p => String(p).toLowerCase()))].sort();
   isi.innerHTML = `
-    ${kartuBuat(saya)}
+    ${kartuBuat(saya, prodiTugas)}
     <div class="kartu">
       <h3>Laporan Kemiripan</h3>
       ${tugas.length ? `

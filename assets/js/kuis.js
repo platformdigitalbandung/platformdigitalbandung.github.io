@@ -16,6 +16,10 @@ const isi = document.getElementById('isi');
 function satuDesimal(n) { return typeof n === 'number' ? n.toFixed(1) : '–'; }
 
 let kuisAktif = null;
+// Tautan dari halaman Kelas: ?rumpun=R1&minggu=3[&mk=KODE] (mk untuk kelas
+// mata kuliah lepas — satu kuis per mata kuliah di rumpun wadah).
+const paramURL = new URLSearchParams(location.search);
+const mkURL = (paramURL.get('mk') || '').toUpperCase();
 
 // Mahasiswa hanya ditawari rumpun prodinya: kuis berkunci prodi, dan backend
 // memakai prodi dari roster.
@@ -52,6 +56,7 @@ function kartuPilih(rumpun, pekan) {
             ${rumpun.map(r => `<option value="${esc(r.kode)}"${r.kode === terpilih ? ' selected' : ''}>${esc(r.kode)} — ${esc(r.nama)}</option>`).join('')}
           </select></label>
         <label>Minggu <input type="number" name="minggu" min="1" max="52" required value="${esc(pekan.minggu || 1)}"></label>
+        <input type="hidden" name="mk" value="${esc(mkURL)}">
         <button>Muat Kuis</button>
       </form>
       <div id="kuis"></div>
@@ -71,13 +76,14 @@ async function muatKuis(e) {
   }
   wadah.innerHTML = '<p class="redup">Memuat kuis…</p>';
   try {
-    kuisAktif = await apiGet(`/api/kuisgerbang/${encodeURIComponent(rumpun)}/${encodeURIComponent(minggu)}`, { auth: true });
+    const mk = String(fd.get('mk') || '');
+    kuisAktif = await apiGet(`/api/kuisgerbang/${encodeURIComponent(rumpun)}/${encodeURIComponent(minggu)}${mk ? `?mk=${encodeURIComponent(mk)}` : ''}`, { auth: true });
     const soal = kuisAktif.soal || [];
     if (!soal.length) {
       wadah.innerHTML = keadaanKosong({
         judul: 'Kuis ini belum punya soal',
-        keterangan: 'Dosen pengampu masih menyusunnya. Kerjakan setelah soalnya tersedia.',
-        siapa: `dosen pengampu ${prodiMahasiswa.toUpperCase()}`,
+        keterangan: 'Pengajar kelas masih menyusunnya. Kerjakan setelah soalnya tersedia.',
+        siapa: `pengajar kelas ${prodiMahasiswa.toUpperCase()}`,
         aksi: { href: 'materi.html', label: 'Pelajari materinya dulu' },
       });
       return;
@@ -100,8 +106,8 @@ async function muatKuis(e) {
     wadah.innerHTML = err.status === 404
       ? keadaanKosong({
         judul: `Belum ada kuis rumpun ${rumpun} minggu ${minggu}`,
-        keterangan: 'Dosen pengampu belum menyusun kuis gerbangnya. Kuis muncul di sini begitu disimpan dosen.',
-        siapa: `dosen pengampu ${prodiMahasiswa.toUpperCase()}`,
+        keterangan: 'Pengajar kelas belum menyusun kuis gerbangnya. Kuis muncul di sini begitu disimpan dosen.',
+        siapa: `pengajar kelas ${prodiMahasiswa.toUpperCase()}`,
         aksi: [{ href: 'materi.html', label: 'Buka materi minggu ini' }],
       })
       : `<div class="pesan gagal">${esc(err.message)}</div>`;
@@ -206,6 +212,8 @@ function kartuKelola() {
       <form id="form-susun">
         <label>Program studi <select name="prodi_kode" required>${opsiProdi(daftarProdi[0] && daftarProdi[0].kode, false)}</select></label>
         <label>Rumpun <select name="rumpun_kode" required></select></label>
+        <label>Mata kuliah <select name="mk_kode"><option value="">(seluruh rumpun)</option></select></label>
+        <p class="redup">Pilih mata kuliah hanya untuk kelas mata kuliah lepas (rumpun tanpa proyek pengikat, mis. Jalur Kontinu).</p>
         <label>Minggu <input type="number" name="minggu" min="1" max="52" required value="${esc(mingguDosen || 1)}"></label>
         <label>Ambang lulus (%) <input type="number" name="ambang_lulus" min="0" max="100" step="1" value="60"></label>
         <p class="redup">Isi 0 untuk memakai ambang bawaan 60%.</p>
@@ -250,10 +258,26 @@ function tambahSoal(soal) {
   nomoriSoal();
 }
 
-async function isiRumpunSusun(terpilih) {
+async function isiRumpunSusun(terpilih, mkTerpilih = '') {
   const form = document.getElementById('form-susun');
   const rumpun = await rumpunDari(form.elements.prodi_kode.value);
   form.elements.rumpun_kode.innerHTML = opsiRumpun(rumpun, terpilih, false);
+  await isiMKSusun(mkTerpilih);
+}
+
+// Mata kuliah rumpun terpilih, untuk kuis kelas mata kuliah lepas.
+async function isiMKSusun(terpilih = '') {
+  const form = document.getElementById('form-susun');
+  const prodi = form.elements.prodi_kode.value;
+  const rumpun = form.elements.rumpun_kode.value;
+  let mks = [];
+  if (prodi && rumpun) {
+    try {
+      ({ matakuliah: mks = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(prodi)}/matakuliah?rumpun=${encodeURIComponent(rumpun)}`));
+    } catch (_) { mks = []; }
+  }
+  form.elements.mk_kode.innerHTML = '<option value="">(seluruh rumpun)</option>'
+    + (mks || []).map(m => `<option value="${esc(m.kode)}"${m.kode === terpilih ? ' selected' : ''}>${esc(m.nama)}</option>`).join('');
 }
 
 async function kosongkanFormulir() {
@@ -280,7 +304,7 @@ function bacaFormulir(form) {
     };
   });
   return {
-    prodi_kode: fd.get('prodi_kode'), rumpun_kode: fd.get('rumpun_kode'),
+    prodi_kode: fd.get('prodi_kode'), rumpun_kode: fd.get('rumpun_kode'), mk_kode: fd.get('mk_kode') || '',
     minggu: Number(fd.get('minggu')), ambang_lulus: Number(fd.get('ambang_lulus')) || 0, soal,
   };
 }
@@ -298,7 +322,7 @@ async function simpanKuis(e) {
   try {
     const k = await apiPostJson('/api/kuisgerbang', data);
     await muatDaftarKuis();
-    hasil.innerHTML = `<div class="pesan sukses">Kuis ${esc(k.prodi_kode.toUpperCase())} rumpun ${esc(k.rumpun_kode)} minggu ${esc(k.minggu)} tersimpan (${k.soal.length} soal).</div>`;
+    hasil.innerHTML = `<div class="pesan sukses">Kuis ${esc(k.prodi_kode.toUpperCase())} rumpun ${esc(k.rumpun_kode)}${k.mk_kode ? ` (${esc(k.mk_kode)})` : ''} minggu ${esc(k.minggu)} tersimpan (${k.soal.length} soal).</div>`;
   } catch (err) {
     hasil.innerHTML = `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
@@ -307,9 +331,9 @@ async function simpanKuis(e) {
 function tabelKuis() {
   if (!daftarKuis.length) return '<div class="kosong">Belum ada kuis untuk saringan ini.</div>';
   return `<div class="gulir"><table>
-    <thead><tr><th>Prodi</th><th>Rumpun</th><th class="num">Minggu</th><th class="num">Soal</th><th class="num">Ambang</th><th class="num">Dikerjakan</th><th></th></tr></thead>
+    <thead><tr><th>Prodi</th><th>Rumpun</th><th>Mata kuliah</th><th class="num">Minggu</th><th class="num">Soal</th><th class="num">Ambang</th><th class="num">Dikerjakan</th><th></th></tr></thead>
     <tbody>${daftarKuis.map(k => `<tr>
-      <td>${esc(k.prodi_kode.toUpperCase())}</td><td>${esc(k.rumpun_kode)}</td><td class="num">${esc(k.minggu)}</td>
+      <td>${esc(k.prodi_kode.toUpperCase())}</td><td>${esc(k.rumpun_kode)}</td><td>${k.mk_kode ? esc(k.mk_kode) : '<span class="redup">seluruh rumpun</span>'}</td><td class="num">${esc(k.minggu)}</td>
       <td class="num">${k.soal.length}</td><td class="num">${satuDesimal(k.ambang_lulus || 60)}%</td>
       <td class="num">${esc(k.dikerjakan)}</td>
       <td>${k.dikerjakan ? '' : `<button type="button" class="sekunder" data-aksi="sunting" data-id="${esc(k.id)}">Sunting</button> `}<button type="button" class="sekunder" data-aksi="hapus" data-id="${esc(k.id)}">Hapus</button></td>
@@ -337,7 +361,7 @@ async function suntingKuis(id) {
   if (!k) return;
   const form = document.getElementById('form-susun');
   form.elements.prodi_kode.value = k.prodi_kode;
-  await isiRumpunSusun(k.rumpun_kode);
+  await isiRumpunSusun(k.rumpun_kode, k.mk_kode || '');
   form.elements.minggu.value = k.minggu;
   form.elements.ambang_lulus.value = k.ambang_lulus || 0;
   document.getElementById('daftar-soal').innerHTML = '';
@@ -376,6 +400,7 @@ async function pasangPenyusun() {
 
   const susun = document.getElementById('form-susun');
   susun.elements.prodi_kode.addEventListener('change', () => isiRumpunSusun());
+  susun.elements.rumpun_kode.addEventListener('change', () => isiMKSusun());
   susun.addEventListener('submit', simpanKuis);
 
   isi.addEventListener('click', e => {
@@ -398,8 +423,13 @@ async function pasangPenyusun() {
 
   pilihProdiBawaan(susun.elements.prodi_kode, sayaDosen);
   tambahSoal();
-  await isiRumpunSusun();
+  // Tautan "+ Kuis" dari halaman Kelas: ?prodi=&rumpun=&mk=&minggu= mengisi formulir.
+  const prodiQ = paramURL.get('prodi') || '';
+  if (prodiQ && [...susun.elements.prodi_kode.options].some(o => o.value === prodiQ)) susun.elements.prodi_kode.value = prodiQ;
+  await isiRumpunSusun(paramURL.get('rumpun') || undefined, mkURL);
+  if (Number(paramURL.get('minggu'))) susun.elements.minggu.value = String(Number(paramURL.get('minggu')));
   await muatDaftarKuis();
+  if (paramURL.get('rumpun')) susun.scrollIntoView({ behavior: 'smooth' });
 }
 
 async function muat() {
@@ -412,7 +442,7 @@ async function muat() {
     // Admin hanya menyiapkan: kuis disusun di peran dosen/kaprodi.
     if (peranAktif(saya) === 'admin' && !halamanUntuk(saya, ['dosen', 'kaprodi'], {
       judul: 'Kuis Gerbang',
-      pesan: 'Kuis gerbang disusun dosen pengampu dan kaprodi prodinya, bukan di peran admin.',
+      pesan: 'Kuis gerbang disusun pengajar kelas dan kaprodi prodinya, bukan di peran admin.',
     })) return;
     sayaDosen = saya;
     const [{ prodi = [] }, agenda] = await Promise.all([
@@ -427,7 +457,7 @@ async function muat() {
       : `<div class="kartu"><h3>Kelola Kuis Gerbang</h3>
           ${keadaanKosong({
             judul: 'Anda belum tercatat mengajar di prodi mana pun',
-            keterangan: 'Kuis gerbang hanya bisa disusun untuk prodi tempat Anda mengajar. Kaprodi mencentang dosen pengampu di halaman Dosen Pengampu Prodi.',
+            keterangan: 'Kuis gerbang disusun pengajar kelas. Kaprodi menunjuk pengajar tiap kelas di halaman Kelas.',
             siapa: 'kaprodi prodi Anda',
             aksi: null,
           })}</div>`;
@@ -475,8 +505,17 @@ async function muat() {
   }
 
   isi.innerHTML = kartuPilih(rumpun, pekan) + riwayat;
-  document.getElementById('form-pilih').addEventListener('submit', muatKuis);
+  const formPilih = document.getElementById('form-pilih');
+  formPilih.addEventListener('submit', muatKuis);
   muatRiwayat(saya.nim);
+  const rumpunQ = paramURL.get('rumpun') || '';
+  const mingguQ = Number(paramURL.get('minggu')) || 0;
+  if (rumpunQ && [...formPilih.rumpun.options].some(o => o.value === rumpunQ)) {
+    formPilih.rumpun.value = rumpunQ;
+    if (mingguQ) formPilih.minggu.value = String(mingguQ);
+    await muatKuis();
+    return;
+  }
   if (pekan.minggu && pekan.rumpun.length === 1) await muatKuis();
 }
 

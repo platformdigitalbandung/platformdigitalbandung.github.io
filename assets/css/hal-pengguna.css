@@ -1,25 +1,6 @@
 /* Halaman Pengguna (pengguna.html) — admin dan kaprodi. Ditautkan sesudah
-   style.css dan hal-dosen.css. */
-
-/* Tab Mahasiswa / Dosen (pola tablist WAI-ARIA). */
-.tab-halaman { display: flex; gap: .25rem; border-bottom: 1px solid var(--garis); margin: 0 0 1rem; }
-.tab-halaman button {
-  margin: 0 0 -1px; padding: .55rem 1rem; min-height: 44px;
-  background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0;
-  color: var(--redup); font-weight: 600;
-}
-.tab-halaman button:hover { background: none; color: var(--tinta); border-color: transparent; border-bottom-color: var(--garis-kuat); }
-.tab-halaman button[aria-selected="true"] { color: var(--aksen); border-bottom-color: var(--aksen); }
-.tab-halaman button:focus-visible { outline: 2px solid var(--aksen); outline-offset: -2px; }
-
-/* Baris saringan: isian berderet di layar lebar. */
-.saringan { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0 .9rem; align-items: end; }
-.saringan label { margin-top: .6rem; }
-.saringan button { margin-top: .6rem; }
-
-/* Tombol aksi berbahaya di sel tabel (nonaktifkan, cabut admin). */
-button.bahaya { background: var(--permukaan); color: var(--tinggi); border-color: #e3c3c0; }
-button.bahaya:hover { background: var(--tinggi-muda); color: var(--tinggi); border-color: var(--tinggi); }
+   style.css dan hal-dosen.css. Tab (.tab-halaman), saringan, dan tombol
+   bahaya ada di style.css karena dipakai juga halaman Kelas. */
 
 /* Pratinjau impor: baris yang gagal diperiksa ditandai. */
 tr.baris-galat td { background: var(--tinggi-muda); }

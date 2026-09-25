@@ -64,16 +64,16 @@ export function kartuPrasyarat(saya, { judul, untuk, pengampu = false, catatan =
   }];
   if (pengampu) {
     const kaprodi = peranDipegang(saya).includes('kaprodi');
+    // Sejak 2026-09-25 hak mengajar per kelas: pengajar kelas yang ditunjuk
+    // kaprodi, atau kaprodi untuk semua kelas prodinya.
     langkah.push({
-      selesai: (saya.prodi_mengajar || []).length > 0,
-      label: 'Dicentang kaprodi sebagai dosen pengampu prodi',
+      selesai: kaprodi || (Number(saya.jumlah_kelas_diajar) || 0) > 0,
+      label: 'Ditunjuk kaprodi sebagai pengajar kelas',
       kosong: {
-        judul: 'Anda belum tercatat mengajar di prodi mana pun',
-        keterangan: kaprodi
-          ? 'Sebagai kaprodi, centang diri Anda di halaman Dosen Pengampu Prodi.'
-          : 'Kaprodi prodi tempat Anda mengajar mencentang nama Anda di halaman Dosen Pengampu Prodi. Hubungi kaprodi itu; nama Anda baru bisa dicentang setelah email kampus terisi.',
-        siapa: kaprodi ? 'Anda, sebagai kaprodi' : 'kaprodi prodi tempat Anda mengajar',
-        aksi: kaprodi ? { href: 'pengampu.html', label: 'Buka Dosen Pengampu Prodi' } : null,
+        judul: 'Anda belum menjadi pengajar kelas mana pun',
+        keterangan: 'Kaprodi menunjuk pengajar tiap kelas di halaman Kelas, memilih dari dosen yang dicentang di Dosen Pengampu Prodi. Hubungi kaprodi prodi tempat Anda mengajar; nama Anda baru bisa dipilih setelah email kampus terisi.',
+        siapa: 'kaprodi prodi tempat Anda mengajar',
+        aksi: { href: 'kelas.html', label: 'Lihat Kelas Saya' },
       },
     });
   }

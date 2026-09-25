@@ -3,13 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tugas Prodi &amp; Laporan Kemiripan — Platform Digital Bandung</title>
+  <title>Kelas — Platform Digital Bandung</title>
+  <meta name="robots" content="noindex">
   <link rel="icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="assets/css/hal-dosen.css">
+  <link rel="stylesheet" href="assets/css/hal-kelas.css">
 </head>
 <body>
   <header class="appbar">
@@ -26,9 +28,9 @@
   <main class="halaman">
     <div class="kepala-halaman">
       <div>
-        <p class="remah"><a href="./">Beranda</a> / Tugas Prodi &amp; Laporan Kemiripan</p>
-        <h1>Tugas Prodi &amp; Laporan Kemiripan</h1>
-        <p>Buat tugas untuk dikumpulkan mahasiswa, lalu periksa kiriman yang mirip satu sama lain</p>
+        <p class="remah" id="remah"><a href="./">Beranda</a> / Kelas</p>
+        <h1 id="judul-kelas">Kelas Saya</h1>
+        <p id="sub-kelas">Kelas yang Anda ikuti atau ajar, periode terbaru di atas</p>
       </div>
     </div>
 
@@ -38,17 +40,14 @@
   <footer class="kaki">
     <div class="kaki-dalam">
       <div class="kaki-catatan">
-        <p>Band kemiripan: <b>tinggi</b> ≥ 0.85 · <b>sedang</b> ≥ 0.60 · <b>rendah</b> &lt; 0.60
-        (ambang awal, belum dikalibrasi).</p>
-        <p>Skor kemiripan adalah alat bantu prioritas pemeriksaan, bukan vonis plagiat.</p>
-        <p class="redup">Lewat WhatsApp: kirim "buat tugas | judul | deskripsi" atau
-        "laporan tugas #id" ke Admin (nomor WhatsApp Anda perlu terdaftar sebagai dosen).</p>
+        <p>Satu kelas untuk satu <b>rumpun</b> (atau satu mata kuliah lepas) dalam satu periode semester. Kelas dibuka otomatis saat kaprodi menerbitkan kalender semester; pesertanya mahasiswa roster prodi, angkatan, dan semester itu.</p>
+        <p class="redup">Materi, kuis, tugas, dan nilai kelas disusun pengajar kelas yang ditunjuk kaprodi. Nilai akhir kelas yang lengkap masuk ke rapor untuk setiap mata kuliah kelas itu.</p>
       </div>
       <p class="kaki-baris"><span>Akademi Digital Bandung</span><span><a href="program.html">Tentang program</a> · <a href="panduan/">Panduan</a></span></p>
     </div>
   </footer>
 
   <script type="module" src="assets/js/akun.js"></script>
-  <script type="module" src="assets/js/dosen.js"></script>
+  <script type="module" src="assets/js/kelas.js"></script>
 </body>
 </html>

@@ -299,7 +299,7 @@ function kartuMateri(m) {
 
 // Materi satu minggu. Rumpun kosong = semua rumpun; `rumpunBerlaku` (bila
 // diketahui dari kalender) menyaring ke rumpun yang dijadwalkan minggu itu.
-async function muatMateri({ nim, prodi, rumpun = '', minggu, rumpunBerlaku = [], namaRumpun = {} }) {
+async function muatMateri({ nim, prodi, rumpun = '', mk = '', minggu, rumpunBerlaku = [], namaRumpun = {} }) {
   const wadah = document.getElementById('daftar-materi');
   if (!minggu || minggu < 1) {
     wadah.innerHTML = '<div class="pesan gagal">Isi minggu dengan angka mulai dari 1.</div>';
@@ -318,13 +318,16 @@ async function muatMateri({ nim, prodi, rumpun = '', minggu, rumpunBerlaku = [],
       apiGet(`/api/materi?${q}`, { auth: true }),
       apiGet(`/api/mahasiswa/${encodeURIComponent(nim)}/progres?minggu=${minggu}`, { auth: true }),
     ]);
-    const materi = (semua || []).filter(m => rumpun || !rumpunBerlaku.length || rumpunBerlaku.includes(m.rumpun_kode));
+    // mk: materi satu mata kuliah lepas (tautan dari halaman kelas mata kuliah).
+    const materi = (semua || [])
+      .filter(m => rumpun || !rumpunBerlaku.length || rumpunBerlaku.includes(m.rumpun_kode))
+      .filter(m => !mk || String(m.mk_kode || '').toUpperCase() === mk.toUpperCase());
     if (!materi.length) {
       const untuk = rumpun ? `rumpun ${rumpun} minggu ${minggu}` : `minggu ${minggu}`;
       wadah.innerHTML = keadaanKosong({
         judul: `Belum ada materi ${untuk}`,
-        keterangan: 'Dosen pengampu belum menambahkan materinya ke katalog. Materi langsung tampil di halaman ini begitu ditambahkan.',
-        siapa: `dosen pengampu ${prodi.toUpperCase()}`,
+        keterangan: 'Pengajar kelas belum menambahkan materinya ke katalog. Materi langsung tampil di halaman ini begitu ditambahkan.',
+        siapa: `pengajar kelas ${prodi.toUpperCase()}`,
         aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }],
       });
       return;
@@ -442,6 +445,18 @@ async function muat() {
     const fd = new FormData(e.target);
     muatMateri({ nim: saya.nim, prodi, rumpun: fd.get('rumpun') || '', minggu: Number(fd.get('minggu')), namaRumpun });
   });
+  // Tautan dari halaman Kelas: ?rumpun=R1&minggu=3[&mk=KODE] langsung membuka
+  // materi itu (form ikut diisi supaya pilihan tampak).
+  const q = new URLSearchParams(location.search);
+  const rumpunQ = q.get('rumpun') || '';
+  const mingguQ = Number(q.get('minggu')) || 0;
+  if (rumpunQ || mingguQ) {
+    const form = document.getElementById('form-pilih');
+    if (rumpunQ && [...form.rumpun.options].some(o => o.value === rumpunQ)) form.rumpun.value = rumpunQ;
+    if (mingguQ) form.minggu.value = String(mingguQ);
+    await muatMateri({ nim: saya.nim, prodi, rumpun: rumpunQ, mk: q.get('mk') || '', minggu: mingguQ || mingguAwal, namaRumpun });
+    return;
+  }
   await muatMateri({ nim: saya.nim, prodi, minggu: mingguAwal, rumpunBerlaku: pekan.rumpun, namaRumpun });
 }
 

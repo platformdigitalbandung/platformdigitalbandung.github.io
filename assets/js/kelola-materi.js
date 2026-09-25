@@ -21,6 +21,8 @@ const UKURAN_MAKS = 20 * 1024 * 1024; // 20 MiB
 const UKURAN_MAKS_LABEL = '20 MiB';
 
 const isi = document.getElementById('isi');
+// Tautan "+ Materi" dari halaman Kelas: ?prodi=&rumpun=&mk=&minggu= mengisi formulir.
+const paramURL = new URLSearchParams(location.search);
 
 let saya = null;
 let prodi = [];
@@ -75,6 +77,8 @@ function kartuForm(m = {}) {
       <form id="form-materi" data-id="${esc(m.id || '')}">
         <label>Program studi <select name="prodi_kode" id="form-prodi" required>${opsiProdi(m.prodi_kode, prodiKelola)}</select></label>
         <label>Rumpun <select name="rumpun_kode" id="form-rumpun" required></select></label>
+        <label>Mata kuliah <select name="mk_kode" id="form-mk"><option value="">(seluruh rumpun)</option></select></label>
+        <p class="redup">Pilih mata kuliah hanya untuk kelas mata kuliah lepas (rumpun tanpa proyek pengikat, mis. Jalur Kontinu).</p>
         <label>Minggu <input type="number" name="minggu" min="1" max="52" required value="${esc(m.minggu ?? 1)}"></label>
         <label>Urutan dalam minggu <input type="number" name="urutan" min="0" value="${esc(m.urutan ?? 0)}"></label>
         <label>Judul <input name="judul" required maxlength="200" value="${esc(m.judul || '')}"></label>
@@ -104,7 +108,7 @@ function kartuForm(m = {}) {
 async function pasangForm(m = {}) {
   const wadah = document.getElementById('wadah-form');
   if (!prodiKelola.length) {
-    // Rantai prasyarat: email kampus → dicentang kaprodi sebagai pengampu.
+    // Rantai prasyarat: email kampus → ditunjuk kaprodi sebagai pengajar kelas.
     wadah.innerHTML = kartuPrasyarat(saya, {
       judul: 'Tambah Materi', untuk: 'Menambah dan mengubah materi', pengampu: true,
       catatan: 'Sambil menunggu, katalog di bawah tetap bisa dilihat.',
@@ -114,9 +118,32 @@ async function pasangForm(m = {}) {
   wadah.innerHTML = kartuForm(m);
   const selProdi = document.getElementById('form-prodi');
   const selRumpun = document.getElementById('form-rumpun');
-  if (!m.id) pilihProdiBawaan(selProdi, saya);
-  await isiPilihanRumpun(selProdi, selRumpun, m.rumpun_kode, false);
-  selProdi.addEventListener('change', () => isiPilihanRumpun(selProdi, selRumpun, '', false));
+  const selMK = document.getElementById('form-mk');
+  const isiMK = async (terpilih = '') => {
+    let mks = [];
+    if (selProdi.value && selRumpun.value) {
+      try {
+        ({ matakuliah: mks = [] } = await apiGet(`/api/kurikulum/prodi/${encodeURIComponent(selProdi.value)}/matakuliah?rumpun=${encodeURIComponent(selRumpun.value)}`));
+      } catch (_) { mks = []; }
+    }
+    selMK.innerHTML = '<option value="">(seluruh rumpun)</option>'
+      + (mks || []).map(x => `<option value="${esc(x.kode)}"${x.kode === terpilih ? ' selected' : ''}>${esc(x.nama)}</option>`).join('');
+  };
+  let rumpunAwal = m.rumpun_kode;
+  let mkAwal = m.mk_kode || '';
+  if (!m.id) {
+    pilihProdiBawaan(selProdi, saya);
+    const prodiQ = paramURL.get('prodi') || '';
+    if (prodiQ && [...selProdi.options].some(o => o.value === prodiQ)) selProdi.value = prodiQ;
+    rumpunAwal = paramURL.get('rumpun') || undefined;
+    mkAwal = (paramURL.get('mk') || '').toUpperCase();
+    const mingguQ = Number(paramURL.get('minggu'));
+    if (mingguQ) document.querySelector('#form-materi [name="minggu"]').value = String(mingguQ);
+  }
+  await isiPilihanRumpun(selProdi, selRumpun, rumpunAwal, false);
+  await isiMK(mkAwal);
+  selProdi.addEventListener('change', async () => { await isiPilihanRumpun(selProdi, selRumpun, '', false); await isiMK(); });
+  selRumpun.addEventListener('change', () => isiMK());
   document.getElementById('form-jenis').addEventListener('change', e => {
     const jenis = e.target.value;
     document.getElementById('bidang-video').hidden = jenis !== 'video';
@@ -160,7 +187,7 @@ async function simpan(e) {
   }
 
   const body = {
-    prodi_kode: fd.get('prodi_kode'), rumpun_kode: fd.get('rumpun_kode'),
+    prodi_kode: fd.get('prodi_kode'), rumpun_kode: fd.get('rumpun_kode'), mk_kode: fd.get('mk_kode') || '',
     minggu: Number(fd.get('minggu')), urutan: Number(fd.get('urutan')) || 0,
     judul: fd.get('judul'), jenis,
     youtube_id: fd.get('youtube_id') || '', isi: fd.get('isi') || '', deskripsi: fd.get('deskripsi') || '',
@@ -244,14 +271,14 @@ async function tampilDaftar(e) {
           <td class="num">${esc(m.minggu)}</td><td class="num">${esc(m.urutan)}</td>
           <td>${esc(m.judul)}</td><td><div>${esc(m.jenis)}${selBerkas(m)}</div></td><td>${esc(m.rumpun_kode)}</td>
           <td>${bolehKelola(m.prodi_kode) ? `<div class="aksi-sel"><button class="sekunder ubah" data-id="${esc(m.id)}">Ubah</button>
-              <button class="sekunder hapus" data-id="${esc(m.id)}">Hapus</button></div>` : '<span class="redup kecil">hanya dosen pengampu prodi ini</span>'}</td></tr>`).join('')}
+              <button class="sekunder hapus" data-id="${esc(m.id)}">Hapus</button></div>` : '<span class="redup kecil">hanya pengajar kelas prodi ini</span>'}</td></tr>`).join('')}
       </tbody></table></div><div id="hasil-hapus"></div>`
       : keadaanKosong({
         judul: 'Belum ada materi untuk saringan ini',
         keterangan: bolehKelola(prodiSaring)
           ? 'Tambahkan materi minggu pertama lewat formulir Tambah Materi di atas.'
-          : 'Materi prodi ini diisi dosen pengampunya.',
-        siapa: bolehKelola(prodiSaring) ? 'Anda, sebagai dosen pengampu prodi ini' : `dosen pengampu ${prodiSaring.toUpperCase()}`,
+          : 'Materi prodi ini diisi pengajar kelasnya.',
+        siapa: bolehKelola(prodiSaring) ? 'Anda, sebagai pengajar kelas prodi ini' : `pengajar kelas ${prodiSaring.toUpperCase()}`,
         aksi: bolehKelola(prodiSaring) ? { href: '#wadah-form', label: 'Ke formulir Tambah Materi' } : null,
       });
     const tabel = daftar.querySelector('table');
@@ -318,7 +345,7 @@ async function mulai() {
   if (saya === undefined) return;
   if (!halamanMengajar(saya, isi, {
     judul: 'Kelola Materi',
-    pesan: 'Menyusun katalog materi dikerjakan dosen pengampu dan kaprodi prodinya.',
+    pesan: 'Menyusun katalog materi dikerjakan pengajar kelas dan kaprodi prodinya.',
     untukMahasiswa: { href: 'materi.html', label: 'Buka Materi', pesan: 'Materi pekan ini untuk Anda ada di halaman Materi.' },
   })) return;
   try {

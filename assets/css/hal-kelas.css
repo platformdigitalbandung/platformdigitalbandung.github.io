@@ -1,0 +1,52 @@
+/* Halaman Kelas (kelas.html): daftar kelas, isi per minggu, anggota, buku
+   nilai, dan kelola kelas kaprodi. Ditautkan sesudah style.css dan hal-dosen.css. */
+
+/* Kartu kelas di daftar "Kelas Saya". */
+.grid-kelas { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: .9rem; margin: 0 0 1.2rem; }
+a.kartu-kelas { display: block; margin: 0; color: var(--tinta); text-decoration: none; border-top: 3px solid var(--aksen); }
+a.kartu-kelas:hover { border-color: var(--aksen); box-shadow: 0 1px 4px rgba(0, 0, 0, .08); text-decoration: none; }
+a.kartu-kelas h3 { margin-bottom: .25rem; color: var(--aksen-tua); }
+.kartu-kelas .baris-kecil { margin: .15rem 0; font-size: .84rem; color: var(--redup); }
+.judul-periode { margin: 1.2rem 0 .6rem; font-size: 1rem; }
+
+/* Kepala detail kelas. */
+.kepala-kelas { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .4rem 1rem; align-items: baseline; }
+.kepala-kelas .meta { margin: 0; }
+
+/* Isi per minggu. */
+details.minggu-kelas { border: 1px solid var(--garis); border-radius: var(--radius); background: var(--permukaan); margin: 0 0 .6rem; }
+details.minggu-kelas > summary {
+  cursor: pointer; padding: .7rem 1rem; min-height: 44px; font-weight: 600;
+  display: flex; flex-wrap: wrap; gap: .3rem .8rem; align-items: center;
+}
+details.minggu-kelas > summary .redup { font-weight: 400; font-size: .84rem; }
+details.minggu-kelas[open] > summary { border-bottom: 1px solid var(--garis-halus); }
+.isi-minggu { padding: .4rem 1rem .8rem; }
+.isi-minggu h4 { margin: .7rem 0 .3rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--redup); }
+.butir-isi { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .3rem .8rem; align-items: center; padding: .45rem 0; border-bottom: 1px solid var(--garis-halus); }
+.butir-isi:last-child { border-bottom: 0; }
+.butir-isi .butir-judul { font-weight: 500; }
+.butir-isi .butir-ket { font-size: .82rem; color: var(--redup); }
+.butir-isi .aksi-sel a.aksi, .butir-isi .aksi-sel button { margin-top: 0; padding: .3rem .7rem; font-size: .82rem; }
+
+/* Bilah "+ Buat" pengajar. */
+.bilah-buat { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: 0 0 1rem; }
+.bilah-buat > * { margin-top: 0; }
+
+/* Buku nilai. */
+table.buku-nilai input[type="number"] { width: 5.5rem; padding: .3rem .4rem; }
+table.buku-nilai td.num, table.buku-nilai th.num { text-align: right; white-space: nowrap; }
+.total-bobot { font-weight: 600; }
+.total-bobot.salah { color: var(--tinggi); }
+table.tabel-bobot input[type="text"] { min-width: 9rem; }
+table.tabel-bobot input[type="number"] { width: 6rem; }
+
+/* Kelola kelas: pilihan pengajar. */
+.pilih-pengajar { max-height: 12rem; overflow-y: auto; border: 1px solid var(--garis); border-radius: 4px; padding: .3rem .6rem; }
+.pilih-pengajar label { display: flex; align-items: center; margin: .25rem 0; font-weight: 400; }
+
+/* Halaman tugas (tugas.html): petunjuk dan jawaban mahasiswa. */
+.teks-panjang { white-space: pre-line; }
+.teks-jawaban { max-height: 24rem; overflow: auto; background: #fafbfc; border: 1px solid var(--garis-halus); border-radius: 4px; padding: .5rem .8rem; }
+table.tabel-kiriman textarea { min-width: 12rem; }
+table.tabel-kiriman input[type="number"] { width: 5.5rem; }
