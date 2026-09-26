@@ -1,10 +1,11 @@
 import { apiGet, arahkanKeLogin } from './api.js';
-import { sayaSekarang, peranDipegang, labelPeran } from './akun.js';
+import { sayaSekarang, peranAktif, labelPeran } from './akun.js';
 import { esc } from './ui.js';
 import { terdaftar as sudahTerdaftar, langkahMulai, semuaSelesai, htmlDaftarMulai, jenisTercakup } from './hal-beranda.js';
 
-// Beranda "Hari ini" (keputusan developer Arfan 2026-09-26). Satu halaman untuk
-// SEMUA peran yang dipegang sekaligus (tanpa pemilih peran):
+// Beranda "Hari ini" (keputusan developer Arfan 2026-09-26), untuk peran aktif
+// dari pemilih peran (akun.js; dosen berjabatan memilih admin, kaprodi, atau
+// dosen):
 //   - langkah yang belum selesai (penyiapan admin, semester kaprodi, syarat
 //     mengajar dosen) — hilang sendiri begitu beres;
 //   - "Perlu dikerjakan": tugas kelas yang belum diserahkan (mahasiswa),
@@ -200,7 +201,10 @@ async function muatBeranda(saya, peran) {
   const kelas = kelasSaya.kelas || [];
   const namaKelas = Object.fromEntries(kelas.map(k => [k.id, k.nama]));
   const tercakup = agenda ? tampilLangkah(peran, saya, agenda) : new Set();
-  const dariKelas = mahasiswa ? butirTugasMahasiswa(tugas, namaKelas) : await butirPerluDinilai(kelas);
+  // Kiriman yang perlu dinilai adalah pekerjaan mengajar: tampil untuk peran
+  // dosen dan kaprodi (kaprodi punya hak pengajar di kelas prodinya), tidak untuk admin.
+  const dariKelas = mahasiswa ? butirTugasMahasiswa(tugas, namaKelas)
+    : (peran.includes('admin') ? [] : await butirPerluDinilai(kelas));
   const dariAgenda = agenda ? peran.flatMap(p => (Array.isArray(agenda[p]) ? agenda[p] : [])).filter(b => !tercakup.has(b.jenis)) : [];
   // Butir yang sama dari dua peran (mis. rpl_menunggu dosen & kaprodi) cukup sekali.
   const unik = new Map();
@@ -328,7 +332,7 @@ const saya = await sayaSekarang;
 // /api/proyekblok/saya menjawab peran "mahasiswa" juga untuk nomor yang tidak
 // terdaftar; prodi_kode hanya terisi untuk mahasiswa yang ada di roster.
 if (sudahTerdaftar(saya)) {
-  const peran = peranDipegang(saya);
+  const peran = [peranAktif(saya)];
   const label = peran.includes('mahasiswa') ? `mahasiswa ${String(saya.prodi_kode || '').toUpperCase()}`.trim() : labelPeran(saya);
   document.getElementById('judul-beranda').textContent = 'Hari ini';
   document.getElementById('hari-ini').textContent = `${hariIniTeks} · ${label}`;

@@ -63,11 +63,14 @@ function butirProdi(kode) {
 }
 
 /**
- * Menu untuk data GET /api/proyekblok/saya: { utama: [butir], bagian:
- * [{ judul, butir }] }. Bagian urut Prodi, Admin, Lainnya; href yang sudah
- * tampil di bagian sebelumnya (atau di menu utama) tidak diulang.
+ * Menu untuk data GET /api/proyekblok/saya dan peran aktif pilihan pengguna
+ * (akun.js): { utama: [butir], bagian: [{ judul, butir }] }. Menu utama sama
+ * untuk semua dosen; bagian Prodi hanya saat peran aktif kaprodi, bagian Admin
+ * hanya saat peran aktif admin (pemilih peran dikembalikan 2026-09-26,
+ * keputusan developer Arfan). Href yang sudah tampil di bagian sebelumnya
+ * (atau di menu utama) tidak diulang.
  */
-export function menuUntuk(saya) {
+export function menuUntuk(saya, aktif = '') {
   if (!saya) return null;
   if (saya.peran !== 'dosen') {
     return {
@@ -78,13 +81,13 @@ export function menuUntuk(saya) {
   const jab = saya.jabatan || [];
   const bagian = [];
   const dipimpin = saya.kaprodi_prodi || [];
-  if (jab.includes('kaprodi') && dipimpin.length) {
+  if (aktif === 'kaprodi' && jab.includes('kaprodi') && dipimpin.length) {
     bagian.push({
       judul: `Prodi ${dipimpin.join('/').toUpperCase()}`,
       butir: [...dipimpin.flatMap(butirProdi), B.kurikulum, B.pengguna, B.pantauKerja, B.kepatuhan, B.rekapRapor, B.rekapRekaman],
     });
   }
-  if (jab.includes('admin')) {
+  if (aktif === 'admin' && jab.includes('admin')) {
     bagian.push({ judul: 'Admin', butir: [B.pengguna, B.kaprodiAdmin, B.prodiBaru, B.pantauKerja, B.kepatuhan, B.rekapRapor, B.rekapRekaman] });
   }
   bagian.push({
@@ -246,9 +249,9 @@ let klikLuarTerpasang = false;
  * nomor belum terdaftar, backend tak terjangkau): nav dikosongkan dan bilah
  * bawah tidak dibuat.
  */
-export function pasangNavigasi(saya) {
+export function pasangNavigasi(saya, aktif = '') {
   const navAtas = document.querySelector('.appbar .navutama');
-  const menu = menuUntuk(saya);
+  const menu = menuUntuk(saya, aktif);
   document.querySelectorAll('.navbawah').forEach(el => el.remove());
   document.body.classList.remove('ada-navbawah');
   if (!navAtas || !menu) {
