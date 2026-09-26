@@ -52,7 +52,7 @@ function kartuKelas(k) {
   return `<a class="kartu kartu-kelas" href="kelas.html?id=${encodeURIComponent(k.id)}">
     <h3>${esc(k.nama)}</h3>
     <p class="baris-kecil">${esc(k.prodi_nama || k.prodi_kode.toUpperCase())} · semester ${esc(k.semester)} · angkatan ${esc(k.angkatan)}</p>
-    <p class="baris-kecil">${k.mk_kode ? 'Mata kuliah lepas' : `Rumpun ${esc(k.rumpun_kode)}${k.rumpun_nama ? ` — ${esc(k.rumpun_nama)}` : ''}`}</p>
+    <p class="baris-kecil">${k.mk_kode ? 'Mata kuliah lepas' : `Rumpun ${esc(k.rumpun_kode)}${k.rumpun_nama ? ` — ${esc(k.rumpun_nama)}` : ''}`}${k.minggu_mulai ? ` · minggu ${esc(k.minggu_mulai)}–${esc(k.minggu_selesai)}` : ''}</p>
     <p class="baris-kecil">${pengajar ? `Pengajar: ${esc(pengajar)}` : '<span class="lencana sedang">belum ada pengajar</span>'}</p>
     <p class="baris-kecil">${esc(k.jumlah_peserta)} peserta · <span class="lencana">${esc(labelPeran[k.peran] || k.peran)}</span></p>
   </a>`;
@@ -123,6 +123,19 @@ let pengumuman = null;
 // Minggu yang ikut dibuka di Tugas Kelas: minggu isi yang baru disimpan lewat panel.
 let mingguSorot = 0;
 const mengajar = () => detail && (detail.peran === 'pengajar' || detail.peran === 'kaprodi');
+// Sistem blok (2026-09-26): rentang minggu kalender kelas ini, mis. [9, 16];
+// null = seluruh semester. Nomor minggu tetap nomor minggu kalender.
+const blok = () => (detail && detail.minggu_mulai ? [detail.minggu_mulai, detail.minggu_selesai] : null);
+const dalamBlok = (n) => { const b = blok(); return !b || (n >= b[0] && n <= b[1]); };
+// Minggu bawaan formulir: minggu berjalan bila masih di blok kelas, selain itu
+// minggu pertama (atau terakhir, bila bloknya sudah lewat) blok itu.
+function mingguBawaan() {
+  const kini = detail.minggu_ini || 0;
+  const b = blok();
+  if (!b) return kini || 1;
+  if (kini && dalamBlok(kini)) return kini;
+  return kini > b[1] ? b[1] : b[0];
+}
 
 function tautanMateri(m) {
   const q = new URLSearchParams({ rumpun: m.rumpun_kode, minggu: String(m.minggu) });
@@ -215,7 +228,8 @@ function kartuPengumuman() {
 function tabBeranda() {
   const semuaTugas = [...(isiKelas.minggu || []).flatMap(w => w.tugas), ...(isiKelas.tugas_tanpa_minggu || [])];
   const sekarang = new Date();
-  const mingguIni = (isiKelas.minggu || []).find(w => w.minggu === detail.minggu_ini);
+  const b = blok();
+  const mingguIni = dalamBlok(detail.minggu_ini) ? (isiKelas.minggu || []).find(w => w.minggu === detail.minggu_ini) : null;
   let utama;
   if (mengajar()) {
     const perlu = semuaTugas.filter(t => t.diserahkan > t.dinilai);
@@ -234,18 +248,34 @@ function tabBeranda() {
       ${mingguIni.kuis.length ? `<h4>Kuis</h4>${mingguIni.kuis.map(butirKuis).join('')}` : ''}
       ${mingguIni.tugas.length ? `<h4>Tugas</h4>${mingguIni.tugas.map(butirTugas).join('')}` : ''}
       ${!mingguIni.materi.length && !mingguIni.kuis.length && !mingguIni.tugas.length ? '<p class="redup">Belum ada materi, kuis, atau tugas untuk minggu ini.</p>' : ''}
-    </div>` : `<div class="kartu"><h3>Minggu berjalan</h3><p class="redup">${detail.jumlah_minggu ? (sekarang < new Date(detail.minggu_awal) ? 'Perkuliahan kelas ini belum mulai.' : 'Kalender kelas ini sudah selesai.') : 'Kalender kelas ini tidak ditemukan.'}</p></div>`;
+    </div>` : `<div class="kartu"><h3>Minggu berjalan</h3><p class="redup">${keteranganDiLuarMinggu(sekarang)}</p></div>`;
   const mk = (detail.mata_kuliah || []).map(m => `${esc(m.nama)} (${esc(m.sks)} SKS)`).join(', ');
+  const teksBlok = b ? `<p>Minggu kelas: ${esc(b[0])}–${esc(b[1])} dari ${esc(detail.jumlah_minggu)} minggu kalender (sistem blok).</p>` : '';
   const tentang = `<div class="kartu"><h3>Tentang kelas</h3>
     <p class="meta">${esc(detail.prodi_nama || detail.prodi_kode.toUpperCase())} · angkatan ${esc(detail.angkatan)} · semester ${esc(detail.semester)} · ${esc(detail.periode)}</p>
     <p>${detail.mk_kode ? 'Mata kuliah' : `${istilah('rumpun', 'Rumpun')} ${esc(detail.rumpun_kode)} — ${esc(detail.rumpun_nama || '')}. Mata kuliah`}: ${mk || '—'}</p>
-    <p>Pengajar: ${esc(namaPengajar(detail)) || '<span class="lencana sedang">belum ditunjuk kaprodi</span>'}</p>
+    ${teksBlok}<p>Pengajar: ${esc(namaPengajar(detail)) || '<span class="lencana sedang">belum ditunjuk kaprodi</span>'}</p>
   </div>`;
   return kartuPengumuman() + minggu + utama + kartuGrup() + tentang;
 }
 
+// Kartu minggu berjalan kosong: kalender belum mulai/selesai, atau minggu
+// berjalan di luar blok kelas ini.
+function keteranganDiLuarMinggu(sekarang) {
+  if (!detail.jumlah_minggu) return 'Kalender kelas ini tidak ditemukan.';
+  const b = blok();
+  if (b && detail.minggu_ini) {
+    if (detail.minggu_ini < b[0]) {
+      const mulai = new Date(new Date(detail.minggu_awal).getTime() + 7 * (b[0] - 1) * 86400000);
+      return `Kelas ini berjalan minggu ${b[0]}–${b[1]} (sistem blok), mulai ${tanggal(mulai)}. Sekarang minggu ${detail.minggu_ini}.`;
+    }
+    return `Blok kelas ini (minggu ${b[0]}–${b[1]}) sudah selesai.`;
+  }
+  return sekarang < new Date(detail.minggu_awal) ? 'Perkuliahan kelas ini belum mulai.' : 'Kalender kelas ini sudah selesai.';
+}
+
 function formTugasBaru() {
-  const minggu = detail.minggu_ini || 1;
+  const minggu = mingguBawaan();
   return `<div class="kartu" id="kartu-tugas-baru" hidden>
     <h3>Tugas Baru</h3>
     <form id="form-tugas-baru">
@@ -272,9 +302,9 @@ function tabTugasKelas() {
     </div>${formTugasBaru()}<div id="panel-isi"></div>` : '';
   const minggu = (isiKelas.minggu || []).map(w => {
     const jumlah = w.materi.length + w.kuis.length + w.tugas.length;
-    const buka = w.minggu === detail.minggu_ini || w.minggu === mingguSorot || (!detail.minggu_ini && w.minggu === 1);
+    const buka = w.minggu === mingguBawaan() || w.minggu === mingguSorot;
     return `<details class="minggu-kelas" id="minggu-${esc(w.minggu)}"${buka ? ' open' : ''}>
-      <summary>Minggu ${esc(w.minggu)}${w.minggu === detail.minggu_ini ? ' <span class="lencana">minggu ini</span>' : ''}
+      <summary>Minggu ${esc(w.minggu)}${w.minggu === detail.minggu_ini ? ' <span class="lencana">minggu ini</span>' : ''}${w.di_luar_blok ? ' <span class="lencana sedang">di luar blok</span>' : ''}
         <span class="redup">${w.mulai ? `mulai ${esc(tanggal(w.mulai))} · ` : ''}${jumlah ? `${w.materi.length} materi · ${w.kuis.length} kuis · ${w.tugas.length} tugas` : 'kosong'}</span></summary>
       <div class="isi-minggu">
         ${w.materi.length ? `<h4>Materi</h4>${w.materi.map(butirMateri).join('')}` : ''}
@@ -385,7 +415,7 @@ async function renderDetail() {
   let badan = '<p class="redup">Memuat…</p>';
   isi.innerHTML = `
     <div class="kartu kepala-kelas"><p class="meta">${esc(detail.prodi_nama || detail.prodi_kode.toUpperCase())} · ${esc(detail.periode)} · Anda: <span class="lencana">${esc(labelPeran[detail.peran] || detail.peran)}</span></p>
-      <p class="meta">${detail.minggu_ini ? `Minggu ${esc(detail.minggu_ini)} dari ${esc(detail.jumlah_minggu)}` : ''} · ${esc(detail.jumlah_peserta)} peserta</p></div>
+      <p class="meta">${detail.minggu_ini ? `Minggu ${esc(detail.minggu_ini)} dari ${esc(detail.jumlah_minggu)}` : ''}${blok() ? ` · blok minggu ${esc(blok()[0])}–${esc(blok()[1])}` : ''} · ${esc(detail.jumlah_peserta)} peserta</p></div>
     <div class="tab-halaman" role="tablist" aria-label="Isi kelas">
       ${TAB.map(([k, l]) => `<button type="button" role="tab" id="tab-${k}" data-tab="${k}" aria-selected="${k === tab}" aria-controls="panel-kelas"${k === tab ? '' : ' tabindex="-1"'}>${l}</button>`).join('')}
     </div>
@@ -414,7 +444,7 @@ async function bukaPanelIsi(aksi, data) {
   if (!wadah) return;
   const kartuTugas = document.getElementById('kartu-tugas-baru');
   if (kartuTugas) kartuTugas.hidden = true;
-  const minggu = Number(data.minggu) || detail.minggu_ini || 1;
+  const minggu = Number(data.minggu) || mingguBawaan();
   const konteks = { namaKelas: detail.nama, prodi_kode: detail.prodi_kode, rumpun_kode: detail.rumpun_kode, mk_kode: detail.mk_kode || '', minggu };
   const opsi = {
     selesai: async (teks, { gagal = false, minggu: mingguIsi = 0 } = {}) => {

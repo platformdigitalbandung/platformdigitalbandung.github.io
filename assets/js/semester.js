@@ -138,13 +138,34 @@ function lencanaPeserta(k) {
   return k.jumlah_peserta ? `${esc(k.jumlah_peserta)} peserta` : '<span class="lencana tinggi">0 peserta</span>';
 }
 
+// Jumlah minggu kalender (minggu sesi terbesar), untuk batas rentang blok.
+function jumlahMinggu(kalenderId) {
+  const kal = data.kalenderSemua.find(k => k.id === kalenderId);
+  return kal ? Math.max(0, ...(kal.sesi || []).map(s => s.minggu)) : 0;
+}
+
+function teksBlok(k) {
+  return k.minggu_mulai ? `minggu ${k.minggu_mulai}–${k.minggu_selesai}` : 'seluruh semester';
+}
+
+// Sistem blok (2026-09-26): rumpun berurutan, mis. R1 minggu 1–8 lalu R2
+// minggu 9–16. Kosong = seluruh minggu kalender.
+function isianBlok(k) {
+  const maks = jumlahMinggu(k.kalender_id) || 52;
+  return `<div class="isian-blok"><span>Minggu</span>
+      <input type="number" name="minggu_mulai" min="1" max="${maks}" value="${k.minggu_mulai || ''}" aria-label="Minggu mulai" placeholder="1">
+      <span>sampai</span>
+      <input type="number" name="minggu_selesai" min="1" max="${maks}" value="${k.minggu_selesai || ''}" aria-label="Minggu selesai" placeholder="${maks}"></div>`;
+}
+
 function formKelas(k) {
   if (!boleh) {
-    return `<tr><td><a href="kelas.html?id=${encodeURIComponent(k.id)}">${esc(k.nama)}</a></td><td>${esc(namaPengajar(k) || '—')}</td><td>${lencanaPeserta(k)}</td><td></td></tr>`;
+    return `<tr><td><a href="kelas.html?id=${encodeURIComponent(k.id)}">${esc(k.nama)}</a><p class="redup">${esc(teksBlok(k))}</p></td><td>${esc(namaPengajar(k) || '—')}</td><td>${lencanaPeserta(k)}</td><td></td></tr>`;
   }
   return `<tr data-id="${escAttr(k.id)}">
     <td><input name="nama" maxlength="120" value="${escAttr(k.nama)}" aria-label="Nama kelas">
-      <p class="redup">${k.mk_kode ? `Mata kuliah ${esc(k.mk_kode)}` : `Rumpun ${esc(k.rumpun_kode)}`} · <a href="kelas.html?id=${encodeURIComponent(k.id)}">Buka kelas</a></p></td>
+      <p class="redup">${k.mk_kode ? `Mata kuliah ${esc(k.mk_kode)}` : `Rumpun ${esc(k.rumpun_kode)}`} · <a href="kelas.html?id=${encodeURIComponent(k.id)}">Buka kelas</a></p>
+      ${isianBlok(k)}</td>
     <td>${(k.pengajar || []).length ? '' : '<p><span class="lencana sedang">belum ada pengajar</span></p>'}${opsiPengajar(k.pengajar || [])}</td>
     <td><label>Peserta tambahan (NIM, pisahkan koma) <input name="tambahan" value="${escAttr((k.peserta_tambahan || []).join(', '))}"></label>
       <label>Dikeluarkan dari kelas (NIM) <input name="keluar" value="${escAttr((k.peserta_keluar || []).join(', '))}"></label>
@@ -169,6 +190,7 @@ function bagianKelas() {
   }).join('');
   return `<h2 class="judul-periode" id="kelas">3. Kelas dan pengajar</h2>
     <p class="meta">Kelas dibuka otomatis saat kalender terbit: satu per rumpun berproyek, atau per mata kuliah untuk rumpun mata kuliah lepas. Pilih pengajarnya dari semua dosen aktif (ketik di kolom cari untuk menyaring), lalu <b>Simpan</b> di baris kelas itu. Dosen yang ditunjuk otomatis tercatat mengajar di prodi ini.</p>
+    <p class="meta"><b>Sistem blok:</b> bila rumpun berjalan berurutan (mis. rumpun pertama minggu 1–8, kedua minggu 9–16), isi <b>Minggu … sampai …</b> di baris kelasnya. Kosongkan keduanya untuk kelas yang berjalan sepanjang semester, mis. jalur kontinu.</p>
     ${kalender.length ? perKal : keadaanKosong({
       judul: `Belum ada kalender terbit untuk ${prodi.toUpperCase()}`,
       keterangan: 'Kelas dibuka per kalender semester yang sudah diterbitkan. Terbitkan kalender di langkah 2; kelasnya dibuat otomatis.',
@@ -267,6 +289,9 @@ function pasangAksi() {
       const pisah = (s) => String(s || '').split(/[,\s]+/).map(x => x.trim()).filter(Boolean);
       const body = {
         nama: tr.querySelector('input[name=nama]').value,
+        // Kosong keduanya = seluruh semester (0 dan 0 menghapus rentang).
+        minggu_mulai: Number(tr.querySelector('input[name=minggu_mulai]').value) || 0,
+        minggu_selesai: Number(tr.querySelector('input[name=minggu_selesai]').value) || 0,
         pengajar: [...tr.querySelectorAll('input[name=pengajar]:checked')].map(c => c.value),
         peserta_tambahan: pisah(tr.querySelector('input[name=tambahan]').value),
         peserta_keluar: pisah(tr.querySelector('input[name=keluar]').value),
