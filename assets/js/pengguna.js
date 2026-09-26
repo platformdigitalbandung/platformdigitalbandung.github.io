@@ -191,7 +191,7 @@ function periksaImpor() {
         <td>${esc(b.body.prodi_kode.toUpperCase())} · ${esc(b.body.angkatan || '—')} · ${esc(b.body.semester)}</td>
         <td>${b.galat.length ? esc(b.galat.join('; ')) : 'siap'}</td></tr>`).join('')}
       </tbody></table></div>
-    <p class="ringkas-impor">${sah.length} dari ${barisImpor.length} baris siap disimpan.${tanpaNomor ? ` ${tanpaNomor} di antaranya tanpa nomor WhatsApp — belum bisa masuk sampai nomornya diisi.` : ''} Semua nomor yang siap sudah berawalan 62.</p>
+    <p class="ringkas-impor">${sah.length} dari ${barisImpor.length} baris siap disimpan.${tanpaNomor ? ` ${tanpaNomor} di antaranya tanpa nomor WhatsApp — tetap bisa masuk dengan NIM/email dan kata sandi, tetapi belum bisa memakai layanan lewat WhatsApp.` : ''} Semua nomor yang siap sudah berawalan 62.</p>
     ${sah.length ? `<div class="cta-row"><button type="button" data-aksi="simpan-impor">Simpan ${sah.length} Mahasiswa</button></div>` : ''}
     <div id="hasil-impor"></div>`;
   const t = wadah.querySelector('table');
@@ -248,7 +248,7 @@ async function simpanMhs(form) {
   }
   try {
     const m = await apiPostJson('/api/mahasiswa', body);
-    pesan('hasil-form-mhs', 'sukses', `Tersimpan: ${esc(m.nim)} — ${esc(m.nama)}${m.phonenumber ? ` (WhatsApp ${esc(m.phonenumber)})` : ' — belum ada nomor WhatsApp, belum bisa masuk'}.`);
+    pesan('hasil-form-mhs', 'sukses', `Tersimpan: ${esc(m.nim)} — ${esc(m.nama)}${m.phonenumber ? ` (WhatsApp ${esc(m.phonenumber)})` : ' — belum ada nomor WhatsApp (tetap bisa masuk dengan NIM/email dan kata sandi)'}.`);
     if (mhsDimuat) await muatMahasiswa();
   } catch (err) {
     pesan('hasil-form-mhs', 'gagal', `Gagal: ${esc(err.message)}`);

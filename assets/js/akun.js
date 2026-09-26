@@ -90,7 +90,9 @@ function render(hasil) {
     const aktif = sah ? peranAktif(saya) : '';
     // Dosen dikenali lewat email kampus (pengganti NIP sejak 2026-09-14), mahasiswa lewat NIM.
     const nomorInduk = saya && saya.peran === 'dosen' ? (saya.email || '') : (saya && saya.nim ? `NIM ${saya.nim}` : '');
-    const judul = [`Masuk sebagai ${nama}`, isi.id ? `nomor ${isi.id}` : '', nomorInduk, isi.exp ? `berlaku sampai ${waktu(isi.exp)}` : '',
+    // Mahasiswa tanpa nomor WhatsApp masuk dengan identitas token "nim:<NIM>" (sejak 2026-09-26).
+    const nomorWA = isi.id && !String(isi.id).startsWith('nim:') ? isi.id : '';
+    const judul = [`Masuk sebagai ${nama}`, nomorWA ? `nomor ${nomorWA}` : '', nomorInduk, isi.exp ? `berlaku sampai ${waktu(isi.exp)}` : '',
       hasil.status === 'tak-terjangkau' ? 'backend tidak terjangkau, peran belum bisa dipastikan' : ''].filter(Boolean).join(' · ');
     wadah.innerHTML = `
       <a class="status-akun masuk" href="./" title="${esc(judul)}">
