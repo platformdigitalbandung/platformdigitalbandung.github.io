@@ -345,12 +345,12 @@ async function simpanCPL(e) {
 
 function barisSesiRitme(sesi = {}) {
   return `<tr>
-    <td><select name="hari">${HARI.map(h => `<option${h === sesi.hari ? ' selected' : ''}>${h}</option>`).join('')}</select></td>
-    <td><select name="moda">${opsiModa(sesi.moda, MODA_SESI.includes(sesi.moda) || !sesi.moda ? MODA_SESI : [...MODA_SESI, sesi.moda])}</select></td>
-    <td><input name="jam_mulai" placeholder="08:00" size="6" inputmode="numeric" value="${escAttr(sesi.jam_mulai || '')}"></td>
-    <td><input name="jam_selesai" placeholder="10:00" size="6" inputmode="numeric" value="${escAttr(sesi.jam_selesai || '')}"></td>
-    <td><input name="menit" type="number" min="0" size="5" value="${escAttr(sesi.menit_instruksional || 0)}"></td>
-    <td><input name="catatan" placeholder="opsional" value="${escAttr(sesi.catatan || '')}"></td>
+    <td><select name="hari" aria-label="Hari">${HARI.map(h => `<option${h === sesi.hari ? ' selected' : ''}>${h}</option>`).join('')}</select></td>
+    <td><select name="moda" aria-label="Moda">${opsiModa(sesi.moda, MODA_SESI.includes(sesi.moda) || !sesi.moda ? MODA_SESI : [...MODA_SESI, sesi.moda])}</select></td>
+    <td><input name="jam_mulai" aria-label="Jam mulai" placeholder="08:00" size="6" inputmode="numeric" value="${escAttr(sesi.jam_mulai || '')}"></td>
+    <td><input name="jam_selesai" aria-label="Jam selesai" placeholder="10:00" size="6" inputmode="numeric" value="${escAttr(sesi.jam_selesai || '')}"></td>
+    <td><input name="menit" aria-label="Menit instruksional" type="number" min="0" size="5" value="${escAttr(sesi.menit_instruksional || 0)}"></td>
+    <td><input name="catatan" aria-label="Catatan" placeholder="opsional" value="${escAttr(sesi.catatan || '')}"></td>
     <td><button type="button" class="sekunder" data-aksi="hapus-baris-ritme" aria-label="Hapus baris ini" title="Hapus baris ini">×</button></td>
   </tr>`;
 }

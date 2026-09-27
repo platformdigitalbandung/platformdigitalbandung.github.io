@@ -1,5 +1,4 @@
 import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, apiPostBerkasToken } from './api.js';
-import { hitungHalaman } from './pdfmateri.js';
 import { esc } from './ui.js';
 
 // Panel isi kelas: formulir materi dan penyusun kuis gerbang yang dibuka di
@@ -105,6 +104,9 @@ export function periksaBerkas(berkas) {
  * sendiri). Melempar Error bila berkas tidak terbaca atau unggahan gagal.
  */
 export async function unggahBerkasMateri(id, idInput, berkas) {
+  // Dimuat saat dibutuhkan saja: halaman kelas juga dibuka mahasiswa, yang
+  // tidak pernah mengunggah PDF.
+  const { hitungHalaman } = await import('./pdfmateri.js');
   const halaman = await hitungHalaman(await berkas.arrayBuffer());
   if (!halaman) throw new Error('jumlah halamannya tidak terbaca');
   return apiPostBerkasToken(`/api/materi/${encodeURIComponent(id)}/berkas`, { halaman: String(halaman) }, idInput, 'berkas');

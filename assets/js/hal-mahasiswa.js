@@ -73,3 +73,45 @@ export async function isiDatalistNIM(datalist, prodiMengajar) {
   } catch (_) { /* isian NIM tetap bisa diketik manual */ }
 }
 
+
+// ===== Konteks kelas (sejak 2026-09-28) =====
+// Materi dan kuis yang dibuka dari halaman Kelas membawa ?kelas=<id>. Halaman
+// lalu "tetap di dalam kelas": remah dan judul memakai nama kelas, pilihan
+// rumpun/minggu disembunyikan, dan ada tombol kembali ke kelas.
+
+const BULAN_PENDEK = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+/** Detail kelas dari ?kelas=<id>, atau null (tanpa parameter, atau tak bisa dibuka). */
+export async function konteksKelas() {
+  const id = new URLSearchParams(location.search).get('kelas') || '';
+  if (!/^[0-9a-f]{24}$/i.test(id)) return null;
+  try { return await apiGet(`/api/kelas/${encodeURIComponent(id)}`); } catch { return null; }
+}
+
+/** Pasang remah, judul, dan subjudul halaman untuk konteks kelas. */
+export function pasangKepalaKelas(k, judulHalaman) {
+  const kepala = document.querySelector('.kepala-halaman');
+  if (!kepala) return;
+  const remah = kepala.querySelector('.remah');
+  if (remah) remah.innerHTML = `<a href="./">Beranda</a> / <a href="kelas.html">Kelas</a> / <a href="kelas.html?id=${encodeURIComponent(k.id)}">${esc(k.nama)}</a> / ${esc(judulHalaman)}`;
+  const h1 = kepala.querySelector('h1');
+  if (h1) h1.textContent = judulHalaman;
+  const sub = kepala.querySelector('h1 + p');
+  if (sub) sub.textContent = k.nama;
+  document.title = `${judulHalaman} · ${k.nama} — Platform Digital Bandung`;
+}
+
+/** "28 Sep – 4 Okt" untuk minggu kalender kelas (dari minggu_awal detail kelas). */
+export function rentangMingguKelas(k, minggu) {
+  const awal = new Date(k.minggu_awal);
+  if (isNaN(awal) || awal.getFullYear() < 2000 || !(minggu >= 1)) return '';
+  const senin = new Date(awal.getTime() + 7 * (minggu - 1) * 86400000);
+  const ahad = new Date(senin.getTime() + 6 * 86400000);
+  const f = d => `${d.getUTCDate()} ${BULAN_PENDEK[d.getUTCMonth()]}`;
+  return `${f(senin)} – ${f(ahad)}`;
+}
+
+/** Tombol kembali ke tab Tugas Kelas kelas itu. */
+export function tombolKembaliKelas(k) {
+  return `<a class="aksi sekunder" href="kelas.html?id=${encodeURIComponent(k.id)}#tugas">← Kembali ke kelas</a>`;
+}

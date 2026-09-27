@@ -95,6 +95,27 @@ function htmlDaftarAgenda(daftar) {
   return `<ul class="daftar-agenda">${daftar.map(htmlButir).join('')}</ul>`;
 }
 
+// "Perlu dikerjakan" dikelompokkan per kelas (sejak 2026-09-28): butir yang
+// punya kelas_id (materi, kuis, tugas, kiriman yang perlu dinilai) di bawah
+// nama kelasnya; butir lain di bagian "Lainnya". Kelompok yang memuat butir
+// mendesak didahulukan.
+function htmlAgendaPerKelas(daftar, namaKelas) {
+  const kelompok = new Map();
+  for (const b of daftar) {
+    const kunci = b.kelas_id || '';
+    if (!kelompok.has(kunci)) kelompok.set(kunci, []);
+    kelompok.get(kunci).push(b);
+  }
+  if (kelompok.size === 1 && kelompok.has('')) return htmlDaftarAgenda(daftar);
+  const urut = [...kelompok.entries()].sort(([ka, a], [kb, b]) =>
+    Number(b.some(x => x.mendesak)) - Number(a.some(x => x.mendesak)) || Number(ka === '') - Number(kb === ''));
+  return urut.map(([id, isi]) => {
+    const nama = id ? (namaKelas[id] || isi[0].kelas_nama || 'Kelas') : 'Lainnya';
+    const judul = id ? `<a href="kelas.html?id=${encodeURIComponent(id)}">${esc(nama)}</a>` : esc(nama);
+    return `<div class="agenda-kelompok"><h3 class="agenda-kelompok-judul">${judul}</h3>${htmlDaftarAgenda(isi)}</div>`;
+  }).join('');
+}
+
 // Tanggal tenggat dekat (<= 24 jam) atau lewat: ditandai mendesak.
 function mendesak(iso) { return Boolean(iso) && Date.parse(iso) - Date.now() < 86400000; }
 
@@ -103,7 +124,8 @@ function mendesak(iso) { return Boolean(iso) && Date.parse(iso) - Date.now() < 8
 function butirTugasMahasiswa(tugas, namaKelas) {
   return (tugas || []).filter(t => t.sudah_kirim === false).map(t => ({
     judul: t.judul,
-    keterangan: t.kelas_id && namaKelas[t.kelas_id] ? `Kelas ${namaKelas[t.kelas_id]}` : `Tugas prodi ${String(t.prodi_kode || '').toUpperCase()}`,
+    // Nama kelas menjadi judul kelompoknya di "Perlu dikerjakan".
+    keterangan: t.kelas_id && namaKelas[t.kelas_id] ? 'Tugas kelas' : `Tugas prodi ${String(t.prodi_kode || '').toUpperCase()}`,
     tenggat: t.tenggat || null,
     tautan: `tugas.html?id=${t.id}`,
     sifat: 'perlu',
@@ -124,7 +146,7 @@ async function butirPerluDinilai(kelas) {
     for (const t of semua) {
       const n = (t.diserahkan || 0) - (t.dinilai || 0);
       if (n > 0) {
-        out.push({ judul: t.judul, keterangan: `Kelas ${h.k.nama} · ${n} kiriman belum dinilai`, jumlah: n,
+        out.push({ judul: t.judul, keterangan: `${n} kiriman belum dinilai`, jumlah: n,
           tautan: `tugas.html?id=${t.id}`, sifat: 'perlu', kelas_id: h.k.id });
       }
     }
@@ -154,10 +176,10 @@ function tampilLangkah(peran, saya, agenda) {
   return tercakup;
 }
 
-function tampilPerlu(butir, akan) {
+function tampilPerlu(butir, akan, namaKelas) {
   const perlu = [...butir].sort((a, b) => Number(Boolean(b.mendesak)) - Number(Boolean(a.mendesak)));
   document.getElementById('agenda-perlu').innerHTML = perlu.length
-    ? htmlDaftarAgenda(perlu)
+    ? htmlAgendaPerKelas(perlu, namaKelas)
     : '<p class="pesan-kosong agenda-beres">Tidak ada yang perlu dikerjakan saat ini.</p>';
   const nMendesak = perlu.filter(b => b.mendesak).length;
   document.getElementById('jumlah-perlu').textContent = perlu.length
@@ -208,13 +230,15 @@ async function muatBeranda(saya, peran) {
   const dariAgenda = agenda ? peran.flatMap(p => (Array.isArray(agenda[p]) ? agenda[p] : [])).filter(b => !tercakup.has(b.jenis)) : [];
   // Butir yang sama dari dua peran (mis. rpl_menunggu dosen & kaprodi) cukup sekali.
   const unik = new Map();
-  dariAgenda.forEach(b => { if (!unik.has(b.jenis + b.judul)) unik.set(b.jenis + b.judul, b); });
+  // Butir per kelas (materi, kuis) boleh berjudul sama: kelasnya ikut jadi kunci.
+  dariAgenda.forEach(b => { const k = `${b.jenis}|${b.judul}|${b.kelas_id || ''}`; if (!unik.has(k)) unik.set(k, b); });
   const agendaUnik = [...unik.values()];
-  tampilPerlu([...dariKelas, ...agendaUnik.filter(b => b.sifat === 'perlu')], agendaUnik.filter(b => b.sifat === 'akan'));
+  const perlu = [...dariKelas, ...agendaUnik.filter(b => b.sifat === 'perlu')];
+  tampilPerlu(perlu, agendaUnik.filter(b => b.sifat === 'akan'), namaKelas);
   if (!agenda) {
     document.getElementById('agenda-perlu').insertAdjacentHTML('beforeend', '<p class="pesan-kosong">Agenda lain belum bisa dimuat; coba muat ulang.</p>');
   }
-  tampilKelas(kelas, dariKelas);
+  tampilKelas(kelas, perlu);
 }
 
 // ===== Jadwal =====
@@ -248,16 +272,19 @@ function tampilJadwal(kal) {
   const catatan = acuan.status === 'belum'
     ? `<p class="pesan-kosong">Perkuliahan dimulai ${esc(tampilTanggal(acuan.mulai))}. Berikut jadwal minggu pertama.</p>` : '';
   wadah.innerHTML = `${catatan}<div class="gulir"><table class="jadwal">
-    <tr><th>Hari</th><th>Tanggal</th><th>Kegiatan</th><th>Waktu</th></tr>
+    <tr><th>Hari</th><th class="kolom-lebar">Tanggal</th><th>Kegiatan</th><th class="kolom-lebar">Waktu</th></tr>
     ${baris.map(s => {
       const tgl = tanggalSesi(s.tanggal);
       const [nama, label] = KEGIATAN[s.moda] || [s.moda, ''];
       const kelas = [tgl === hariIni ? 'hari-ini' : '', s.moda === 'bebas' ? 'libur' : ''].filter(Boolean).join(' ');
+      const waktu = s.jam_mulai ? `${esc(s.jam_mulai)}–${esc(s.jam_selesai || '')}` : '–';
+      // Di HP kolom Tanggal dan Waktu disembunyikan; isinya ikut tampil di
+      // bawah Hari dan Kegiatan (.hanya-hp), supaya tabel tidak terpotong.
       return `<tr${kelas ? ` class="${kelas}"` : ''}>
-        <td>${esc(s.hari)}${tgl === hariIni ? '<span class="label-moda label-hari-ini">hari ini</span>' : ''}</td>
-        <td>${esc(tampilTanggal(tgl))}</td>
-        <td>${esc(nama)}${label ? `<span class="label-moda">${esc(label)}</span>` : ''}${s.keterangan ? `<br><span class="redup">${esc(s.keterangan)}</span>` : ''}</td>
-        <td class="waktu">${s.jam_mulai ? `${esc(s.jam_mulai)}–${esc(s.jam_selesai || '')}` : '–'}</td></tr>`;
+        <td>${esc(s.hari)}<span class="hanya-hp redup">${esc(tampilTanggal(tgl))}</span>${tgl === hariIni ? '<span class="label-moda label-hari-ini">hari ini</span>' : ''}</td>
+        <td class="kolom-lebar">${esc(tampilTanggal(tgl))}</td>
+        <td>${esc(nama)}${label ? `<span class="label-moda">${esc(label)}</span>` : ''}${s.jam_mulai ? `<span class="hanya-hp waktu">${waktu}</span>` : ''}${s.keterangan ? `<br><span class="redup">${esc(s.keterangan)}</span>` : ''}</td>
+        <td class="waktu kolom-lebar">${waktu}</td></tr>`;
     }).join('')}
   </table></div>`;
   document.getElementById('judul-jadwal').textContent = `Jadwal minggu ${acuan.minggu}`;

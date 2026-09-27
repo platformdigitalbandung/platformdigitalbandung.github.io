@@ -137,13 +137,15 @@ function mingguBawaan() {
   return kini > b[1] ? b[1] : b[0];
 }
 
+// Materi dan kuis dibuka dengan konteks kelas (?kelas=), supaya mahasiswa
+// tetap "di dalam kelas" (sejak 2026-09-28).
 function tautanMateri(m) {
-  const q = new URLSearchParams({ rumpun: m.rumpun_kode, minggu: String(m.minggu) });
+  const q = new URLSearchParams({ rumpun: m.rumpun_kode, minggu: String(m.minggu), kelas: idKelas });
   if (detail.mk_kode) q.set('mk', detail.mk_kode);
   return `materi.html?${q}`;
 }
 function tautanKuis(minggu) {
-  const q = new URLSearchParams({ rumpun: detail.rumpun_kode, minggu: String(minggu) });
+  const q = new URLSearchParams({ rumpun: detail.rumpun_kode, minggu: String(minggu), kelas: idKelas });
   if (detail.mk_kode) q.set('mk', detail.mk_kode);
   return `kuis.html?${q}`;
 }
@@ -235,13 +237,13 @@ function tabBeranda() {
     const perlu = semuaTugas.filter(t => t.diserahkan > t.dinilai);
     utama = `<div class="kartu"><h3>Perlu dinilai</h3>${perlu.length
       ? perlu.map(butirTugas).join('')
-      : '<p class="redup">Tidak ada kiriman yang menunggu nilai.</p>'}</div>`;
+      : `<p class="redup">${semuaTugas.length ? 'Tidak ada kiriman yang menunggu nilai.' : 'Belum ada tugas di kelas ini.'}</p>`}</div>`;
   } else {
     const perlu = semuaTugas.filter(t => t.status === 'ditugaskan')
       .sort((a, b) => (a.tenggat ? new Date(a.tenggat) : Infinity) - (b.tenggat ? new Date(b.tenggat) : Infinity));
     utama = `<div class="kartu"><h3>Perlu dikerjakan</h3>${perlu.length
       ? perlu.map(butirTugas).join('')
-      : '<p class="redup">Semua tugas kelas ini sudah Anda serahkan.</p>'}</div>`;
+      : `<p class="redup">${semuaTugas.length ? 'Semua tugas kelas ini sudah Anda serahkan.' : 'Belum ada tugas di kelas ini.'}</p>`}</div>`;
   }
   const minggu = mingguIni ? `<div class="kartu"><h3>Minggu ${esc(mingguIni.minggu)} <span class="redup">· mulai ${esc(tanggal(mingguIni.mulai))}</span></h3>
       ${mingguIni.materi.length ? `<h4>Materi</h4>${mingguIni.materi.map(butirMateri).join('')}` : ''}

@@ -1,7 +1,7 @@
 import { apiGet, apiPostJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
 import { sayaSekarang } from './akun.js';
 import { esc, keadaanKosong, istilah, pilihProdiBawaan, labelTabel } from './ui.js';
-import { pekanMahasiswa, isiDatalistNIM } from './hal-mahasiswa.js';
+import { pekanMahasiswa, isiDatalistNIM, konteksKelas, pasangKepalaKelas, rentangMingguKelas, tombolKembaliKelas } from './hal-mahasiswa.js';
 import { tambahSoal, bacaSoal, aksiSoal } from './panel-isi.js';
 
 // Kuis Gerbang. Mahasiswa mengerjakan kuis rumpun/minggu prodinya; NIM dan
@@ -34,6 +34,8 @@ function lencanaLulus(lulus) {
 }
 
 let prodiMahasiswa = '';
+// Tautan materi pada keadaan kosong kuis; dari halaman Kelas ikut membawa kelasnya.
+let tautanMateri = 'materi.html';
 
 // Rumpun terpilih otomatis bila kalender menyebut tepat satu rumpun minggu itu;
 // selain itu mahasiswa memilih sendiri — API tidak dipanggil selama rumpun kosong.
@@ -85,7 +87,7 @@ async function muatKuis(e) {
         judul: 'Kuis ini belum punya soal',
         keterangan: 'Pengajar kelas masih menyusunnya. Kerjakan setelah soalnya tersedia.',
         siapa: `pengajar kelas ${prodiMahasiswa.toUpperCase()}`,
-        aksi: { href: 'materi.html', label: 'Pelajari materinya dulu' },
+        aksi: { href: tautanMateri, label: 'Pelajari materinya dulu' },
       });
       return;
     }
@@ -109,7 +111,7 @@ async function muatKuis(e) {
         judul: `Belum ada kuis rumpun ${rumpun} minggu ${minggu}`,
         keterangan: 'Pengajar kelas belum menyusun kuis gerbangnya. Kuis muncul di sini begitu disimpan dosen.',
         siapa: `pengajar kelas ${prodiMahasiswa.toUpperCase()}`,
-        aksi: [{ href: 'materi.html', label: 'Buka materi minggu ini' }],
+        aksi: [{ href: tautanMateri, label: 'Buka materi minggu ini' }],
       })
       : `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
@@ -454,6 +456,33 @@ async function muat() {
       aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }],
     })}</div>` + riwayat;
     muatRiwayat(saya.nim);
+    return;
+  }
+
+  // Dibuka dari halaman Kelas (?kelas=<id>): kuis kelas itu langsung dimuat,
+  // tanpa pilihan rumpun/minggu.
+  const kelas = await konteksKelas();
+  if (kelas) {
+    const minggu = Number(paramURL.get('minggu')) || kelas.minggu_ini || pekan.minggu || 1;
+    pasangKepalaKelas(kelas, `Kuis minggu ${minggu}`);
+    const tm = new URLSearchParams({ rumpun: kelas.rumpun_kode, minggu: String(minggu), kelas: kelas.id });
+    if (kelas.mk_kode) tm.set('mk', kelas.mk_kode);
+    tautanMateri = `materi.html?${tm}`;
+    const rentang = rentangMingguKelas(kelas, minggu);
+    isi.innerHTML = `
+      <div class="kartu">
+        <h3>Kuis minggu ${esc(minggu)}${rentang ? ` · ${esc(rentang)}` : ''}</h3>
+        <p class="meta">Kuis gerbang kelas ${esc(kelas.nama)}. Kerjakan sebelum sesi tatap muka Jumat.</p>
+        <p class="cta-row">${tombolKembaliKelas(kelas)}</p>
+        <form id="form-pilih" hidden>
+          <input type="hidden" name="rumpun" value="${esc(kelas.rumpun_kode)}">
+          <input type="hidden" name="minggu" value="${esc(minggu)}">
+          <input type="hidden" name="mk" value="${esc(kelas.mk_kode || '')}">
+        </form>
+        <div id="kuis"></div>
+      </div>` + riwayat;
+    muatRiwayat(saya.nim);
+    await muatKuis();
     return;
   }
 

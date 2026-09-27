@@ -37,6 +37,8 @@ body {
 }
 a { color: var(--aksen); text-decoration: none; }
 a:hover { text-decoration: underline; }
+/* Tautan di dalam kalimat bergaris bawah: tidak hanya dibedakan warna (WCAG 1.4.1). */
+p:not(.remah) a:not(.aksi):not(.tautan-tombol), .meta a:not(.aksi), .redup a:not(.aksi) { text-decoration: underline; text-underline-offset: .15em; }
 h1, h2, h3, h4 { font-weight: 600; line-height: 1.3; }
 code { font-family: var(--mono); font-size: .82rem; background: var(--latar); padding: .05rem .3rem; border-radius: 3px; }
 .redup { color: var(--redup); font-size: .85rem; }
@@ -408,6 +410,12 @@ table.jadwal td { padding: .55rem 1rem; }
 table.jadwal tr:last-child td { border-bottom: 0; }
 table.jadwal tr.hari-ini td { background: var(--aksen-muda); }
 table.jadwal tr.libur td { color: var(--redup); }
+table.jadwal .hanya-hp { display: none; }
+@media (max-width: 560px) {
+  table.jadwal .kolom-lebar { display: none; }
+  table.jadwal .hanya-hp { display: block; font-size: .82rem; }
+  table.jadwal td { padding: .5rem .75rem; }
+}
 .waktu { font-family: var(--mono); font-size: .8rem; white-space: nowrap; }
 .label-moda {
   display: inline-block; font-size: .75rem; padding: .05rem .4rem; border-radius: 3px;
@@ -429,6 +437,10 @@ table.jadwal tr.libur td { color: var(--redup); }
 
 /* ===== Beranda: agenda per peran ===== */
 .daftar-agenda { list-style: none; margin: 0; padding: 0; }
+/* "Perlu dikerjakan" per kelas (Beranda). */
+.agenda-kelompok + .agenda-kelompok { border-top: 1px solid var(--garis); }
+.agenda-kelompok-judul { margin: 0; padding: .7rem 1rem .1rem; font-size: .8rem; font-weight: 600; color: var(--redup); text-transform: uppercase; letter-spacing: .03em; }
+.agenda-kelompok-judul a { color: inherit; }
 .agenda-butir { border-bottom: 1px solid var(--garis-halus); border-left: 3px solid transparent; }
 .agenda-butir:last-child { border-bottom: 0; }
 .agenda-butir.mendesak { border-left-color: var(--tinggi); }

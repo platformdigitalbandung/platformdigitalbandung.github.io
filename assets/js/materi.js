@@ -1,7 +1,7 @@
 import { apiGet, apiPostJson, isLoggedIn, arahkanKeLogin } from './api.js';
 import { sayaSekarang } from './akun.js';
 import { esc, keadaanKosong, istilah } from './ui.js';
-import { pekanMahasiswa } from './hal-mahasiswa.js';
+import { pekanMahasiswa, konteksKelas, pasangKepalaKelas, rentangMingguKelas, tombolKembaliKelas } from './hal-mahasiswa.js';
 import { buatPelacak } from './pelacak.js';
 import { pasangPDF } from './pdfmateri.js';
 
@@ -299,7 +299,7 @@ function kartuMateri(m) {
 
 // Materi satu minggu. Rumpun kosong = semua rumpun; `rumpunBerlaku` (bila
 // diketahui dari kalender) menyaring ke rumpun yang dijadwalkan minggu itu.
-async function muatMateri({ nim, prodi, rumpun = '', mk = '', minggu, rumpunBerlaku = [], namaRumpun = {} }) {
+async function muatMateri({ nim, prodi, rumpun = '', mk = '', minggu, rumpunBerlaku = [], namaRumpun = {}, kelas = null }) {
   const wadah = document.getElementById('daftar-materi');
   if (!minggu || minggu < 1) {
     wadah.innerHTML = '<div class="pesan gagal">Isi minggu dengan angka mulai dari 1.</div>';
@@ -325,10 +325,10 @@ async function muatMateri({ nim, prodi, rumpun = '', mk = '', minggu, rumpunBerl
     if (!materi.length) {
       const untuk = rumpun ? `rumpun ${rumpun} minggu ${minggu}` : `minggu ${minggu}`;
       wadah.innerHTML = keadaanKosong({
-        judul: `Belum ada materi ${untuk}`,
+        judul: kelas ? `Belum ada materi minggu ${minggu} di kelas ini` : `Belum ada materi ${untuk}`,
         keterangan: 'Pengajar kelas belum menambahkan materinya ke katalog. Materi langsung tampil di halaman ini begitu ditambahkan.',
-        siapa: `pengajar kelas ${prodi.toUpperCase()}`,
-        aksi: [{ href: 'kalender.html', label: 'Lihat kalender' }],
+        siapa: kelas ? 'pengajar kelas ini' : `pengajar kelas ${prodi.toUpperCase()}`,
+        aksi: kelas ? [{ href: `kelas.html?id=${encodeURIComponent(kelas.id)}#tugas`, label: 'Kembali ke kelas' }] : [{ href: 'kalender.html', label: 'Lihat kalender' }],
       });
       return;
     }
@@ -341,7 +341,8 @@ async function muatMateri({ nim, prodi, rumpun = '', mk = '', minggu, rumpunBerl
       if (!kelompok.has(m.rumpun_kode)) kelompok.set(m.rumpun_kode, []);
       kelompok.get(m.rumpun_kode).push(m);
     });
-    wadah.innerHTML = [...kelompok.entries()].map(([kode, daftar]) => `
+    // Dari halaman Kelas: satu kelas, tanpa judul rumpun (nama kelas sudah di kepala halaman).
+    wadah.innerHTML = kelas ? materi.map(kartuMateri).join('') : [...kelompok.entries()].map(([kode, daftar]) => `
       <section class="kelompok-rumpun">
         <h2 class="judul-rumpun">${esc(kode)}${namaRumpun[kode] ? ` — ${esc(namaRumpun[kode])}` : ''}</h2>
         ${daftar.map(kartuMateri).join('')}
@@ -415,6 +416,24 @@ async function muat() {
 
   const namaRumpun = Object.fromEntries((rumpun || []).map(r => [r.kode, r.nama]));
   const mingguAwal = pekan.minggu || 1;
+
+  // Dibuka dari halaman Kelas (?kelas=<id>): tetap di dalam kelas itu.
+  const kelas = await konteksKelas();
+  if (kelas) {
+    const q = new URLSearchParams(location.search);
+    const minggu = Number(q.get('minggu')) || kelas.minggu_ini || mingguAwal;
+    pasangKepalaKelas(kelas, `Materi minggu ${minggu}`);
+    const rentang = rentangMingguKelas(kelas, minggu);
+    isi.innerHTML = `
+      <div class="kartu kartu-pekan">
+        <h3>Minggu ${esc(minggu)}${rentang ? ` · ${esc(rentang)}` : ''}</h3>
+        <p class="meta">Materi kelas ${esc(kelas.nama)} minggu ini. Selesaikan sebelum sesi tatap muka Jumat.</p>
+        <p class="cta-row">${tombolKembaliKelas(kelas)}</p>
+      </div>
+      <div id="daftar-materi"></div>`;
+    await muatMateri({ nim: saya.nim, prodi, rumpun: kelas.rumpun_kode, mk: kelas.mk_kode || '', minggu, namaRumpun, kelas });
+    return;
+  }
   const judulPekan = pekan.minggu
     ? `Minggu ${pekan.minggu}${pekan.rentang ? ` · ${esc(pekan.rentang)}` : ''}`
     : 'Pilih minggu';
