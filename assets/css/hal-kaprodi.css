@@ -84,6 +84,7 @@ li.sesi:first-child { border-top: 0; }
 .sesi-hari { font-weight: 500; }
 .sesi-jam { font-family: var(--mono); font-size: .8rem; color: var(--tinta); }
 .sesi-ket { color: var(--redup); font-size: .8rem; }
+.sesi-kelas { grid-column: 1 / -1; font-size: .82rem; font-weight: 500; }
 li.sesi-bebas { color: var(--redup); }
 li.sesi-bebas .sesi-hari { font-weight: 400; }
 

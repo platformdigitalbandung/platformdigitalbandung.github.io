@@ -240,3 +240,16 @@ export function labelTabel(tabel) {
   }
   t.classList.add('tabel-kartu');
 }
+
+// Hari asinkron kelas (keputusan developer Arfan 2026-09-29): Senin dan Selasa
+// untuk kelas mata kuliah lepas, Rabu untuk kelas rumpun, diatur kaprodi.
+// Nama kelas yang hari asinkronnya jatuh pada sesi kalender itu (kalender
+// sama, minggunya di dalam blok kelas) — aturan yang sama dengan
+// kelas.KelasPadaSesi di backend, dipakai jadwal Beranda dan halaman Jadwal.
+export function kelasPadaSesi(kelas, kal, s) {
+  const nama = (kelas || []).filter(k => k.kalender_id === kal.id
+    && (k.hari_asinkron || (k.mk_kode ? 'Senin' : 'Rabu')) === s.hari
+    && (!k.minggu_mulai || (s.minggu >= k.minggu_mulai && s.minggu <= k.minggu_selesai)))
+    .map(k => k.nama);
+  return [...new Set(nama)].sort();
+}

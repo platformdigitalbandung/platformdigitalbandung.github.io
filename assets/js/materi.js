@@ -284,9 +284,24 @@ function labelJenis(m) {
   return 'Bacaan';
 }
 
+// Hari asinkron (2026-09-29): materi yang hari kelasnya belum tiba datang dari
+// backend tanpa tautan video/isi/berkas (terkunci) beserta saat terbukanya.
+function tanggalBuka(iso) {
+  return new Date(iso).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', weekday: 'long', day: 'numeric', month: 'long' });
+}
+
 function kartuMateri(m) {
+  if (m.terkunci) {
+    return `
+    <div class="kartu">
+      <h3>${esc(m.judul)}</h3>
+      <p class="meta">${labelJenis(m)}${m.deskripsi ? ` · ${esc(m.deskripsi)}` : ''}</p>
+      <div class="pesan info">Terbuka <b>${esc(tanggalBuka(m.dibuka))}</b> pukul 00.00 WIB, hari asinkron kelas ini.</div>
+    </div>`;
+  }
   const tersimpan = pelacak.get(m.id)?.tersimpan || 0;
   const badan = badanMateri(m);
+  const hari = m.dibuka ? `<p class="redup">Hari asinkron: ${esc(tanggalBuka(m.dibuka))}. Selesaikan paling lambat pukul 23.59 WIB hari itu.</p>` : '';
   return `
     <div class="kartu">
       <h3>${esc(m.judul)}</h3>
@@ -294,6 +309,7 @@ function kartuMateri(m) {
       ${badan}
       <progress class="progres" max="100" value="${tersimpan}" data-id="${esc(m.id)}"></progress>
       <p class="redup teks-progres" data-id="${esc(m.id)}">${Math.round(tersimpan)}% tercatat</p>
+      ${hari}
     </div>`;
 }
 
@@ -348,6 +364,7 @@ async function muatMateri({ nim, prodi, rumpun = '', mk = '', minggu, rumpunBerl
         ${daftar.map(kartuMateri).join('')}
       </section>`).join('');
     for (const m of materi) {
+      if (m.terkunci) continue;
       if (m.jenis === 'video') {
         pasangVideo(m, tersimpan.get(m.id) || 0).catch(err => {
           const t = document.querySelector(`.teks-progres[data-id="${m.id}"]`);

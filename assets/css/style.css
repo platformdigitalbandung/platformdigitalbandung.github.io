@@ -683,3 +683,6 @@ button.bahaya:hover { background: var(--tinggi-muda); color: var(--tinggi); bord
 .syarat-sandi li.terpenuhi::marker { content: "✓  "; }
 .lihat-sandi { display: flex; align-items: center; gap: .4rem; font-weight: 400; }
 .lihat-sandi input { width: auto; }
+
+/* Jadwal Beranda: kelas pada hari asinkron (2026-09-29). */
+table.jadwal .kelas-hari { font-weight: 500; font-size: .85rem; }

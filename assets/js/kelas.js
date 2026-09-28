@@ -31,6 +31,12 @@ function tanggal(iso, jam = false) {
     ? { ...WIB, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }
     : { ...WIB, day: 'numeric', month: 'short', year: 'numeric' }) + (jam ? ' WIB' : '');
 }
+// "Rabu, 7 Okt" (WIB) — hari asinkron dan saat materi terbuka.
+function hariTanggal(iso) {
+  const d = new Date(iso);
+  if (isNaN(d) || d.getFullYear() < 2000) return '';
+  return d.toLocaleDateString('id-ID', { ...WIB, weekday: 'long', day: 'numeric', month: 'short' });
+}
 function angka(v) { return v === null || v === undefined ? '—' : (Math.round(v * 100) / 100).toLocaleString('id-ID'); }
 function pesan(id, jenis, teks) {
   const el = document.getElementById(id);
@@ -120,6 +126,7 @@ let detail = null;
 let isiKelas = null;
 let buku = null;
 let pengumuman = null;
+let ketepatan = null;
 // Minggu yang ikut dibuka di Tugas Kelas: minggu isi yang baru disimpan lewat panel.
 let mingguSorot = 0;
 const mengajar = () => detail && (detail.peran === 'pengajar' || detail.peran === 'kaprodi');
@@ -172,8 +179,12 @@ function butirTugas(t) {
     <div class="aksi-sel">${kanan}</div></div>`;
 }
 
-function butirKuis(q) {
-  const kanan = mengajar()
+// Hari asinkron (2026-09-29): bagi peserta, materi dan kuis satu minggu baru
+// terbuka pukul 00.00 WIB hari asinkron kelasnya (w.terkunci dari backend).
+const lencanaTerbuka = (iso) => `<span class="lencana">terbuka ${esc(hariTanggal(iso))}</span>`;
+
+function butirKuis(q, w) {
+  const kanan = !mengajar() && w && w.terkunci ? lencanaTerbuka(w.dibuka) : mengajar()
     ? `<span class="butir-ket">${esc(q.dikerjakan)} sudah mengerjakan</span><button type="button" class="sekunder" data-aksi="susun-kuis" data-minggu="${escAttr(q.minggu)}">${q.dikerjakan ? 'Lihat' : 'Susun'}</button>`
     : `${q.skor !== undefined && q.skor !== null
       ? (q.lulus ? `<span class="lencana rendah">lulus ${esc(angka(q.skor))}%</span>` : `<span class="lencana tinggi">belum lulus ${esc(angka(q.skor))}%</span>`)
@@ -186,7 +197,7 @@ function butirMateri(m) {
   return `<div class="butir-isi"><div><div class="butir-judul">${esc(m.judul)}</div><div class="butir-ket">${esc(jenis)}${m.deskripsi ? ` · ${esc(m.deskripsi)}` : ''}</div></div>
     <div class="aksi-sel">${mengajar()
       ? `<button type="button" class="sekunder" data-aksi="ubah-materi" data-id="${escAttr(m.id)}" data-minggu="${escAttr(m.minggu)}">Kelola</button>`
-      : `<a class="aksi sekunder" href="${escAttr(tautanMateri(m))}">Buka</a>`}</div></div>`;
+      : m.terkunci ? lencanaTerbuka(m.dibuka) : `<a class="aksi sekunder" href="${escAttr(tautanMateri(m))}">Buka</a>`}</div></div>`;
 }
 
 // Grup WhatsApp kelas: tautan undangan untuk semua anggota; tautan pembuatan
@@ -246,8 +257,11 @@ function tabBeranda() {
       : `<p class="redup">${semuaTugas.length ? 'Semua tugas kelas ini sudah Anda serahkan.' : 'Belum ada tugas di kelas ini.'}</p>`}</div>`;
   }
   const minggu = mingguIni ? `<div class="kartu"><h3>Minggu ${esc(mingguIni.minggu)} <span class="redup">· mulai ${esc(tanggal(mingguIni.mulai))}</span></h3>
-      ${mingguIni.materi.length ? `<h4>Materi</h4>${mingguIni.materi.map(butirMateri).join('')}` : ''}
-      ${mingguIni.kuis.length ? `<h4>Kuis</h4>${mingguIni.kuis.map(butirKuis).join('')}` : ''}
+      ${mingguIni.dibuka ? `<p class="meta">${mingguIni.terkunci && !mengajar()
+        ? `Materi dan kuis minggu ini terbuka <b>${esc(hariTanggal(mingguIni.dibuka))}</b> pukul 00.00 WIB.`
+        : `Hari asinkron: <b>${esc(hariTanggal(mingguIni.dibuka))}</b>. Selesaikan materinya hari itu; yang selesai sesudahnya menjadi catatan.`}</p>` : ''}
+      ${mingguIni.materi.length ? `<h4>Materi</h4>${mingguIni.materi.map(m => butirMateri(m)).join('')}` : ''}
+      ${mingguIni.kuis.length ? `<h4>Kuis</h4>${mingguIni.kuis.map(q => butirKuis(q, mingguIni)).join('')}` : ''}
       ${mingguIni.tugas.length ? `<h4>Tugas</h4>${mingguIni.tugas.map(butirTugas).join('')}` : ''}
       ${!mingguIni.materi.length && !mingguIni.kuis.length && !mingguIni.tugas.length ? '<p class="redup">Belum ada materi, kuis, atau tugas untuk minggu ini.</p>' : ''}
     </div>` : `<div class="kartu"><h3>Minggu berjalan</h3><p class="redup">${keteranganDiLuarMinggu(sekarang)}</p></div>`;
@@ -256,7 +270,7 @@ function tabBeranda() {
   const tentang = `<div class="kartu"><h3>Tentang kelas</h3>
     <p class="meta">${esc(detail.prodi_nama || detail.prodi_kode.toUpperCase())} · angkatan ${esc(detail.angkatan)} · semester ${esc(detail.semester)} · ${esc(detail.periode)}</p>
     <p>${detail.mk_kode ? 'Mata kuliah' : `${istilah('rumpun', 'Rumpun')} ${esc(detail.rumpun_kode)} — ${esc(detail.rumpun_nama || '')}. Mata kuliah`}: ${mk || '—'}</p>
-    ${teksBlok}<p>Pengajar: ${esc(namaPengajar(detail)) || '<span class="lencana sedang">belum ditunjuk kaprodi</span>'}</p>
+    ${teksBlok}${detail.hari_asinkron ? `<p>Hari asinkron: <b>${esc(detail.hari_asinkron)}</b> — materi dan kuis tiap minggu terbuka bagi mahasiswa pukul 00.00 WIB hari itu dan tetap terbuka sesudahnya.</p>` : ''}<p>Pengajar: ${esc(namaPengajar(detail)) || '<span class="lencana sedang">belum ditunjuk kaprodi</span>'}</p>
   </div>`;
   return kartuPengumuman() + minggu + utama + kartuGrup() + tentang;
 }
@@ -307,10 +321,11 @@ function tabTugasKelas() {
     const buka = w.minggu === mingguBawaan() || w.minggu === mingguSorot;
     return `<details class="minggu-kelas" id="minggu-${esc(w.minggu)}"${buka ? ' open' : ''}>
       <summary>Minggu ${esc(w.minggu)}${w.minggu === detail.minggu_ini ? ' <span class="lencana">minggu ini</span>' : ''}${w.di_luar_blok ? ' <span class="lencana sedang">di luar blok</span>' : ''}
-        <span class="redup">${w.mulai ? `mulai ${esc(tanggal(w.mulai))} · ` : ''}${jumlah ? `${w.materi.length} materi · ${w.kuis.length} kuis · ${w.tugas.length} tugas` : 'kosong'}</span></summary>
+        ${w.terkunci && !mengajar() ? lencanaTerbuka(w.dibuka) : ''}
+        <span class="redup">${w.dibuka ? `asinkron ${esc(hariTanggal(w.dibuka))} · ` : w.mulai ? `mulai ${esc(tanggal(w.mulai))} · ` : ''}${jumlah ? `${w.materi.length} materi · ${w.kuis.length} kuis · ${w.tugas.length} tugas` : 'kosong'}</span></summary>
       <div class="isi-minggu">
-        ${w.materi.length ? `<h4>Materi</h4>${w.materi.map(butirMateri).join('')}` : ''}
-        ${w.kuis.length ? `<h4>Kuis</h4>${w.kuis.map(butirKuis).join('')}` : ''}
+        ${w.materi.length ? `<h4>Materi</h4>${w.materi.map(m => butirMateri(m)).join('')}` : ''}
+        ${w.kuis.length ? `<h4>Kuis</h4>${w.kuis.map(q => butirKuis(q, w)).join('')}` : ''}
         ${w.tugas.length ? `<h4>Tugas</h4>${w.tugas.map(butirTugas).join('')}` : ''}
         ${jumlah ? '' : '<p class="redup">Belum ada isi.</p>'}
         ${mengajar() ? `<p class="cta-row"><button type="button" class="sekunder" data-aksi="buka-materi" data-minggu="${escAttr(w.minggu)}">+ Materi</button>${w.kuis.length ? '' : ` <button type="button" class="sekunder" data-aksi="buka-kuis" data-minggu="${escAttr(w.minggu)}">+ Kuis</button>`}</p>` : ''}
@@ -370,7 +385,7 @@ function tabNilai() {
   const komp = buku.komponen || [];
   if (detail.peran === 'peserta') {
     const b = (buku.baris || [])[0];
-    if (!b) return '<div class="pesan info">Nilai Anda belum tersedia.</div>';
+    if (!b) return '<div class="pesan info">Nilai Anda belum tersedia.</div>' + kartuKetepatan();
     return `<div class="kartu"><h3>Nilai Saya</h3>
       <div class="gulir"><table><thead><tr><th>Komponen</th><th class="num">Bobot</th><th class="num">Nilai</th></tr></thead><tbody>
       ${komp.map(k => `<tr><td>${esc(k.nama)} <span class="redup">(${esc(JENIS[k.jenis] || k.jenis)})</span></td><td class="num">${esc(angka(k.bobot))}%</td><td class="num">${esc(angka(b.komponen[k.kunci]))}</td></tr>`).join('')}
@@ -378,7 +393,7 @@ function tabNilai() {
       <p>${b.lengkap ? `Nilai akhir: <b>${esc(angka(b.nilai_akhir))}</b> (${esc(b.huruf)})` : `Nilai sementara: <b>${esc(angka(b.sementara))}</b> — nilai akhir muncul setelah semua komponen terisi.`}</p>
       ${(buku.tugas || []).length ? `<h4>Nilai per tugas</h4><ul class="daftar-ringkas">${buku.tugas.map(t => `<li>${esc(t.judul)}<span class="kecil">${esc(angka(b.tugas[t.id]))}</span></li>`).join('')}</ul>` : ''}
       <details class="cara-skor"><summary>Bagaimana nilai dihitung?</summary><ul>${(buku.catatan || []).map(c => `<li>${esc(c)}</li>`).join('')}</ul></details>
-    </div>`;
+    </div>` + kartuKetepatan();
   }
   const bisaIsi = mengajar();
   const manual = komp.filter(k => k.jenis === 'manual');
@@ -403,7 +418,40 @@ function tabNilai() {
       <th class="num">Sementara</th><th class="num">Akhir</th>${bisaIsi && manual.length ? '<th></th>' : ''}</tr></thead><tbody>${baris}</tbody></table></div>`
       : '<p class="redup">Belum ada peserta.</p>'}
     <details class="cara-skor"><summary>Bagaimana nilai dihitung?</summary><ul>${(buku.catatan || []).map(c => `<li>${esc(c)}</li>`).join('')}</ul></details>
-  </div>` + perTugas;
+  </div>` + perTugas + kartuKetepatan();
+}
+
+// Ketepatan belajar (keputusan developer Arfan 2026-09-29): materi tuntas
+// (100%) paling lambat 23.59 WIB hari asinkron kelasnya tepat; sesudahnya
+// atau belum tuntas menjadi catatan — kecuali materinya terbit pada/sesudah
+// hari itu, atau mahasiswanya baru masuk roster sesudahnya.
+const STATUS_KETEPATAN = { terlambat: 'terlambat', belum: 'belum selesai' };
+function kartuKetepatan() {
+  const kt = ketepatan || {};
+  const aturan = `<p class="meta">Materi dinilai tepat bila selesai (100%) paling lambat 23.59 WIB pada hari asinkron kelas ini (<b>${esc(kt.hari_asinkron || detail.hari_asinkron || '')}</b>). Materi yang diunggah dosen pada hari itu atau sesudahnya tidak menimbulkan catatan. Dinilai mulai ${esc(hariTanggal(kt.berlaku_sejak))}.</p>`;
+  const baris = kt.baris || [];
+  if (detail.peran === 'peserta') {
+    const b = baris[0];
+    const catatan = b ? b.catatan || [] : [];
+    return `<div class="kartu" id="ketepatan"><h3>Ketepatan belajar</h3>${aturan}
+      ${!b ? '<p class="redup">Belum ada materi yang dinilai.</p>'
+        : `<p>${esc(b.tepat)} materi tepat hari · ${esc(b.terlambat)} terlambat · ${esc(b.belum)} belum selesai${b.hari_ini ? ` · ${esc(b.hari_ini)} dijadwalkan hari ini` : ''}</p>
+        ${catatan.length ? `<h4>Catatan</h4><ul class="daftar-ringkas">${catatan.map(c => `<li>Minggu ${esc(c.minggu)} — ${esc(c.judul)}<span class="kecil">${c.status === 'terlambat' && c.tuntas
+          ? `selesai ${esc(hariTanggal(c.tuntas))}, jadwal ${esc(hariTanggal(c.dibuka))}`
+          : `${esc(STATUS_KETEPATAN[c.status] || c.status)}, jadwal ${esc(hariTanggal(c.dibuka))}`}</span></li>`).join('')}</ul>`
+          : '<p class="redup">Tidak ada catatan.</p>'}`}
+    </div>`;
+  }
+  const materi = kt.materi || [];
+  const telat = materi.filter(m => m.dosen_telat);
+  return `<div class="kartu" id="ketepatan"><h3>Ketepatan belajar</h3>${aturan}
+    ${!materi.length ? '<p class="redup">Belum ada materi yang dinilai.</p>' : `
+    <div class="gulir"><table><thead><tr><th>NIM</th><th>Nama</th><th class="num">Tepat</th><th class="num">Terlambat</th><th class="num">Belum</th><th class="num">Hari ini</th><th class="num">Dikecualikan</th><th>Catatan</th></tr></thead><tbody>
+    ${baris.map(b => `<tr><td>${esc(b.nim)}</td><td>${esc(b.nama)}</td><td class="num">${esc(b.tepat)}</td><td class="num">${esc(b.terlambat)}</td><td class="num">${esc(b.belum)}</td><td class="num">${esc(b.hari_ini)}</td><td class="num">${esc(b.dikecualikan)}</td>
+      <td>${(b.catatan || []).map(c => `M${esc(c.minggu)} ${esc(c.judul)} (${esc(STATUS_KETEPATAN[c.status] || c.status)})`).join('; ') || '—'}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="meta">${esc(materi.length)} materi dinilai${telat.length ? `; ${esc(telat.length)} terbit pada/sesudah hari jadwalnya sehingga tidak menimbulkan catatan: ${telat.map(m => `${esc(m.judul)} (minggu ${esc(m.minggu)})`).join(', ')}` : ''}.</p>`}
+  </div>`;
 }
 
 const TAB = [['beranda', 'Beranda'], ['tugas', 'Tugas Kelas'], ['anggota', 'Anggota'], ['nilai', 'Nilai']];
@@ -417,7 +465,7 @@ async function renderDetail() {
   let badan = '<p class="redup">Memuat…</p>';
   isi.innerHTML = `
     <div class="kartu kepala-kelas"><p class="meta">${esc(detail.prodi_nama || detail.prodi_kode.toUpperCase())} · ${esc(detail.periode)} · Anda: <span class="lencana">${esc(labelPeran[detail.peran] || detail.peran)}</span></p>
-      <p class="meta">${detail.minggu_ini ? `Minggu ${esc(detail.minggu_ini)} dari ${esc(detail.jumlah_minggu)}` : ''}${blok() ? ` · blok minggu ${esc(blok()[0])}–${esc(blok()[1])}` : ''} · ${esc(detail.jumlah_peserta)} peserta</p></div>
+      <p class="meta">${detail.minggu_ini ? `Minggu ${esc(detail.minggu_ini)} dari ${esc(detail.jumlah_minggu)}` : ''}${blok() ? ` · blok minggu ${esc(blok()[0])}–${esc(blok()[1])}` : ''}${detail.hari_asinkron ? ` · asinkron ${esc(detail.hari_asinkron)}` : ''} · ${esc(detail.jumlah_peserta)} peserta</p></div>
     <div class="tab-halaman" role="tablist" aria-label="Isi kelas">
       ${TAB.map(([k, l]) => `<button type="button" role="tab" id="tab-${k}" data-tab="${k}" aria-selected="${k === tab}" aria-controls="panel-kelas"${k === tab ? '' : ' tabindex="-1"'}>${l}</button>`).join('')}
     </div>
@@ -426,6 +474,7 @@ async function renderDetail() {
     if ((tab === 'beranda' || tab === 'tugas') && !isiKelas) isiKelas = await apiGet(`/api/kelas/${encodeURIComponent(idKelas)}/isi`);
     if (tab === 'beranda' && pengumuman === null) ({ pengumuman = [] } = await apiGet(`/api/kelas/${encodeURIComponent(idKelas)}/pengumuman`));
     if (tab === 'nilai' && !buku) buku = await apiGet(`/api/kelas/${encodeURIComponent(idKelas)}/nilai`);
+    if (tab === 'nilai' && !ketepatan) ketepatan = await apiGet(`/api/kelas/${encodeURIComponent(idKelas)}/ketepatan`);
     badan = { beranda: tabBeranda, tugas: tabTugasKelas, anggota: tabAnggota, nilai: tabNilai }[tab]();
   } catch (err) {
     badan = `<div class="pesan gagal">${esc(err.message)}</div>`;

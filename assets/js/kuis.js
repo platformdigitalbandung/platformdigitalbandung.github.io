@@ -113,7 +113,10 @@ async function muatKuis(e) {
         siapa: `pengajar kelas ${prodiMahasiswa.toUpperCase()}`,
         aksi: [{ href: tautanMateri, label: 'Buka materi minggu ini' }],
       })
-      : `<div class="pesan gagal">${esc(err.message)}</div>`;
+      // 403 "Belum dibuka: …" = hari asinkron kelasnya belum tiba (2026-09-29).
+      : err.status === 403 && /^Belum dibuka/.test(err.message || '')
+        ? `<div class="pesan info">${esc(err.message)}</div>`
+        : `<div class="pesan gagal">${esc(err.message)}</div>`;
   }
 }
 

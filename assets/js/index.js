@@ -1,7 +1,7 @@
 import { apiGet, arahkanKeLogin } from './api.js';
 import { sayaSekarang, peranAktif, labelPeran, tanpaNomorWA } from './akun.js';
 import { htmlHubungkanWA, pasangHubungkanWA } from './hubungkanwa.js';
-import { esc } from './ui.js';
+import { esc, kelasPadaSesi } from './ui.js';
 import { terdaftar as sudahTerdaftar, langkahMulai, semuaSelesai, htmlDaftarMulai, jenisTercakup } from './hal-beranda.js';
 
 // Beranda "Hari ini" (keputusan developer Arfan 2026-09-26), untuk peran aktif
@@ -50,11 +50,13 @@ const PERINTAH_WA = {
     ['kalender minggu ini', 'Jadwal minggu ini'],
     ['daftar tugas', 'Tugas yang masih terbuka'],
     ['nilai saya', 'Nilai tiap kelas'],
+    ['catatan belajar', 'Materi yang tidak diselesaikan pada hari asinkronnya'],
   ],
   dosen: [
     ['mk diampu', 'Kelas Anda beserta tautan grup WhatsApp-nya'],
     ['status proyek kerja', 'Proyek kerja bimbingan dan statusnya'],
     ['daftar tugas', 'Tugas yang masih terbuka'],
+    ['catatan belajar', 'Ketepatan belajar kelas Anda'],
   ],
 };
 
@@ -268,6 +270,9 @@ function mingguAcuan(sesi, hariIni) {
   return { status: 'berjalan', minggu: acuan.minggu };
 }
 
+// Kelas pemakai (GET /api/kelas/saya) untuk menyebut kelas tiap hari asinkron.
+let kelasJadwal = [];
+
 function tampilJadwal(kal) {
   const wadah = document.getElementById('jadwal');
   const hariIni = hariIniYMD();
@@ -292,7 +297,7 @@ function tampilJadwal(kal) {
       return `<tr${kelas ? ` class="${kelas}"` : ''}>
         <td>${esc(s.hari)}<span class="hanya-hp redup">${esc(tampilTanggal(tgl))}</span>${tgl === hariIni ? '<span class="label-moda label-hari-ini">hari ini</span>' : ''}</td>
         <td class="kolom-lebar">${esc(tampilTanggal(tgl))}</td>
-        <td>${esc(nama)}${label ? `<span class="label-moda">${esc(label)}</span>` : ''}${s.jam_mulai ? `<span class="hanya-hp waktu">${waktu}</span>` : ''}${s.keterangan ? `<br><span class="redup">${esc(s.keterangan)}</span>` : ''}</td>
+        <td>${esc(nama)}${label ? `<span class="label-moda">${esc(label)}</span>` : ''}${s.jam_mulai ? `<span class="hanya-hp waktu">${waktu}</span>` : ''}${kelasPadaSesi(kelasJadwal, kal, s).map(n => `<br><b class="kelas-hari">${esc(n)}</b>`).join('')}${s.keterangan ? `<br><span class="redup">${esc(s.keterangan)}</span>` : ''}</td>
         <td class="waktu kolom-lebar">${waktu}</td></tr>`;
     }).join('')}
   </table></div>`;
@@ -303,7 +308,11 @@ function tampilJadwal(kal) {
 async function muatJadwal(prodiLingkup) {
   const wadah = document.getElementById('jadwal');
   try {
-    const { kalender: semua = [] } = await apiGet('/api/kalender');
+    const [{ kalender: semua = [] }, { kelas: kelasSaya = [] }] = await Promise.all([
+      apiGet('/api/kalender'),
+      apiGet('/api/kelas/saya', { auth: true }).catch(() => ({ kelas: [] })),
+    ]);
+    kelasJadwal = kelasSaya;
     const kalender = prodiLingkup ? semua.filter(k => prodiLingkup.includes(k.prodi_kode)) : semua;
     if (!kalender.length) {
       wadah.innerHTML = prodiLingkup

@@ -1,6 +1,6 @@
 import { apiGet, apiPostJson, apiPutJson, apiDeleteJson, isLoggedIn, arahkanKeLogin } from './api.js';
 import { sayaSekarang, adalahKaprodiAktif, peranAktif } from './akun.js';
-import { esc, keadaanKosong, istilah, labelModa, opsiModa, labelTabel, prodiBawaan } from './ui.js';
+import { esc, keadaanKosong, istilah, labelModa, opsiModa, labelTabel, prodiBawaan, kelasPadaSesi } from './ui.js';
 
 // Kalender akademik. Baca untuk dosen dan mahasiswa terdaftar (hanya kalender
 // yang sudah diterbitkan); belum masuk diarahkan ke /login/.
@@ -80,17 +80,23 @@ function mingguTerbuka(kelompok) {
   return { minggu: 0, status: 'selesai' };
 }
 
-function sesiBaris(s) {
+// Kelas pemakai (GET /api/kelas/saya): nama kelas tiap hari asinkron
+// (Senin/Selasa mata kuliah lepas, Rabu rumpun; keputusan 2026-09-29).
+let kelasSaya = [];
+
+function sesiBaris(s, k) {
   const bebas = s.moda === 'bebas';
+  const kelas = k ? kelasPadaSesi(kelasSaya, k, s) : [];
   return `<li class="sesi${bebas ? ' sesi-bebas' : ''}">
     <span class="sesi-hari">${esc(s.hari || '')}, ${esc(tanggalPendek(s.tanggal))}</span>
     <span class="sesi-moda moda-${escAttr(s.moda)}">${esc(labelModa(s.moda))}</span>
     <span class="sesi-jam">${s.jam_mulai ? `${esc(s.jam_mulai)}–${esc(s.jam_selesai || '')} WIB` : ''}</span>
     ${s.keterangan ? `<span class="sesi-ket">${esc(s.keterangan)}</span>` : ''}
+    ${kelas.length ? `<span class="sesi-kelas">${kelas.map(esc).join(' · ')}</span>` : ''}
   </li>`;
 }
 
-function tabelSesi(sesi) {
+function tabelSesi(sesi, k) {
   if (!sesi || !sesi.length) return '<p class="redup">Kalender ini belum punya sesi.</p>';
   const kelompok = perMinggu(sesi);
   const { minggu: buka, status } = mingguTerbuka(kelompok);
@@ -106,7 +112,7 @@ function tabelSesi(sesi) {
         <summary><span class="minggu-judul">Minggu ${esc(minggu)}</span>
           <span class="minggu-tanggal">${esc(tanggalPendek(awal))} – ${esc(tanggalPendek(akhir, { day: 'numeric', month: 'short', year: 'numeric' }))}</span>
           ${ini ? '<span class="lencana rendah">minggu ini</span>' : ''}</summary>
-        <ul class="daftar-sesi">${daftar.map(sesiBaris).join('')}</ul>
+        <ul class="daftar-sesi">${daftar.map(s => sesiBaris(s, k)).join('')}</ul>
       </details>`;
     }).join('')}
   </div>`;
@@ -169,7 +175,7 @@ function kartuKalender(k) {
     <div class="kartu" data-kartu="${id}">
       <h3>${esc(k.prodi_kode.toUpperCase())} · angkatan ${esc(k.angkatan)} · semester ${esc(k.semester)} ${status}</h3>
       <p class="meta">${esc(namaProdi(k.prodi_kode))} · mulai ${esc(tanggal(k.tanggal_mulai))} · ${perMinggu(k.sesi || []).length} minggu, ${(k.sesi || []).length} sesi</p>
-      <div class="isi-sesi">${tabelSesi(k.sesi)}</div>
+      <div class="isi-sesi">${tabelSesi(k.sesi, k)}</div>
       <div class="aksi-kartu">${aksi}</div>
       <div class="hasil-kartu"></div>
     </div>`;
@@ -266,7 +272,11 @@ function renderDaftar() {
 
 async function muatDaftar() {
   const q = prodiSusun.length ? '?draft=1' : '';
-  const { kalender: semua = [] } = await apiGet('/api/kalender' + q);
+  const [{ kalender: semua = [] }, { kelas = [] }] = await Promise.all([
+    apiGet('/api/kalender' + q),
+    apiGet('/api/kelas/saya', { auth: true }).catch(() => ({ kelas: [] })),
+  ]);
+  kelasSaya = kelas;
   // Draft hanya ditampilkan untuk prodi yang disusun pengguna ini.
   daftarKalender = semua.filter(k => k.diterbitkan || bolehSusun(k));
   renderDaftar();
@@ -310,7 +320,7 @@ function tutupSunting(id) {
   const k = cariKalender(id);
   const kartu = kartuDari(id);
   if (!k || !kartu) return;
-  kartu.querySelector('.isi-sesi').innerHTML = tabelSesi(k.sesi);
+  kartu.querySelector('.isi-sesi').innerHTML = tabelSesi(k.sesi, k);
   kartu.querySelector('.aksi-kartu').hidden = false;
 }
 
