@@ -54,8 +54,19 @@ function opsiProdi(terpilih, { semua = false } = {}) {
 function opsiStatus(terpilih = 'aktif') {
   return STATUS.map(s => `<option value="${s}"${s === terpilih ? ' selected' : ''}>${s}</option>`).join('');
 }
+// Sejak 2026-09-28 kata sandi awal berpola dilarang: "belum dibuat" berarti
+// masih kata sandi awal (mahasiswa, masa peralihan), kata sandi sementara hasil
+// reset, atau belum punya kata sandi sama sekali.
 function lencanaSandi(sendiri) {
-  return sendiri ? '<span class="lencana rendah">sudah diganti</span>' : '<span class="lencana sedang">kata sandi awal</span>';
+  return sendiri ? '<span class="lencana rendah">dibuat sendiri</span>' : '<span class="lencana sedang">belum dibuat</span>';
+}
+
+// Hasil reset: kata sandi sementara acak, ditampilkan SEKALI di sini.
+function pesanReset(h) {
+  const kirim = h.terkirim_wa
+    ? 'Sudah dikirim juga oleh bot ke WhatsApp pemiliknya.'
+    : 'Sampaikan kepadanya secara pribadi (bot belum mengirimkannya ke WhatsApp-nya).';
+  return `Kata sandi ${esc(h.nama)} sudah direset. Kata sandi sementara: <code>${esc(h.sandi_sementara)}</code> — hanya ditampilkan sekali. ${kirim} Ia masuk dengan <b>${esc(h.identitas)}</b> dan kata sandi itu, lalu wajib membuat kata sandi baru yang kuat.`;
 }
 
 // ===================== Mahasiswa =====================
@@ -82,7 +93,7 @@ function tabelMhs() {
       keterangan: 'Ubah saringan, atau tambahkan mahasiswa lewat formulir di bawah.',
     });
   }
-  return `<p class="meta">${mahasiswa.length} mahasiswa · ${mahasiswa.filter(m => !m.sandi_sendiri).length} masih memakai kata sandi awal</p>
+  return `<p class="meta">${mahasiswa.length} mahasiswa · ${mahasiswa.filter(m => !m.sandi_sendiri).length} belum membuat kata sandi sendiri</p>
     <div class="gulir"><table>
     <thead><tr><th>NIM</th><th>Nama</th><th>Prodi</th><th>WhatsApp</th><th>Email</th><th>Status</th><th>Kata sandi</th><th></th></tr></thead><tbody>
     ${mahasiswa.map(m => `<tr data-nim="${escAttr(m.nim)}">
@@ -111,7 +122,7 @@ function kartuFormMhs(m = null) {
         <label>NIM <input name="nim" required maxlength="30" value="${escAttr(m.nim || '')}"${baru ? '' : ' readonly'}></label>
         <label>Nama <input name="nama" required maxlength="120" value="${escAttr(m.nama || '')}"></label>
         <label>Nomor WhatsApp <input name="phonenumber" maxlength="20" inputmode="tel" value="${escAttr(m.phonenumber || '')}" placeholder="081234567890"></label>
-        <label>Email <input type="email" name="email" maxlength="120" value="${escAttr(m.email || '')}" placeholder="menentukan kata sandi awal"></label>
+        <label>Email <input type="email" name="email" maxlength="120" value="${escAttr(m.email || '')}" placeholder="email kampus"></label>
         <label>Program studi <select name="prodi_kode" required>${opsiProdi(m.prodi_kode)}</select></label>
         <label>Angkatan <input name="angkatan" required maxlength="9" value="${escAttr(m.angkatan || '')}" placeholder="2026"></label>
         <label>Semester <input type="number" name="semester" min="0" max="14" value="${escAttr(m.semester ?? 1)}"></label>
@@ -278,7 +289,7 @@ function tabelDosen() {
       aksi: admin ? null : { href: 'kelas.html', label: 'Buka Kelas' },
     });
   }
-  return `<p class="meta">${daftar.length} dari ${dosen.length} dosen${admin ? ` · ${dosen.filter(d => !d.aktif).length} nonaktif` : ''} · ${dosen.filter(d => !d.sandi_sendiri).length} masih memakai kata sandi awal</p>
+  return `<p class="meta">${daftar.length} dari ${dosen.length} dosen${admin ? ` · ${dosen.filter(d => !d.aktif).length} nonaktif` : ''} · ${dosen.filter(d => !d.sandi_sendiri).length} belum membuat kata sandi sendiri</p>
     <div class="gulir"><table>
     <thead><tr><th>Nama</th><th>Email kampus</th><th>WhatsApp</th><th>Mengajar</th><th>Jabatan</th><th>Status</th><th>Kata sandi</th><th></th></tr></thead><tbody>
     ${daftar.map(d => `<tr data-id="${escAttr(d.id)}">
@@ -302,7 +313,7 @@ function kartuTambahDosen() {
   return `
     <div class="kartu">
       <h3>Tambah Dosen</h3>
-      <p class="meta">Dosen baru langsung aktif. Email kampusnya diisi dosen sendiri (lewat WhatsApp <code>daftar dosen | email</code> atau halaman Roster &amp; Email Dosen); setelah itu ia bisa masuk dengan email + kata sandi awal.${admin ? '' : ' Dosen yang Anda tambahkan langsung tercatat di prodi Anda dan bisa ditunjuk sebagai pengajar kelas.'} Nomor yang pernah dinonaktifkan hanya bisa diaktifkan kembali admin.</p>
+      <p class="meta">Dosen baru langsung aktif. Email kampusnya diisi dosen sendiri (lewat WhatsApp <code>daftar dosen | email</code> atau halaman Roster &amp; Email Dosen); ia masuk lewat WhatsApp lalu membuat kata sandi sendiri di halaman Ganti Kata Sandi (atau Anda mereset kata sandinya untuk mendapat kata sandi sementara).${admin ? '' : ' Dosen yang Anda tambahkan langsung tercatat di prodi Anda dan bisa ditunjuk sebagai pengajar kelas.'} Nomor yang pernah dinonaktifkan hanya bisa diaktifkan kembali admin.</p>
       <form id="form-tambah-dosen" class="saringan">
         <label>Nomor WhatsApp <input name="nohp" required maxlength="20" inputmode="tel" placeholder="081234567890"></label>
         <label>Nama lengkap <input name="nama" required maxlength="120"></label>
@@ -369,9 +380,9 @@ async function muatRiwayat() {
 async function aksiDosen(aksi, d) {
   try {
     if (aksi === 'reset-dosen') {
-      if (!window.confirm(`Reset kata sandi ${d.nama}? Kata sandinya kembali ke kata sandi awal (bagian email sebelum @ ditambah ADB).`)) return;
-      await apiPostJson('/api/pengguna/sandi/reset', { peran: 'dosen', id: d.id });
-      pesan('pesan-dosen', 'sukses', `Kata sandi ${esc(d.nama)} kembali ke kata sandi awal. Ia masuk dengan ${esc(d.email)} dan kata sandi <b>bagian email sebelum @ + ADB</b>.`);
+      if (!window.confirm(`Reset kata sandi ${d.nama}? Sistem membuat kata sandi sementara acak yang wajib ia ganti setelah masuk.`)) return;
+      const h = await apiPostJson('/api/pengguna/sandi/reset', { peran: 'dosen', id: d.id });
+      pesan('pesan-dosen', 'sukses', pesanReset(h));
     } else if (aksi === 'admin-dosen') {
       const jadi = !d.admin;
       if (!window.confirm(jadi
@@ -452,11 +463,11 @@ function pasangPendengar() {
         document.getElementById('kartu-form-mhs').outerHTML = kartuFormMhs(m);
         document.getElementById('kartu-form-mhs').scrollIntoView({ behavior: 'smooth', block: 'start' });
       } else if (aksi === 'reset-mhs') {
-        if (!window.confirm(`Reset kata sandi ${m.nama} (${m.nim})? Kata sandinya kembali ke kata sandi awal.`)) return;
+        if (!window.confirm(`Reset kata sandi ${m.nama} (${m.nim})? Sistem membuat kata sandi sementara acak yang wajib ia ganti setelah masuk.`)) return;
         try {
-          await apiPostJson('/api/pengguna/sandi/reset', { peran: 'mahasiswa', id: m.id });
-          pesan('pesan-mhs', 'sukses', `Kata sandi ${esc(m.nama)} kembali ke kata sandi awal: ${m.email ? 'bagian email sebelum @' : 'NIM'} ditambah <b>ADB</b>. Ia masuk dengan NIM ${esc(m.nim)}.`);
+          const h = await apiPostJson('/api/pengguna/sandi/reset', { peran: 'mahasiswa', id: m.id });
           await muatMahasiswa();
+          pesan('pesan-mhs', 'sukses', pesanReset(h));
         } catch (err) {
           pesan('pesan-mhs', 'gagal', `Gagal: ${esc(err.message)}`);
         }

@@ -1,4 +1,5 @@
 import { getCookie } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/cookie.min.js';
+import { redirect } from 'https://cdn.jsdelivr.net/gh/crootjs/lib@0.0.12/url.min.js';
 import { apiGet, logout, arahkanKeLogin } from './api.js';
 import { pasangNavigasi, buatLembar, bukaLembar, tutupLembar } from './menu.js';
 
@@ -32,6 +33,24 @@ function isiToken() {
   } catch {
     return {};
   }
+}
+
+// Wajib ganti kata sandi (keputusan developer Rolly 2026-09-28): halaman login
+// memasang cookie `wajib_ganti` setelah masuk dengan kata sandi awal berpola,
+// kata sandi sementara hasil reset, atau kata sandi yang belum kuat. Selama
+// cookie itu ada, semua halaman diarahkan ke Ganti Kata Sandi; sandi.js
+// menghapusnya begitu kata sandi baru tersimpan. Hak akses tetap diputuskan
+// backend — ini hanya memastikan pemiliknya tidak melewatkan penggantian.
+if (getCookie('login') && getCookie('wajib_ganti') && !/\/sandi\.html$/.test(location.pathname)) {
+  redirect('/sandi.html');
+}
+
+// Mahasiswa yang masuk dengan kata sandi tanpa nomor WhatsApp di roster
+// bertoken "nim:<NIM>" (sejak 2026-09-26): Beranda dan Ganti Kata Sandi
+// menampilkan kartu Hubungkan WhatsApp untuknya.
+export function tanpaNomorWA() {
+  const isi = isiToken();
+  return !!(isi && String(isi.id || '').startsWith('nim:'));
 }
 
 function waktu(iso) {

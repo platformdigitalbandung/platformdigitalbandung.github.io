@@ -1,5 +1,6 @@
 import { apiGet, arahkanKeLogin } from './api.js';
-import { sayaSekarang, peranAktif, labelPeran } from './akun.js';
+import { sayaSekarang, peranAktif, labelPeran, tanpaNomorWA } from './akun.js';
+import { htmlHubungkanWA, pasangHubungkanWA } from './hubungkanwa.js';
 import { esc } from './ui.js';
 import { terdaftar as sudahTerdaftar, langkahMulai, semuaSelesai, htmlDaftarMulai, jenisTercakup } from './hal-beranda.js';
 
@@ -21,6 +22,8 @@ const BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'O
 
 // Tanggal sesi disimpan sebagai tengah malam UTC dari tanggal kalendernya, jadi
 // 10 karakter pertama ISO-nya adalah tanggal yang dimaksud.
+pasangHubungkanWA(document.getElementById('mulai'));
+
 function tanggalSesi(iso) { return String(iso || '').slice(0, 10); }
 function hariIniYMD() { return new Date().toLocaleDateString('en-CA', { timeZone: ZONA }); }
 function tampilTanggal(ymd) {
@@ -223,6 +226,12 @@ async function muatBeranda(saya, peran) {
   const kelas = kelasSaya.kelas || [];
   const namaKelas = Object.fromEntries(kelas.map(k => [k.id, k.nama]));
   const tercakup = agenda ? tampilLangkah(peran, saya, agenda) : new Set();
+  // Mahasiswa yang masuk dengan kata sandi tanpa nomor WhatsApp diajak
+  // menghubungkan nomornya (keputusan developer Rolly 2026-09-28).
+  if (mahasiswa && tanpaNomorWA() && !document.getElementById('hubungkan-wa')) {
+    document.getElementById('mulai').insertAdjacentHTML('afterbegin', htmlHubungkanWA());
+    document.getElementById('panel-mulai').hidden = false;
+  }
   // Kiriman yang perlu dinilai adalah pekerjaan mengajar: tampil untuk peran
   // dosen dan kaprodi (kaprodi punya hak pengajar di kelas prodinya), tidak untuk admin.
   const dariKelas = mahasiswa ? butirTugasMahasiswa(tugas, namaKelas)
