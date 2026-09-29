@@ -51,13 +51,15 @@ function kartuStatus(st) {
       <p>Masuk dengan <b>${st.peran === 'mahasiswa' ? 'NIM' : 'email kampus'}</b>: <b>${esc(st.identitas || '—')}</b></p>
       <p>Kata sandi: ${tanda}</p>
       ${st.wajib_ganti ? `<div class="pesan gagal">${esc(st.alasan_ganti || 'Kata sandi Anda wajib diganti.')} Halaman lain terbuka lagi setelah kata sandi baru tersimpan.</div>` : ''}
-      ${!st.perlu_sandi_lama && st.identitas ? '<p class="meta">Akun Anda belum punya kata sandi. Buat di bawah supaya Anda bisa masuk dengan NIM atau email kampus selain lewat WhatsApp.</p>' : ''}
+      ${!st.perlu_sandi_lama && !st.wajib_ganti && st.identitas ? '<p class="meta">Akun Anda belum punya kata sandi. Buat di bawah supaya Anda bisa masuk dengan NIM atau email kampus selain lewat WhatsApp.</p>' : ''}
       ${!st.identitas ? `<div class="pesan gagal">${esc(st.alasan || 'Akun ini belum bisa masuk dengan kata sandi.')}</div>` : ''}
     </div>`;
 }
 
 function kartuGanti(st) {
-  const judul = st.perlu_sandi_lama ? 'Ganti Kata Sandi' : 'Buat Kata Sandi';
+  // Kata sandi lama hanya diminta bila akun punya kata sandi tersimpan; akun
+  // yang masih memakai kata sandi awal langsung membuat yang baru (2026-09-29).
+  const judul = st.perlu_sandi_lama ? 'Ganti Kata Sandi' : (st.wajib_ganti ? 'Buat Kata Sandi Baru' : 'Buat Kata Sandi');
   return `
     <div class="kartu">
       <h3>${judul}</h3>
