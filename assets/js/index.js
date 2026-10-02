@@ -211,7 +211,7 @@ function tampilKelas(kelas, perlu) {
     const pengajar = (k.pengajar_orang || []).map(p => p.nama).join(', ');
     return `<a class="kartu kartu-kelas" href="kelas.html?id=${encodeURIComponent(k.id)}">
       <h3>${esc(k.nama)}</h3>
-      <p class="baris-kecil">${esc(k.periode || '')} · semester ${esc(k.semester)}${k.peran !== 'peserta' ? ` · <span class="lencana">${esc(LABEL[k.peran] || k.peran)}</span>` : ''}</p>
+      <p class="baris-kecil">${esc(k.periode || '')} · semester ${esc(k.semester)}${k.minggu_mulai ? ` · minggu ${esc(k.minggu_mulai)}–${esc(k.minggu_selesai)}` : ''}${k.peran !== 'peserta' ? ` · <span class="lencana">${esc(LABEL[k.peran] || k.peran)}</span>` : ''}</p>
       <p class="baris-kecil">${pengajar ? `Pengajar: ${esc(pengajar)}` : '<span class="lencana sedang">belum ada pengajar</span>'}</p>
       ${n ? `<p class="baris-kecil"><span class="lencana tinggi">${esc(n)} perlu dikerjakan</span></p>` : ''}
     </a>`;
